@@ -1,4 +1,4 @@
-from riemann_math import *
+from riemann_math import get_primes, get_zeros, TruePi, LogIntegral, J_Wave, MobiusPi, mean_spacing, find_nearest_zero, load_or_init_results, save_results, ZERO_COUNT, TAU
 import mpmath
 import time
 
@@ -304,18 +304,3 @@ def run_experiment_1c(zeros, resolution=50, x_start=2, x_end=50):
         
     print("  > Experiment 1C Done.           ")
     return results
-
-if __name__ == "__main__":
-    t0 = time.time()
-    zeros = get_zeros(ZERO_COUNT)
-    print("Loading existing results...")
-    data = load_or_init_results()
-    
-    # Run Exp 1 A, B, C? 
-    # Usually this file runs A. But now it has all.
-    # We should let CLI control what runs, but default to A if run directly?
-    
-    exp1 = run_experiment_1(zeros)
-    # data["experiment_1"] = exp1
-    # save_results(data)
-    print(f"Finished split execution in {time.time() - t0:.2f}s")

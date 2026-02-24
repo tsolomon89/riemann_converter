@@ -1,4 +1,4 @@
-from riemann_math import *
+from riemann_math import get_primes, get_zeros, TruePi, LogIntegral, J_Wave, MobiusPi, mean_spacing, find_nearest_zero, load_or_init_results, save_results, ZERO_COUNT, TAU
 import mpmath
 import time
 
@@ -51,9 +51,7 @@ def run_experiment_2(zeros, resolution=100, x_start=2, x_end=20, beta_offset=0.0
         res_2B.append({"x": float(x_vis), "error": float(error_B)})
         
         if i % 10 == 0: 
-            print(f"  > [Exp2] Centrifuge point {i}/{points} (x_vis={float(x_vis):.1f})")
-            import sys
-            sys.stdout.flush()
+            print(f"  > [Exp2] Centrifuge point {i}/{points} (x_vis={float(x_vis):.1f})", flush=True)
 
     return {"2A": res_2A, "2B": res_2B}
 
@@ -132,14 +130,3 @@ def run_experiment_2b(zeros, resolution=100, x_start=2, x_end=20, beta_offset=0.
 
     print("\n  > Experiment 2B Done.")
     return final_data
-
-if __name__ == "__main__":
-    t0 = time.time()
-    zeros = get_zeros(ZERO_COUNT)
-    print("Loading existing results...")
-    data = load_or_init_results()
-    
-    exp2 = run_experiment_2(zeros)
-    # data["experiment_2"] = exp2
-    # save_results(data)
-    print(f"Finished split execution in {time.time() - t0:.2f}s")

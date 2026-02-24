@@ -6,6 +6,19 @@ from riemann_math import get_zeros, load_or_init_results, save_results, ZERO_COU
 
 from verifier import run_verification
 
+EXPERIMENT_REGISTRY = [
+    {"keys": ["1"], "module": "run_exp1", "func": "run_experiment_1", "name": "EXPERIMENT 1A (Consolidated)", "out_key": "experiment_1", "pass_kwargs": True},
+    {"keys": ["1b", "1"], "module": "run_exp1", "func": "run_experiment_1b", "name": "EXPERIMENT 1B (Consolidated)", "out_key": "experiment_1b", "pass_kwargs": True},
+    {"keys": ["1c"], "module": "run_exp1", "func": "run_experiment_1c", "name": "EXPERIMENT 1C (Consolidated)", "out_key": "experiment_1c", "pass_kwargs": True},
+    {"keys": ["2"], "module": "run_exp2", "func": "run_experiment_2", "name": "EXPERIMENT 2A (Consolidated)", "out_key": "experiment_2", "pass_kwargs": True},
+    {"keys": ["2b", "2"], "module": "run_exp2", "func": "run_experiment_2b", "name": "EXPERIMENT 2B (Consolidated)", "out_key": "experiment_2b", "pass_kwargs": True},
+    {"keys": ["3"], "module": "run_exp3", "func": "run_experiment_3", "name": "EXPERIMENT 3", "out_key": "experiment_3", "pass_kwargs": True},
+    {"keys": ["4"], "module": "run_exp4", "func": "run_experiment_4", "name": "EXPERIMENT 4: Translation vs Dilation", "out_key": "experiment_4", "pass_kwargs": False},
+    {"keys": ["5"], "module": "run_exp5", "func": "run_experiment_5", "name": "EXPERIMENT 5: Zero Correspondence", "out_key": "experiment_5", "pass_kwargs": False},
+    {"keys": ["6"], "module": "run_exp6", "func": "run_experiment_6", "name": "EXPERIMENT 6: Critical Line Drift", "out_key": "experiment_6", "pass_kwargs": False},
+    {"keys": ["7"], "module": "run_exp7", "func": "run_experiment_7", "name": "EXPERIMENT 7: Centrifuge Fix", "out_key": "experiment_7", "pass_kwargs": False},
+]
+
 def main():
     parser = argparse.ArgumentParser(description="Riemann Research Engine CLI")
     parser.add_argument("--run", type=str, default="all", help="Experiment to run: 1, 1c, 2, 3, or all")
@@ -27,12 +40,6 @@ def main():
     if args.quick:
         print(" [WARN] RUNNING IN QUICK MODE (Reduced Precision/Count)")
         riemann_math.configure(dps=30, zero_count=100)
-    
-    # Late Import to ensure they pick up the modified configuration
-    import run_exp1
-    import run_exp2
-    import run_exp3
-
     
     print("Initialize Experiment Engine...")
     t0 = time.time()
@@ -71,69 +78,25 @@ def main():
     default_kwargs['beta_offset'] = float(args.beta_offset)
     default_kwargs['k_power'] = int(args.k_power)
 
-    # EXPERIMENT 1 (Consolidated 1, 1B, 1C)
-    if run_all or "1" in run_args:
-        print("\n--- EXPERIMENT 1A (Consolidated) ---")
-        exp1 = run_exp1.run_experiment_1(zeros, **default_kwargs)
-        data["experiment_1"] = exp1
-        
-    if run_all or "1b" in run_args or "1" in run_args: 
-         print("\n--- EXPERIMENT 1B (Consolidated) ---")
-         # Now inside run_exp1
-         exp1b = run_exp1.run_experiment_1b(zeros, **default_kwargs)
-         data["experiment_1b"] = exp1b
-
-    if run_all or "1c" in run_args:
-        print("\n--- EXPERIMENT 1C (Consolidated) ---")
-        # Now inside run_exp1
-        exp1c = run_exp1.run_experiment_1c(zeros, **default_kwargs)
-        data["experiment_1c"] = exp1c
-
-    # EXPERIMENT 2 (Consolidated 2, 2B)
-    if run_all or "2" in run_args:
-        print("\n--- EXPERIMENT 2A (Consolidated) ---")
-        exp2 = run_exp2.run_experiment_2(zeros, **default_kwargs)
-        data["experiment_2"] = exp2
-        
-    if run_all or "2b" in run_args or "2" in run_args:
-        print("\n--- EXPERIMENT 2B (Consolidated) ---")
-        exp2b = run_exp2.run_experiment_2b(zeros, **default_kwargs)
-        data["experiment_2b"] = exp2b
-
-    # EXPERIMENT 3
-    if run_all or "3" in run_args:
-        print("\n--- EXPERIMENT 3 ---")
-        exp3 = run_exp3.run_experiment_3(zeros, **default_kwargs)
-        data["experiment_3"] = exp3
-
-    # EXPERIMENT 4: Translation vs Dilation
-    if run_all or "4" in run_args:
-        print("\n--- EXPERIMENT 4 ---")
-        import run_exp4
-        exp4 = run_exp4.run_experiment_4(zeros)
-        data["experiment_4"] = exp4
-
-    # EXPERIMENT 5: Zero Correspondence
-    if run_all or "5" in run_args:
-        print("\n--- EXPERIMENT 5 ---")
-        import run_exp5
-        exp5 = run_exp5.run_experiment_5(zeros)
-        data["experiment_5"] = exp5
-
-    # EXPERIMENT 6: Critical Line Drift
-    if run_all or "6" in run_args:
-        print("\n--- EXPERIMENT 6 ---")
-        import run_exp6
-        exp6 = run_exp6.run_experiment_6(zeros)
-        data["experiment_6"] = exp6
-
-    # EXPERIMENT 7: Centrifuge Fix
-    if run_all or "7" in run_args:
-        print("\n--- EXPERIMENT 7 ---")
-        import run_exp7
-        exp7 = run_exp7.run_experiment_7(zeros)
-        data["experiment_7"] = exp7
-        
+    # Execute Experiments from Registry
+    import importlib
+    import inspect
+    
+    for exp in EXPERIMENT_REGISTRY:
+        if run_all or any(k in run_args for k in exp["keys"]):
+            print(f"\n--- {exp['name']} ---")
+            mod = importlib.import_module(exp["module"])
+            func = getattr(mod, exp["func"])
+            
+            if exp["pass_kwargs"]:
+                sig = inspect.signature(func)
+                filtered_kwargs = {k: v for k, v in default_kwargs.items() if k in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())}
+                result = func(zeros, **filtered_kwargs)
+            else:
+                result = func(zeros)
+                
+            data[exp["out_key"]] = result
+            
     # Save Merged Results
     # Run the automated verification checks!
     data = run_verification(data)

@@ -1,5 +1,5 @@
 import mpmath
-from riemann_math import *
+from riemann_math import get_primes, get_zeros, TruePi, LogIntegral, J_Wave, MobiusPi, mean_spacing, find_nearest_zero, load_or_init_results, save_results, ZERO_COUNT, TAU
 import time
 
 def run_experiment_6(zeros):
@@ -111,12 +111,3 @@ def run_experiment_6(zeros):
         }
         
     return results
-
-if __name__ == "__main__":
-    t0 = time.time()
-    zeros = get_zeros(ZERO_COUNT)
-    # data = load_or_init_results()
-    exp6 = run_experiment_6(zeros)
-    # data["experiment_6"] = exp6
-    # save_results(data)
-    print(f"Finished Exp 6 in {time.time() - t0:.2f}s")
