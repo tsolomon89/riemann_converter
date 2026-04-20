@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  --foreground-rgb: 230, 240, 255;
+  --background-start-rgb: 5, 8, 12;
+  --background-end-rgb: 0, 0, 0;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: radial-gradient(circle at 50% 0%, #1a2c4e 0%, #000000 100%);
+  min-height: 100vh;
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+/* Gauss Style - Serif for Math/Headers */
+.font-gauss {
+    font-family: "Times New Roman", Times, serif;
+    letter-spacing: -0.02em;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Improved Glassmorphism */
+.glass-panel {
+    background: rgba(20, 30, 50, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(100, 200, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.glass-panel-hover:hover {
+    background: rgba(30, 50, 80, 0.5);
+    border-color: rgba(100, 200, 255, 0.3);
+    box-shadow: 0 0 15px rgba(100, 200, 255, 0.1);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #05080c; 
+}
+::-webkit-scrollbar-thumb {
+  background: #334e68; 
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4f7a9e; 
+}

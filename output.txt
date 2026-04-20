@@ -1,0 +1,23 @@
+Verifying Riemann Explicit Formula Correction (Trivial Zeros)
+-----------------------------------------------------------
+x = 2.5
+Li(x) = 1.667295
+R(x, []) = 1.061456
+Difference (R - Li) = -0.605839
+Expected approx (-ln 2) = -0.693147
+Deviation from -ln 2 (due to integral term) = 0.087309
+
+x = 10
+Li(x) = 6.165601
+R(x, []) = 5.474625
+Difference (R - Li) = -0.690976
+Expected approx (-ln 2) = -0.693147
+Deviation from -ln 2 (due to integral term) = 0.002171
+
+x = 100
+Li(x) = 30.138325
+R(x, []) = 29.445178
+Difference (R - Li) = -0.693147
+Expected approx (-ln 2) = -0.693147
+Deviation from -ln 2 (due to integral term) = 0.000000
+
