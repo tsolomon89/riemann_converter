@@ -27,8 +27,14 @@ graph LR
 
 ## 📂 Documentation Structure
 
+*   [**Precise Claim**](THEORY.md): One-page statement of exactly what this repo asserts (Claims 1–4), what it does not, and how it sits on top of Odlyzko / Platt–Trudgian. **Start here for the epistemic posture.**
 *   [**Mathematical Framework**](MATH_README.md): Detailed explanation of the explicit formula, the Möbius Inversion, and the specific algorithms used in the Python engine.
+*   [**Reviewer Reproduction Guide**](REPRODUCE.md): How to rerun the evidence at five fidelity tiers, read the dashboard, and stress-test the claims.
 *   [**Dashboard Documentation**](dashboard/README.md): Overview of the React frontend, the Zero-Math policy, and the UI components.
+
+## 🔗 Relationship to Prior Work
+
+This repo does **not** re-verify RH for the first 10¹³ zeros — Odlyzko's numerical verification and Platt–Trudgian's RH-up-to-height bounds already did that at $k=0$. What we add is a *structural test*: assuming the external verification at $k=0$ holds, do the gauge/lattice/brittleness claims (see [THEORY.md](THEORY.md)) propagate that verification to every scale $k \in \mathbb{Z}$ without recomputation? If yes, the external work buys a whole equivariance class; if any of Claims 1–4 fail, the structural payoff evaporates. This project *extends*, not replaces, Odlyzko and Platt–Trudgian.
 
 ## 🚀 Quick Start
 
@@ -56,22 +62,31 @@ Open [http://localhost:3000](http://localhost:3000) to view the Analytic Interfe
 
 ## 🧪 Experiments
 
-1.  **EXP-01: Equivariance (Scale Invariance)**: Verifying that the explicit formula holds structure across global scale transformations ($X \to X/\tau^k$).
-2.  **EXP-02: Centrifuge (Rogue Zero)**: Testing the "brittleness" of the reconstruction against infinitesimal perturbations ($\beta=0.5 \to 0.5001$).
-3.  **EXP-03: Falsification (Beta=Pi)**: A counter-factual test to verify divergence under non-physical parameters.
-4.  **EXP-04: Translation vs Dilation**: Disambiguating coordinate shifts from operator scaling.
-5.  **EXP-05: Zero Correspondence**: Testing if scaled zeros map to existing zeros (Lattice Hypothesis).
-6.  **EXP-06: Critical Line Drift**: Measuring implicit Beta drift under scaling.
-7.  **EXP-07: Centrifuge Fix**: Calibrated sensitivity test for rogue zero amplification.
+Organized by theory stage (see `MATH_README.md §3.0`). **The stages are
+not coequal.** Brittleness carries the falsifiable content; Gauge and
+Lattice are the structural scaffolding that makes the brittleness
+argument meaningful. Read the brittleness battery first.
 
-## Zeta Transform Explorer (New)
+**Brittleness (the falsifiable content)** — RH stress-test via rogue-zero amplification under deep zoom. If any zero in the covered ordinate range were off the critical line, these detectors should see it.
 
-A standalone visualization module is available at `/zeta`.
-This tool renders the conformal mapping $w = \zeta(s)$ with high-precision (50 dps) and allows applying various "$\tau$-lenses" to the input and output planes.
+1.  **EXP-02: Centrifuge (Rogue Zero)**: infinitesimal $\beta = 0.5 \to 0.5001$ produces visible error amplification.
+2.  **EXP-02B: Rogue Isolation**: residual error scales exactly as $x^{\Delta\beta}$ (isolates the single perturbed zero).
+3.  **EXP-07: Calibrated Sensitivity**: local, relative metric for rogue amplification monotonicity across an $\varepsilon$ sweep.
 
-### Features
-- **Arbitrary Precision**: Uses `mpmath` backend to compute $\zeta(s)$ without standard float errors.
-- **Interactive Lenses**:
-  - $A_k(s)$: Input deformations (e.g., imaginary axis scaling).
-  - $B_k(w)$: Output deformations.
-- **Visual Verification**: Checks zero crossings and grid mapping integrity.
+**Gauge (scaffolding)** — coordinate scale-gauge symmetry under τ = 2π. Establishes that the reconstruction transforms covariantly under the chosen group action.
+
+4.  **EXP-01: Equivariance (Coordinate Gauge)**: reconstruction is isometric under $X \to X/\tau^k$.
+5.  **EXP-01B: Operator Gauge (Falsification)**: naive operator scaling (ρ, γ) breaks the symmetry — the gauge is rigid.
+6.  **EXP-06: Critical Line Drift (load-bearing)**: $\hat\beta(k)$ stays at ½ under scaling. This is what licenses propagating the $k=0$ verification to other scales.
+
+**Lattice (scaffolding)** — scaled zeros correspond to true Riemann zeros. Mostly a plumbing check on an identity we already assume.
+
+7.  **EXP-01C: τ-Lattice Hypothesis**: scaling zeros by $\tau^k$ reconstructs the scaled prime lattice $P_k$.
+8.  **EXP-04: Translation vs Dilation**: disambiguates trivial coord-shift from non-trivial operator scaling.
+9.  **EXP-05: Zero Correspondence**: nearest-neighbor test — do scaled zeros land on true zeros?
+10. **EXP-08: Scaled-Zeta Zero Equivalence**: zeros of ζ(s) scaled by $\tau^k$ vs zeros of ζ(s·τ^k). Plumbing check, not independent evidence — see [THEORY.md §2](THEORY.md).
+
+**Control**
+
+11. **EXP-03: Falsification (β=π)**: counter-factual that must diverge — meta-check that our falsifier is armed.
+

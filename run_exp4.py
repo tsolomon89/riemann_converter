@@ -4,7 +4,7 @@ import math
 import time
 
 
-def run_experiment_4(zeros):
+def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100):
     """
     Experiment 4: Log-Translation vs Log-Dilation Disambiguation.
     Distinguishes whether 'scaling works' because of coordinate invariance (translation)
@@ -16,8 +16,9 @@ def run_experiment_4(zeros):
     
     # 1. Setup
     # Physical range for visualization
-    X_start, X_end = 10, 100 # Visual window
-    points = 20 if len(zeros) <= 100 else 200 # Number of points (Fast mode for quick check)
+    X_start, X_end = x_start, x_end
+    # Use CLI-provided resolution to keep high-zero runs tractable.
+    points = max(20, int(resolution))
     
     # K values to test
     k_values = [1, 2]
@@ -84,7 +85,7 @@ def run_experiment_4(zeros):
         # log(x') = log(x) + Delta
         # x' = x * e^Delta
         search_range = 0.5
-        steps_opt = 20
+        steps_opt = 12
         
         print(f"    > Optimizing Translation Model ({steps_opt} steps)...")
         # Coarse Grid
@@ -105,7 +106,7 @@ def run_experiment_4(zeros):
         # Just doing a finer grid local to best
         local_range = 0.05
         # print("    > Refining Translation Model...")
-        for d in mpmath.linspace(best_delta - local_range, best_delta + local_range, 20):
+        for d in mpmath.linspace(best_delta - local_range, best_delta + local_range, 12):
              rmse = 0
              for px, tr in zip(points_x_opt, target_residuals_opt):
                 x_shifted = px * mpmath.exp(d)
@@ -141,7 +142,7 @@ def run_experiment_4(zeros):
         search_alpha_range = alpha_pred * 0.1
         
         print(f"    > Optimizing Dilation Model...")
-        for a in mpmath.linspace(alpha_pred - search_alpha_range, alpha_pred + search_alpha_range, 10):
+        for a in mpmath.linspace(alpha_pred - search_alpha_range, alpha_pred + search_alpha_range, 8):
             rmse = 0
             count_ok = 0
             for px, tr in zip(points_x_opt, target_residuals_opt):

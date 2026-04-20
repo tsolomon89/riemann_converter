@@ -1,27 +1,39 @@
 import argparse
+import sys
 import time
 import riemann_math
-from riemann_math import get_zeros, load_or_init_results, save_results, ZERO_COUNT
+from riemann_math import get_zeros, get_last_zero_source_info, load_or_init_results, save_results, ZERO_COUNT
 
 
 from verifier import run_verification
 
+# Schema version of dashboard/public/experiments.json.
+# Bump when adding/removing/renaming top-level fields or the summary structure.
+# Verifier refuses to grade artifacts with a mismatched version.
+SCHEMA_VERSION = "2026.05.0"
+
 EXPERIMENT_REGISTRY = [
     {"keys": ["1"], "module": "run_exp1", "func": "run_experiment_1", "name": "EXPERIMENT 1A (Consolidated)", "out_key": "experiment_1", "pass_kwargs": True},
-    {"keys": ["1b", "1"], "module": "run_exp1", "func": "run_experiment_1b", "name": "EXPERIMENT 1B (Consolidated)", "out_key": "experiment_1b", "pass_kwargs": True},
+    {"keys": ["1b"], "module": "run_exp1", "func": "run_experiment_1b", "name": "EXPERIMENT 1B (Consolidated)", "out_key": "experiment_1b", "pass_kwargs": True},
     {"keys": ["1c"], "module": "run_exp1", "func": "run_experiment_1c", "name": "EXPERIMENT 1C (Consolidated)", "out_key": "experiment_1c", "pass_kwargs": True},
     {"keys": ["2"], "module": "run_exp2", "func": "run_experiment_2", "name": "EXPERIMENT 2A (Consolidated)", "out_key": "experiment_2", "pass_kwargs": True},
-    {"keys": ["2b", "2"], "module": "run_exp2", "func": "run_experiment_2b", "name": "EXPERIMENT 2B (Consolidated)", "out_key": "experiment_2b", "pass_kwargs": True},
+    {"keys": ["2b"], "module": "run_exp2", "func": "run_experiment_2b", "name": "EXPERIMENT 2B (Consolidated)", "out_key": "experiment_2b", "pass_kwargs": True},
     {"keys": ["3"], "module": "run_exp3", "func": "run_experiment_3", "name": "EXPERIMENT 3", "out_key": "experiment_3", "pass_kwargs": True},
-    {"keys": ["4"], "module": "run_exp4", "func": "run_experiment_4", "name": "EXPERIMENT 4: Translation vs Dilation", "out_key": "experiment_4", "pass_kwargs": False},
-    {"keys": ["5"], "module": "run_exp5", "func": "run_experiment_5", "name": "EXPERIMENT 5: Zero Correspondence", "out_key": "experiment_5", "pass_kwargs": False},
-    {"keys": ["6"], "module": "run_exp6", "func": "run_experiment_6", "name": "EXPERIMENT 6: Critical Line Drift", "out_key": "experiment_6", "pass_kwargs": False},
-    {"keys": ["7"], "module": "run_exp7", "func": "run_experiment_7", "name": "EXPERIMENT 7: Centrifuge Fix", "out_key": "experiment_7", "pass_kwargs": False},
+    {"keys": ["4"], "module": "run_exp4", "func": "run_experiment_4", "name": "EXPERIMENT 4: Translation vs Dilation", "out_key": "experiment_4", "pass_kwargs": True},
+    {"keys": ["5"], "module": "run_exp5", "func": "run_experiment_5", "name": "EXPERIMENT 5: Zero Correspondence", "out_key": "experiment_5", "pass_kwargs": True},
+    {"keys": ["6"], "module": "run_exp6", "func": "run_experiment_6", "name": "EXPERIMENT 6: Critical Line Drift", "out_key": "experiment_6", "pass_kwargs": True},
+    {"keys": ["7"], "module": "run_exp7", "func": "run_experiment_7", "name": "EXPERIMENT 7: Centrifuge Fix", "out_key": "experiment_7", "pass_kwargs": True},
+    {"keys": ["8"], "module": "run_exp8", "func": "run_experiment_8", "name": "EXPERIMENT 8: Scaled-Zeta Zero Equivalence", "out_key": "experiment_8", "pass_kwargs": True},
 ]
 
 def main():
     parser = argparse.ArgumentParser(description="Riemann Research Engine CLI")
-    parser.add_argument("--run", type=str, default="all", help="Experiment to run: 1, 1c, 2, 3, or all")
+    parser.add_argument(
+        "--run",
+        type=str,
+        default="all",
+        help="Experiment(s) to run: 1,1b,1c,2,2b,3,4,5,6,7,8,all (comma-separated allowed)",
+    )
     parser.add_argument("--quick", action="store_true", help="Run in fast mode with fewer zeros and points")
     parser.add_argument("--zero-source", type=str, default="generated", help="Source of zeros: 'generated' or 'file:<path>'")
     parser.add_argument("--zero-count", type=int, default=ZERO_COUNT, help="Overridden number of zeros")
@@ -31,6 +43,10 @@ def main():
     parser.add_argument("--x-end", type=float, default=None, help="End of X range")
     parser.add_argument("--beta-offset", type=float, default=0.0001, help="Beta perturbation amount (for Exp 2/7)")
     parser.add_argument("--k-power", type=int, default=-20, help="Exponent of tau (k) for deep zoom (for Exp 2/7)")
+    parser.add_argument("--k-values", type=str, default="0,1,2", help="k-values for Exp 8 (comma-separated, e.g. -2,-1,0,1,2)")
+    parser.add_argument("--n-test", type=int, default=500, help="Number of zeros to evaluate in Exp 8")
+    parser.add_argument("--allow-corrupt-zero-cache", action="store_true", help="Allow non-monotonic zeros.dat for generated source (not recommended)")
+    parser.add_argument("--no-verify", action="store_true", help="Skip inline verification; run `python verifier.py` separately to grade (recommended for reviewer-reproducible runs)")
     args = parser.parse_args()
     
     # Configure Math Engine
@@ -45,7 +61,16 @@ def main():
     t0 = time.time()
     
     # Shared Resource Loading
-    zeros = get_zeros(riemann_math.ZERO_COUNT, source=args.zero_source)
+    zeros = get_zeros(
+        riemann_math.ZERO_COUNT,
+        source=args.zero_source,
+        allow_corrupt_cache=args.allow_corrupt_zero_cache,
+    )
+    if not zeros:
+        raise ValueError(
+            "No zeros were loaded. Check --zero-source path/format and try again. "
+            f"(source='{args.zero_source}')"
+        )
     
     # Load Existing Data (to preserving other experiments if running partial)
     data = load_or_init_results()
@@ -65,6 +90,12 @@ def main():
             
     if "meta" not in data: data["meta"] = {}
     data["meta"]["code_fingerprint"] = fingerprints
+    data["meta"]["zero_source_info"] = get_last_zero_source_info()
+    data["meta"]["schema_version"] = SCHEMA_VERSION
+    data["meta"]["reproducibility_instructions"] = (
+        f"python experiment_engine.py {' '.join(sys.argv[1:])}  "
+        f"[dps={args.dps}, zero_source={args.zero_source}, zero_count={riemann_math.ZERO_COUNT}]"
+    )
     
     # Parse Run Arguments (support comma-separated lists)
     run_args = [x.strip() for x in args.run.split(",")]
@@ -77,6 +108,9 @@ def main():
     if args.x_end is not None: default_kwargs['x_end'] = float(args.x_end)
     default_kwargs['beta_offset'] = float(args.beta_offset)
     default_kwargs['k_power'] = int(args.k_power)
+    default_kwargs['k_values'] = args.k_values
+    default_kwargs['n_test'] = int(args.n_test)
+    default_kwargs['dps'] = int(args.dps)
 
     # Execute Experiments from Registry
     import importlib
@@ -97,11 +131,15 @@ def main():
                 
             data[exp["out_key"]] = result
             
-    # Save Merged Results
-    # Run the automated verification checks!
-    data = run_verification(data)
+    # Verification is now decoupled: --no-verify produces a raw-data artifact
+    # that a reviewer can grade independently via `python verifier.py`.
+    if not args.no_verify:
+        data = run_verification(data)
+    else:
+        # Clear any stale summary so the artifact is unambiguously un-graded.
+        data.pop("summary", None)
+        print("  [INFO] Skipping inline verification. Run `python verifier.py` to grade.")
 
-    # Save Merged Results
     save_results(data)
     print(f"\nEngine Finished in {time.time() - t0:.2f}s.")
 

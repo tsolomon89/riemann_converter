@@ -75,17 +75,59 @@ To ensure scientific integrity, the engine runs an automated QA pass (`verifier.
 
 ### 2.6 Execution Flow
 The `experiment_engine.py` CLI orchestrates the generation process:
-1.  **Initialization**: Sets precision to 50 DPS and loads/computes the first 1000 Riemann Zeros.
-2.  **State Management**: Loads existing `experiments.json`.
-3.  **Experiment Execution**: Runs `run_exp[1-3].py`.
-4.  **Verification**: Runs `verifier.py` to grade the results.
-5.  **Persistence**: Saves the merged dataset with metadata and verdicts.
+1.  **Initialization**: Sets precision to 50 DPS and loads/computes Riemann Zeros (default 20,000; quick mode: 100).
+2.  **State Management**: Loads existing `experiments.json` so partial runs don't destroy prior results.
+3.  **Experiment Execution**: Walks the `EXPERIMENT_REGISTRY` in `experiment_engine.py` and dispatches to `run_exp1.py`…`run_exp8.py`. Runs the subset selected by `--run` (or all).
+4.  **Verification**: Runs `verifier.py` to grade the results, attach a theory `stage` (gauge / lattice / brittleness / control) to each verdict, and emit a `stage_verdicts` rollup.
+5.  **Persistence**: Saves the merged dataset with metadata and verdicts to `dashboard/public/experiments.json`.
 
 ---
 
 ## 3. Experimental Configurations
 
-The engine executes three specific experiments to verify the hypothesis properties.
+The engine runs eleven experiment stages across four theory groups. Each verdict records a `stage` field so the `summary.stage_verdicts` rollup can report a single headline status per stage.
+
+### 3.0 Theory Stages
+
+The engine tests a three-stage layered conjecture, in this order:
+
+1.  **Gauge** — The explicit formula has a rigid scale-gauge symmetry under τ = 2π. Coordinate scaling preserves the reconstruction isometrically; operator scaling (ρ or γ alone) breaks it.
+    *   Members: **EXP_1** (coordinate gauge), **EXP_1B** (operator-gauge falsification), **EXP_6** (β-stability under scaling).
+2.  **Lattice** — Scaled zeros γ·τ^k correspond to true Riemann zeros — an arithmetic self-similarity, not just a coordinate reparametrization.
+    *   Members: **EXP_1C** (τ-Lattice direct test), **EXP_4** (translation vs dilation), **EXP_5** (zero correspondence), **EXP_8** (scaled-ζ zero equivalence).
+3.  **Brittleness** — Once Gauge and Lattice hold, a single rogue zero with β ≠ ½ produces detectably amplified error under deep zoom, giving a constructive RH falsification path.
+    *   Members: **EXP_2** (centrifuge stress test), **EXP_2B** (rogue isolation), **EXP_7** (calibrated sensitivity).
+
+The **Control** group (**EXP_3**, β=π falsification) sits outside the narrative; its PASS means the obviously-wrong hypothesis diverged as expected.
+
+### 3.0.1 Test Roles (orthogonal axis)
+
+The `stage` axis tells you *where* a test lives in the theory. The `role` axis tells you *what job the test does* in the proof-by-contradiction chain (conformality ⇒ compression ⇒ any β≠½ zero is detectable in a vanishingly small interval ⇒ RH). An experiment can belong to any stage and independently play any role; the two axes cross.
+
+| Role | Meaning | How a PASS reads | How a non-PASS reads |
+|---|---|---|---|
+| **ENABLER** (key 🔑) | Establishes a premise in the chain. | `theory_fit=SUPPORTS` — the chain keeps going. | `theory_fit=REFUTES` — the chain is blocked at this link. |
+| **PATHFINDER** (compass 🧭) | Disambiguates *which* mechanism is in play (e.g. coord-reparam vs operator dilation) or *which* path to build out next. | `theory_fit=INFORMATIVE` with a `direction` metric. | `theory_fit=INFORMATIVE` with the opposing `direction`. A pathfinder never fails — it *answers*. |
+| **DETECTOR** (radar 📡) | Verifies the rogue-zero detection machinery fires as designed. | `theory_fit=SUPPORTS` — detector is armed. | `theory_fit=REFUTES` — the detector is dead. |
+| **FALSIFICATION_CONTROL** (shield 🛡️) | Sanity check that the system can fail on known-bad data. | `theory_fit=SUPPORTS` (the decoy *did* blow up as expected). | `theory_fit=CONTROL_BROKEN` — a dead discriminator, which is theory-refuting. |
+
+Role assignments:
+
+| Exp | Stage | Role | Chain role |
+|---|---|---|---|
+| EXP_1 | gauge | ENABLER | coordinate-scaling is conformal on the explicit formula |
+| EXP_1B | gauge | FALSIFICATION_CONTROL | naive operator-scaling must break |
+| EXP_1C | lattice | ENABLER | zeros carry a τ-lattice structure |
+| EXP_2 | brittleness | DETECTOR | rogue amplifies at deep k |
+| EXP_2B | brittleness | DETECTOR | rogue isolation is theoretically clean |
+| EXP_3 | control | FALSIFICATION_CONTROL | β=π diverges vs true π(x) |
+| EXP_4 | lattice | **PATHFINDER** | is scaling coord-trivial (TRANSLATION) or op-nontrivial (DILATION)? |
+| EXP_5 | lattice | **PATHFINDER** | do scaled zeros land on existing zeros (lattice-hit) or between them (lattice-path-negative)? |
+| EXP_6 | gauge | ENABLER | **linchpin**: compression preserves the critical line; without this the RH-contradiction path collapses |
+| EXP_7 | brittleness | DETECTOR | detector sensitivity is calibrated |
+| EXP_8 | lattice | ENABLER | ζ(s·τ^k) zeros vs τ^k·γₙ — zeta-operator-level equivalence |
+
+Why PATHFINDER is a first-class role: EXP_4 and EXP_5 are not theory-confirmers, they are *direction-setters*. EXP_4 tells you whether the scaling is a coordinate reparametrization (TRANSLATION branch) or a genuine operator dilation (DILATION branch), both of which are theoretically admissible — they just route you down different downstream investigations. EXP_5 tells you whether to pursue the naive τ-lattice ("scaled zeros land on true zeros") or to treat the lattice as emergent from the explicit-formula equivariance. Forcing either experiment into PASS/FAIL pretends there's a binary answer when there isn't; `theory_fit=INFORMATIVE` makes the axis honest.
 
 ### Experiment 1A: Equivariance (Coordinate Gauge)
 **Hypothesis**: The distribution of primes is scale-invariant under the gauge $\tau = 2\pi$.
@@ -172,6 +214,17 @@ The amplitude term $x^\pi$ dominates instantly, causing massive divergence.
 *   **Metric**: Amplification factor $A(x) = |E_{rogue} - E_{clean}| / (|E_{clean}| + \eta)$.
 *   **Pass Condition**: $A(\epsilon)$ should be monotonic with $\epsilon$.
 
+### Experiment 8: Scaled-Zeta Zero Equivalence
+**Goal**: Compare the zeros of the $\tau^k$-scaled zeta function $\zeta(s \cdot \tau^k)$ to the $\tau^k$-scaled baseline zeros $\gamma_n \cdot \tau^k$. If the Lattice claim holds, these two sets should coincide to within numerical tolerance.
+*   **Method**: For each $k$, locate the first $N$ zeros of $\zeta(s \cdot \tau^k)$ numerically and pair them against the scaled baseline zeros.
+*   **Metrics** (`per_k`):
+    *   $p99\, |\Delta|$ — 99th percentile of absolute zero-vs-scaled-zero gap.
+    *   $p95\, \text{residual}$ — 95th percentile of normalized residual.
+*   **Adaptive Tolerance** (computed by the verifier, not the engine):
+    *   $\text{tol}_{\text{zero}} = \max(5 \cdot 10^{-\text{declared\_decimals}},\ 10^{-20})$
+    *   $\text{tol}_{\text{residual}} = 10^{-\min(30,\ \text{dps}/2)}$
+*   **Pass Condition**: worst $p99\, |\Delta| \le \text{tol}_{\text{zero}}$ AND worst $p95\, \text{residual} \le \text{tol}_{\text{residual}}$.
+
 ---
 
 ## 4. Codebase Mapping
@@ -183,54 +236,82 @@ The amplitude term $x^\pi$ dominates instantly, causing massive divergence.
 | **Logarithmic Integral** | `riemann_math.LogIntegral` | `mpmath.li(X)` |
 | **Explicit Formula** | `riemann_math.J_Wave` | $\sum \frac{x^\beta}{\ln x} \frac{2\sin(\gamma \ln x)}{\gamma}$ |
 | **Möbius Inversion** | `riemann_math.MobiusPi` | $\sum \frac{\mu(k)}{k} J(x^{1/k})$ |
-| **Coordinate Gauge** | `run_exp1.py` | $X_{eff} = X_{phys} / \tau^k$ |
-| **Operator Gauge** | `run_exp1b.py` | $\rho' = \rho \cdot \tau^k$ |
-| **Verification** | `verifier.py` | Automated QA checks |
+| **Coordinate Gauge** | `run_exp1.py::run_experiment_1` | $X_{eff} = X_{phys} / \tau^k$ |
+| **Operator Gauge** | `run_exp1.py::run_experiment_1b` | $\rho' = \rho \cdot \tau^k$ |
+| **τ-Lattice** | `run_exp1.py::run_experiment_1c` | $\gamma' = \gamma \cdot \tau^k$ at $X_{phys}$ |
+| **Scaled-ζ Zeros** | `run_exp8.py` | zeros of $\zeta(s \cdot \tau^k)$ |
+| **Verification** | `verifier.py` | Stage rollups, adaptive tolerances, regression log |
 
 ---
 
 ## 5. Data Artifact Specification (`experiments.json`)
 
-The output file serves as the strict contract between the Python Oracle and the React Observer.
+The output file is the contract between the Python Oracle and the React Observer. The shape is versioned via `meta.schema_version`; the verifier refuses artifacts whose version does not match `EXPECTED_SCHEMA_VERSION`. The engine produces the raw data + `meta`; `verifier.py` adds the `summary` block and appends to `verdict_history.jsonl`.
+
+Each experiment verdict carries **three orthogonal axes**:
+
+- `status` — the *mechanical* outcome (`PASS`/`FAIL`/...). Did the numeric threshold get crossed?
+- `theory_fit` — the *theory-centric* outcome (`SUPPORTS`/`REFUTES`/`CANDIDATE`/`INFORMATIVE`/`CONTROL_BROKEN`/`INCONCLUSIVE`). Does the observed result support, refute, or inform the Gauge→Lattice→Brittleness conjecture?
+- `role` — the *chain-role* (`ENABLER`/`PATHFINDER`/`DETECTOR`/`FALSIFICATION_CONTROL`). What job does this test do in the proof-by-contradiction chain? See §3.0.1.
+
+Polarity matters: for `FALSIFICATION_CONTROL` experiments, mechanical `PASS` (the falsifier exploded as predicted) maps to `theory_fit = SUPPORTS`; mechanical `FAIL` (the falsifier did not trigger — a dead discriminator) maps to `theory_fit = CONTROL_BROKEN`. For `PATHFINDER` experiments, any decisive outcome (hit OR miss) maps to `theory_fit = INFORMATIVE` — a pathfinder's job is to pick a direction, not to pass/fail the theory. Stage rollups aggregate over `theory_fit`, not `status`.
 
 ```json
 {
   "meta": {
+    "schema_version": "2026.04.3",
     "dps": 50,
     "zeros": 1000,
     "tau": 6.28318...,
-    "verdicts": {
-       "EXP_1": "PASS",
-       "EXP_2": "PASS",
-       "EXP_3": "PASS"
-    }
+    "code_fingerprint": { "<filename>": "<md5>", ... },
+    "zero_source_info": { "source_path": "...", "declared_decimals": 46, ... },
+    "reproducibility_instructions": "python experiment_engine.py ..."
   },
-  "experiment_1": {
-    "0": [ { "x": float, "eff_x": float, "y_rec": float, "y_true": float }, ... ],
-    "1": [ ... ]
+  "summary": {
+    "schema_version": "2026.04.3",
+    "engine_status": "OK",
+    "overall": "PASS|FAIL",
+    "experiments": {
+      "EXP_1": {
+        "stage": "gauge|lattice|brittleness|control",
+        "role": "ENABLER|PATHFINDER|DETECTOR|FALSIFICATION_CONTROL",
+        "type": "VALIDATION|HYPOTHESIS_TEST|FALSIFICATION_CONTROL",
+        "status": "PASS|FAIL|NOTEWORTHY|INCONCLUSIVE|INSUFFICIENT_DATA|INSUFFICIENT_SEPARATION|SKIP",
+        "theory_fit": "SUPPORTS|REFUTES|CANDIDATE|INFORMATIVE|CONTROL_BROKEN|INCONCLUSIVE",
+        "metrics": { "...": "numeric metrics; PATHFINDER rows include 'direction' e.g. 'TRANSLATION', 'lattice-hit', 'lattice-path-negative'" },
+        "interpretation": "..."
+      },
+      "...": "EXP_1B, EXP_1C, EXP_2, EXP_2B, EXP_3, EXP_4, EXP_5, EXP_6, EXP_7, EXP_8"
+    },
+    "stage_verdicts": {
+      "gauge":       { "status": "SUPPORTS|REFUTES|CANDIDATE|PARTIAL|INCONCLUSIVE", "reason": "...", "members": ["EXP_1", "EXP_1B", "EXP_6"], "member_fits": {"EXP_1": "SUPPORTS", ...}, "role_breakdown": {"ENABLER": 2, "FALSIFICATION_CONTROL": 1} },
+      "lattice":     { "status": "...", "reason": "...", "members": ["EXP_1C", "EXP_4", "EXP_5", "EXP_8"], "member_fits": {...}, "role_breakdown": {"ENABLER": 2, "PATHFINDER": 2} },
+      "brittleness": { "status": "...", "reason": "...", "members": ["EXP_2", "EXP_2B", "EXP_7"], "member_fits": {...}, "role_breakdown": {"DETECTOR": 3} },
+      "control":     { "status": "...", "reason": "...", "members": ["EXP_3"], "member_fits": {...}, "role_breakdown": {"FALSIFICATION_CONTROL": 1} }
+    },
+    "zero_path_decision": "SCALE_AD_HOC|COMPUTE_PER_K|UNDECIDED",
+    "zero_path_reason": "..."
   },
-  "experiment_1b": {
-      "variants": {
-          "gamma_scaled": { 
-              "0": [...],
-              "1": [ { "x": float, "y_rec": float, "y_rec_amp_renorm": float }, ... ]
-          },
-          "rho_scaled": { 
-              "1": [ { "x": float, "y_rec": float, "status": "ok|error" }, ... ]
-          }
-      }
-  },
-  "experiment_2": {
-    "2A": [ { "x": float, "error": float }, ... ],
-    "2B": [ { "x": float, "error": float }, ... ]
-  },
-  "experiment_2b": [
-      { "x": float, "diff": float, "pred_ratio": float, "obs_ratio": float, "residual": float }, ...
-  ],
-  "experiment_3": {
-    "3A": [ { "x": float, "y": float }, ... ],
-    "3B": [ { "x": float, "y": float }, ... ],
-    "TruePi": [ { "x": float, "y": float }, ... ]
-  }
+  "experiment_1":  { "-2": [ {"x": float, "eff_x": float, "y_rec": float, "y_true": float}, ... ], "-1": [...], "0": [...], "1": [...], "2": [...] },
+  "experiment_1b": { "variants": { "gamma_scaled": { "<k>": [...] }, "rho_scaled": { "<k>": [...] } } },
+  "experiment_1c": { "<k>": [ {"x_eff": float, "x_phys": float, "y_true": float, "y_coord": float, "y_op": float}, ... ] },
+  "experiment_2":  { "2A": [ {"x": float, "error": float}, ... ], "2B": [...] },
+  "experiment_2b": [ {"x": float, "diff": float, "pred_ratio": float, "obs_ratio": float, "residual": float}, ... ],
+  "experiment_3":  { "3A": [...], "3B": [...], "TruePi": [...] },
+  "experiment_4":  { "<k>": {"winner": "TRANSLATION|DILATION", "delta_error": float, "rmse_trans": float, "rmse_dil": float, ... } },
+  "experiment_5":  { "<k>": {"median_z": float, "mean_z": float, "p95_z": float, ... } },
+  "experiment_6":  { "<k>": {"beta_hat": float, "rmse_opt": float, "rmse_05": float, ... } },
+  "experiment_7":  { "calibrated": [ {"epsilon": float, "max_amp": float, ... }, ... ] },
+  "experiment_8":  { "per_k": { "<k>": {"metrics": {"p99_abs_dev": float, "p95_residual": float, ... }, ... } } }
 }
 ```
+
+### Regression log (`verdict_history.jsonl`)
+
+`verifier.py` appends one JSON line per run to `dashboard/public/verdict_history.jsonl`:
+
+```json
+{"timestamp": "...Z", "schema_version": "2026.04.3", "overall": "PASS|FAIL", "stage_verdicts": {"gauge": "SUPPORTS", ...}, "code_fingerprint": {...}, "zero_source_info": {...}}
+```
+
+A stage verdict flip vs. the prior line prints a loud `[REGRESSION]` warning. The dashboard's `VerdictHistoryPanel` reads the last 10 lines of this file.

@@ -12,6 +12,8 @@ def run_experiment_2(zeros, resolution=100, x_start=2, x_end=20, beta_offset=0.0
     k = k_power (default -20).
     """
     print(f"Running Experiment 2: Centrifuge... [Res={resolution}, k={k_power}, beta_offset={beta_offset}]")
+    if not zeros:
+        raise ValueError("Experiment 2 requires at least one loaded zero.")
     
     k = k_power
     scale_factor = mpmath.power(TAU, -k) # tau^(-k)
@@ -66,6 +68,8 @@ def run_experiment_2b(zeros, resolution=100, x_start=2, x_end=20, beta_offset=0.
     Computes Diff, Predicted Ratio, and Residual.
     """
     print(f"Running Experiment 2B: Rogue Isolation... [Res={resolution}, k={k_power}]")
+    if not zeros:
+        raise ValueError("Experiment 2B requires at least one loaded zero.")
     
     k = k_power
     scale_factor = mpmath.power(TAU, -k) # ~10^16

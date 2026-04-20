@@ -8,9 +8,15 @@ import time
 
 def run_experiment_1(zeros, resolution=500, x_start=2, x_end=50):
     """
-    Experiment 1: Explicit Equivariance (Coordinate Gauge).
-    Tests if zeros scaled by tau^k (rho * tau^k) reconstruct the function 
-    at scaled coordinates X * tau^k.
+    Experiment 1A: Explicit Equivariance (Coordinate Gauge).
+
+    Tests whether the explicit formula is isometric under coordinate scaling
+    X_phys = X_eff * tau^k. Zeros are NOT scaled. For each k in {-2,-1,0,1,2}
+    we evaluate the reconstruction at the effective coordinate X_eff = X_phys/tau^k
+    using the pristine (unmodified) zero set, and plot against the physical X.
+
+    Expected outcome: on a log axis, all five K curves are geometrically identical
+    (isometry). This is the "Gauge" stage of the theory ordering.
     """
     print(f"Running Experiment 1: Exp1A (Coordinate Gauge) [Res={resolution}, Range={x_start}-{x_end}]...")
     
@@ -178,30 +184,37 @@ def run_experiment_1b(zeros, resolution=200, x_start=2, x_end=50):
 
 def fast_J_Wave(X, betas, gammas):
     """
-    Optimized J_Wave for scalar X and lists of betas/gammas.
-    Precomputes log(X) and avoids some mpmath overhead in the loop.
+    Optimized J_Wave for scalar X when every beta is equal.
+    Pulls x^beta / ln(x) * 2 out of the zero-sum loop. Requires that all
+    elements of `betas` are the same value; asserts this so the silent
+    "hardcoded beta=0.5" landmine cannot recur.
     """
     if X < 2: return mpmath.mpf(0)
-    
+
+    # Enforce the equal-beta precondition that makes the pre-factor optimization valid.
+    if not betas:
+        raise ValueError("fast_J_Wave requires a non-empty betas list")
+    beta0 = betas[0]
+    if any(b != beta0 for b in betas):
+        raise ValueError("fast_J_Wave requires all betas to be equal; use J_Wave for varying betas")
+
     ln_X = mpmath.log(X)
     inv_ln_X = 1 / ln_X
-    
+
     term1 = -mpmath.log(2)
     term2 = 1 / (2 * X * X * ln_X)
     trivial_zeros = term1 + term2
-    
+
     li_val = mpmath.li(X)
-    
-    sqrt_X = mpmath.sqrt(X)
-    pre_factor = (sqrt_X * inv_ln_X) * 2
-    
+
+    pre_factor = (mpmath.power(X, beta0) * inv_ln_X) * 2
+
     sum_osc = mpmath.mpf(0)
-    
     for g in gammas:
         sum_osc += mpmath.sin(g * ln_X) / g
-        
+
     total_mask = pre_factor * sum_osc
-    
+
     return li_val - total_mask + trivial_zeros
 
 def fast_MobiusPi(X, betas, gammas):

@@ -2,7 +2,7 @@ import mpmath
 from riemann_math import get_primes, get_zeros, TruePi, LogIntegral, J_Wave, MobiusPi, mean_spacing, find_nearest_zero, load_or_init_results, save_results, ZERO_COUNT, TAU
 import time
 
-def run_experiment_6(zeros):
+def run_experiment_6(zeros, resolution=60, x_start=10, x_end=100):
     """
     Experiment 6: Critical Line Drift Estimator.
     Measures if the reconstruction implicitly prefers a different beta > 0.5
@@ -13,8 +13,8 @@ def run_experiment_6(zeros):
     results = {}
     
     # 1. Setup
-    X_start, X_end = 10, 100
-    points = 100
+    X_start, X_end = x_start, x_end
+    points = max(20, int(resolution))
     k_values = [0, 1, 2] # Include 0 check
     
     # Pre-load primes for TruePi
