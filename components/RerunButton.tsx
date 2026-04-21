@@ -5,7 +5,7 @@ import { RefreshCw, Wind, Gauge, Play, Rocket, X } from "lucide-react";
 import clsx from "clsx";
 
 // Five re-run tiers the dashboard exposes. Each button maps to a hardcoded
-// argv list on the server; see dashboard/app/api/rerun/route.ts.
+// argv list on the server; see app/api/rerun/route.ts.
 //
 //   verify        - re-grade existing artifact (seconds)
 //   smoke         - plumbing check; ~1 min; DO NOT cite as evidence
@@ -29,7 +29,7 @@ const MODE_LABELS: Record<Mode, { label: string; icon: React.ReactNode; hint: st
     smoke: {
         label: "Smoke",
         icon: <Wind size={12} />,
-        hint: "100 zeros, dps=30 (~1 min). Plumbing check — expect noisy REFUTES; DO NOT cite as evidence.",
+        hint: "100 zeros, dps=30 (~1 min). Plumbing check � expect noisy INCONCLUSIVE / INCONSISTENT outcomes; DO NOT cite as evidence.",
     },
     standard: {
         label: "Standard",
@@ -52,6 +52,7 @@ export default function RerunButton({ onFinished }: Props) {
     const [running, setRunning] = useState<Mode | null>(null);
     const [logs, setLogs] = useState<string[]>([]);
     const [logsOpen, setLogsOpen] = useState(false);
+    const runAuthToken = process.env.NEXT_PUBLIC_RESEARCH_RUN_TOKEN?.trim();
 
     const runMode = async (mode: Mode) => {
         if (running) return;
@@ -59,14 +60,24 @@ export default function RerunButton({ onFinished }: Props) {
         setLogs([`[ui] starting ${mode}...\n`]);
         setLogsOpen(true);
         try {
+            const headers: HeadersInit = { "Content-Type": "application/json" };
+            if (runAuthToken) headers.Authorization = `Bearer ${runAuthToken}`;
             const response = await fetch("/api/rerun", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({ mode }),
             });
             if (response.status === 409) {
                 const body = await response.json();
                 setLogs((prev) => [...prev, `[ui] ${body.error ?? "already running"}\n`]);
+                return;
+            }
+            if (!response.ok) {
+                const body = (await response.json().catch(() => ({}))) as { error?: string };
+                setLogs((prev) => [
+                    ...prev,
+                    `[ui] request failed (${response.status}): ${body.error ?? "run request failed"}\n`,
+                ]);
                 return;
             }
             const reader = response.body?.getReader();

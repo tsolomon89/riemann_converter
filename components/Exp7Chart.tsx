@@ -39,7 +39,7 @@ export default function Exp7Chart({ data }: Props) {
         </LineChart>
       </ResponsiveContainer>
       <div className="mt-2 text-xs text-gray-400 text-center">
-         Monotonic growth confirms the Centrifuge is sensitive to rogue zeros.
+         Program 2 exploratory. Monotonic growth of A(ε) across the swept perturbations is consistent with the centrifuge being sensitive on this run&apos;s settings. Does not formalize a non-hiding theorem; does not support the theorem candidate.
       </div>
     </div>
   );

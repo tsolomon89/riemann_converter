@@ -1,10 +1,16 @@
+import copy
 import json
 import os
 import math
 import datetime
 
-OUTPUT_FILE = "dashboard/public/experiments.json"
-HISTORY_FILE = "dashboard/public/verdict_history.jsonl"
+# Output paths. The Next.js app serves files under repo-root `public/`; the
+# legacy `dashboard/public/` paths are retained as a fallback so older scripts
+# still resolve until the dashboard-directory refactor is fully cleaned up.
+OUTPUT_FILE = "public/experiments.json"
+HISTORY_FILE = "public/verdict_history.jsonl"
+LEGACY_OUTPUT_FILES = ("dashboard/public/experiments.json",)
+LEGACY_HISTORY_FILES = ("dashboard/public/verdict_history.jsonl",)
 
 # Must match experiment_engine.SCHEMA_VERSION. Bump in both places when the
 # artifact shape changes (top-level keys, summary shape, stage names, etc.).
@@ -100,30 +106,550 @@ ROLE_MAP = {
 }
 
 
-# Mechanical status -> theory-fit translation.
+# ============================================================================
+# CANONICAL ONTOLOGY (Sprint 2a) — PROOF_PROGRAM_SPEC.md §5/§6/§7
+# ============================================================================
+# The constants below encode the ontology the spec freezes. `ROLE_MAP` above is
+# retained as a deprecation shim; the new canonical axis is FUNCTION_MAP.
+# Mappings mirror the provisional witness map in PROOF_PROGRAM_SPEC.md §7.
+# GAP_WITNESS_MAP_REVIEW may revise these before Sprint 2b begins UI work.
+
+# Axis A — what job the experiment does in the proof program.
+FUNCTION_MAP = {
+    "EXP_1":  "COHERENCE_WITNESS",        # reconstruction covariance, "showing the work"
+    "EXP_1B": "CONTROL",                  # naive operator scaling must break
+    "EXP_1C": "COHERENCE_WITNESS",        # zero-scaling coherence, not a direct obligation witness
+    "EXP_2":  "EXPLORATORY",              # brittleness — Program 2 only
+    "EXP_2B": "EXPLORATORY",              # rogue isolation — Program 2 only
+    "EXP_3":  "CONTROL",                  # beta=pi counterfactual must diverge
+    "EXP_4":  "PATHFINDER",               # translation vs dilation direction choice
+    "EXP_5":  "PATHFINDER",               # lattice-hit / miss direction choice
+    "EXP_6":  "PROOF_OBLIGATION_WITNESS", # provisional — beta-invariance witness
+    "EXP_7":  "EXPLORATORY",              # calibrated sensitivity — Program 2 only
+    "EXP_8":  "REGRESSION_CHECK",         # scaled-zeta identity plumbing
+}
+
+# Axis C — kind of claim this result licenses.
+EPISTEMIC_LEVEL_MAP = {
+    "EXP_1":  "EMPIRICAL",
+    "EXP_1B": "INSTRUMENTAL",
+    "EXP_1C": "EMPIRICAL",
+    "EXP_2":  "EMPIRICAL",
+    "EXP_2B": "EMPIRICAL",
+    "EXP_3":  "INSTRUMENTAL",
+    "EXP_4":  "EMPIRICAL",
+    "EXP_5":  "EMPIRICAL",
+    "EXP_6":  "EMPIRICAL",
+    "EXP_7":  "EMPIRICAL",
+    "EXP_8":  "INSTRUMENTAL",
+}
+
+# Which named research program each experiment lives in. PROGRAM_1 is canonical
+# (direct invariance); PROGRAM_2 is exploratory (contradiction-by-detectability).
+# See PROOF_PROGRAM_SPEC.md Decision Log #2.
+PROGRAM_MAP = {
+    "EXP_1":  "PROGRAM_1",
+    "EXP_1B": "PROGRAM_1",
+    "EXP_1C": "PROGRAM_1",
+    "EXP_2":  "PROGRAM_2",
+    "EXP_2B": "PROGRAM_2",
+    "EXP_3":  "PROGRAM_1",
+    "EXP_4":  "PROGRAM_1",
+    "EXP_5":  "PROGRAM_1",
+    "EXP_6":  "PROGRAM_1",
+    "EXP_7":  "PROGRAM_2",
+    "EXP_8":  "PROGRAM_1",
+}
+
+# Only PROOF_OBLIGATION_WITNESS carries an obligation_id. Provisional per §7.
+OBLIGATION_MAP = {
+    "EXP_6": "OBL_BETA_INVARIANCE",
+}
+
+WITNESS_MAP_REVIEW_STATUS = "PENDING_SIGNOFF"  # set to SIGNED_OFF after review
+WITNESS_MAP_REVIEW_TEMPLATE = {
+    "gate_id": "SPRINT_3B_0_WITNESS_MAP_REVIEW",
+    "status": WITNESS_MAP_REVIEW_STATUS,
+    "api_contract_ready": False,
+    "notes": [
+        "Experiment->obligation mapping is frozen from the provisional state.",
+        "Mappings remain provisional in artifact output until witness-map review sign-off.",
+        "Do not finalize HTTP/API contracts as authoritative while status != SIGNED_OFF.",
+    ],
+}
+
+# Mandatory inference rails (PROOF_PROGRAM_SPEC.md §5/§6). Every experiment's
+# record must populate these; disallowed_conclusion must include at least one
+# theorem-level overreach disclaimer.
+INFERENCE_RAILS = {
+    "EXP_1": {
+        "inference_scope": "this run, tested k-range, at declared fidelity",
+        "allowed_conclusion": [
+            "The explicit-formula reconstruction is numerically covariant under "
+            "X -> X/tau^k on the tested k-range at the stated fidelity.",
+        ],
+        "disallowed_conclusion": [
+            "The Riemann Hypothesis is true.",
+            "The zero-scaling hypothesis is confirmed.",
+            "The theorem candidate is proved.",
+            "Coverage extends beyond Odlyzko's verified range.",
+        ],
+    },
+    "EXP_1B": {
+        "inference_scope": "this run, naive operator-scaling variant",
+        "allowed_conclusion": [
+            "The engine detects the wrong group action: naive operator scaling "
+            "breaks the reconstruction as expected, arming the gauge claim's "
+            "falsifier.",
+        ],
+        "disallowed_conclusion": [
+            "The theorem candidate is supported by this control.",
+            "The gauge is correct.",
+            "RH is true.",
+        ],
+    },
+    "EXP_1C": {
+        "inference_scope": "this run, tested k-range, at declared fidelity",
+        "allowed_conclusion": [
+            "Scaling zeros by tau^k is numerically isometric to scaling the "
+            "lattice by tau^k on the tested range at the stated tolerances.",
+        ],
+        "disallowed_conclusion": [
+            "OBL_ZERO_SCALING_EQUIVALENCE is formally proven.",
+            "The RH predicate transports exactly under the gauge.",
+            "The theorem candidate is proved.",
+        ],
+    },
+    "EXP_2": {
+        "inference_scope": "this run, Program 2 exploratory; planted rogue zero",
+        "allowed_conclusion": [
+            "Under deep zoom, a planted off-line zero produces visible error "
+            "amplification relative to the clean baseline at this run's settings.",
+        ],
+        "disallowed_conclusion": [
+            "The theorem candidate is supported.",
+            "No off-line zero exists at arbitrary height.",
+            "Program 2's non-hiding theorem is established.",
+        ],
+    },
+    "EXP_2B": {
+        "inference_scope": "this run, Program 2 exploratory; residual isolation",
+        "allowed_conclusion": [
+            "The residual error scales as x^(0.5+delta) as the single-perturbed-"
+            "zero model predicts at this run's settings.",
+        ],
+        "disallowed_conclusion": [
+            "The theorem candidate is supported.",
+            "All off-line zeros are isolable in general.",
+        ],
+    },
+    "EXP_3": {
+        "inference_scope": "this run, beta=pi counterfactual control",
+        "allowed_conclusion": [
+            "The engine detects the counterfactual: beta=pi reconstruction "
+            "diverges as expected, arming the beta-invariance claim's falsifier.",
+        ],
+        "disallowed_conclusion": [
+            "The theorem candidate is supported by this control.",
+            "beta is invariant.",
+        ],
+    },
+    "EXP_4": {
+        "inference_scope": "this run, translation-vs-dilation disambiguation",
+        "allowed_conclusion": [
+            "Between log-translation and log-dilation, the data prefers the "
+            "winning branch at this run's conditions.",
+        ],
+        "disallowed_conclusion": [
+            "The theorem candidate is supported or refuted by this pathfinder.",
+            "The chosen direction is correct at untested scales.",
+        ],
+    },
+    "EXP_5": {
+        "inference_scope": "this run, nearest-neighbor zero correspondence",
+        "allowed_conclusion": [
+            "Scaled zeros {lattice-hit, lattice-weak, lattice-path-negative} "
+            "under this run's median_z thresholds.",
+        ],
+        "disallowed_conclusion": [
+            "The theorem candidate is supported or refuted by this pathfinder.",
+            "The zero-scaling hypothesis is universally confirmed or ruled out.",
+        ],
+    },
+    "EXP_6": {
+        "inference_scope": "this run, tested k-range, AUTHORITATIVE fidelity required",
+        "allowed_conclusion": [
+            "beta_hat(k) = 1/2 to within optimizer tolerance on the tested "
+            "k-range at AUTHORITATIVE fidelity.",
+        ],
+        "disallowed_conclusion": [
+            "beta is invariant at untested k.",
+            "The RH predicate transports exactly under the gauge.",
+            "OBL_BETA_INVARIANCE is formally proven.",
+            "The theorem candidate is proved.",
+        ],
+    },
+    "EXP_7": {
+        "inference_scope": "this run, Program 2 exploratory; epsilon-sweep",
+        "allowed_conclusion": [
+            "The rogue-amplification function A(epsilon) is monotone across "
+            "the swept epsilon range at this run's settings.",
+        ],
+        "disallowed_conclusion": [
+            "The theorem candidate is supported.",
+            "A non-hiding theorem is established.",
+        ],
+    },
+    "EXP_8": {
+        "inference_scope": "this run, zeta(s*tau^k) identity check",
+        "allowed_conclusion": [
+            "The zero-generator respects the zeta(s*tau^k) identity numerically "
+            "within the adaptive tolerance.",
+        ],
+        "disallowed_conclusion": [
+            "Anything about the RH predicate.",
+            "Anything about the theorem candidate.",
+            "Anything about whether zero-scaling preserves RH-relevant structure.",
+        ],
+    },
+}
+
+# Canonical proof program. Emitted into summary.proof_program on every run.
+# Witness lists are filled in from the observed experiments by
+# _build_proof_program(). Per-obligation inference.disallowed_conclusion is
+# normative — it travels with the data into the API and UI.
+PROOF_PROGRAM_TEMPLATE = {
+    "theorem_candidate": {
+        "formal_statement": (
+            "There exists a nontrivial multiplicative gauge T_c : s -> s * c^k "
+            "(c > 1 real, k integer) under which the RH-relevant analytic "
+            "structure of zeta is preserved strongly enough that the compressed "
+            "view under T_c and the uncompressed view are the same mathematical "
+            "case for the purposes of the RH predicate. Equivalently: if zeta "
+            "has a non-trivial zero rho with Re(rho) != 1/2, its image under "
+            "T_c is likewise off the critical line, and conversely."
+        ),
+        "plain_language": (
+            "If the relevant zeta/prime structure can be transported into a "
+            "compressed scale without changing the RH-relevant behavior, then "
+            "searching arbitrarily further in the uncompressed scale becomes "
+            "logically redundant rather than mathematically necessary."
+        ),
+        "non_claims": [
+            "A formal proof of RH.",
+            "Extension of verified ordinate coverage beyond Odlyzko's range.",
+            "That numerical equivariance of reconstructions is itself a "
+            "transport theorem for the RH predicate.",
+            "That tau is the unique multiplicative base for which the "
+            "invariance can hold.",
+            "That detecting a rogue zero under deep scaling is equivalent to "
+            "proving RH.",
+        ],
+        "working_gauge": {"base": "tau = 2*pi", "unique": False},
+    },
+    "obligations": [
+        {
+            "id": "OBL_COORD_RECONSTRUCTION_COVARIANCE",
+            "title": "Coordinate reconstruction covariance",
+            "statement": (
+                "Under X -> X/tau^k, the explicit-formula reconstruction of "
+                "psi transforms covariantly (modulo subdominant corrections)."
+            ),
+            "status": "OPEN",
+            "witnesses": [],
+            "program": "PROGRAM_1",
+            "inference": {
+                "inference_scope": "Program 1, obligation-level",
+                "allowed_conclusion": [
+                    "When witnessed, the reconstruction machinery is coherent "
+                    "with a covariant coordinate gauge.",
+                ],
+                "disallowed_conclusion": [
+                    "This obligation alone proves the theorem candidate.",
+                    "Covariance of reconstructions implies covariance of the "
+                    "RH predicate.",
+                ],
+            },
+        },
+        {
+            "id": "OBL_ZERO_SCALING_EQUIVALENCE",
+            "title": "Zero scaling equivalence",
+            "statement": (
+                "Scaling zeros rho by tau^k is isometric to scaling the prime "
+                "lattice by tau^k in the reconstruction."
+            ),
+            "status": "OPEN",
+            "witnesses": [],
+            "program": "PROGRAM_1",
+            "inference": {
+                "inference_scope": "Program 1, obligation-level",
+                "allowed_conclusion": [
+                    "When witnessed, the zero-scaling identity holds numerically "
+                    "within the tested drift/ratio tolerances.",
+                ],
+                "disallowed_conclusion": [
+                    "This obligation alone proves the theorem candidate.",
+                    "Numerical isometry implies exact analytic transport.",
+                ],
+            },
+        },
+        {
+            "id": "OBL_BETA_INVARIANCE",
+            "title": "Beta invariance under the gauge",
+            "statement": (
+                "The best-fit critical-line parameter beta_hat(k) equals 1/2 "
+                "across the tested k-family, to within optimizer tolerance."
+            ),
+            "status": "OPEN",
+            "witnesses": [],
+            "program": "PROGRAM_1",
+            "inference": {
+                "inference_scope": "Program 1, obligation-level",
+                "allowed_conclusion": [
+                    "When witnessed at AUTHORITATIVE fidelity, the recovered "
+                    "critical-line parameter is empirically invariant on the "
+                    "tested k-range.",
+                ],
+                "disallowed_conclusion": [
+                    "This obligation alone proves the theorem candidate.",
+                    "beta is invariant at untested k.",
+                    "The RH predicate transports exactly.",
+                ],
+            },
+        },
+        {
+            "id": "OBL_EXACT_RH_TRANSPORT",
+            "title": "Exact transport of the RH predicate",
+            "statement": (
+                "The RH predicate itself (not merely the reconstruction, not "
+                "merely the zeros, not merely the beta fit) transports exactly "
+                "under T_c."
+            ),
+            "status": "OPEN",
+            "witnesses": [],
+            "program": "PROGRAM_1",
+            "inference": {
+                "inference_scope": "Program 1, the load-bearing obligation",
+                "allowed_conclusion": [
+                    "This obligation has no empirical witness; it is a "
+                    "theorem-level claim awaiting a proof artifact.",
+                ],
+                "disallowed_conclusion": [
+                    "Numerical witnesses of other obligations suffice to "
+                    "establish this one.",
+                ],
+            },
+        },
+        {
+            "id": "OBL_ROGUE_DETECTABILITY",
+            "title": "Rogue-zero detectability (Program 2, optional)",
+            "statement": (
+                "Any off-line zero within the covered ordinate range produces "
+                "an amplification signature that is finite-k-detectable under "
+                "the gauge."
+            ),
+            "status": "OPEN",
+            "witnesses": [],
+            "program": "PROGRAM_2",
+            "inference": {
+                "inference_scope": "Program 2, obligation-level; exploratory",
+                "allowed_conclusion": [
+                    "When exploratorily witnessed, the amplification function "
+                    "behaves monotonically under the tested perturbations.",
+                ],
+                "disallowed_conclusion": [
+                    "This obligation alone proves the theorem candidate.",
+                    "A non-hiding theorem is established by these witnesses.",
+                    "Program 2 is currently on the proof-critical path.",
+                ],
+            },
+        },
+    ],
+    "open_gaps": [
+        {
+            "id": "GAP_RH_PREDICATE_TRANSPORT",
+            "title": "Exact transport of the RH predicate",
+            "description": (
+                "Exact transport of the RH predicate under the gauge is not "
+                "proved, only witnessed."
+            ),
+            "blocker_for": ["OBL_EXACT_RH_TRANSPORT"],
+        },
+        {
+            "id": "GAP_TAU_UNIQUENESS",
+            "title": "Uniqueness of tau as the gauge base",
+            "description": (
+                "Whether tau is structurally singled out, or whether any c > 1 "
+                "would serve. Not a proof obligation — a parked research "
+                "question outside the critical path."
+            ),
+        },
+        {
+            "id": "GAP_COVERAGE_TRANSPORT",
+            "title": "No zero hides at arbitrary height",
+            "description": (
+                "Heuristic argument that a rogue zero at ordinate ~10^9999 "
+                "cannot hide under compression; no formal non-hiding theorem."
+            ),
+        },
+        {
+            "id": "GAP_PROGRAM2_FORMALIZATION",
+            "title": "Formal non-hiding theorem for Program 2",
+            "description": (
+                "The contradiction-by-detectability route lacks a formal "
+                "amplification/non-hiding theorem."
+            ),
+            "blocker_for": ["OBL_ROGUE_DETECTABILITY"],
+        },
+        {
+            "id": "GAP_WITNESS_MAP_REVIEW",
+            "title": "Provisional witness map",
+            "description": (
+                "The mapping of experiments to obligations (PROOF_PROGRAM_SPEC "
+                "§7) is provisional. Sprint 3b.0 witness-map review must be "
+                "signed off before API/schema contracts treat witness mappings "
+                "as authoritative."
+            ),
+        },
+    ],
+}
+
+
+def _outcome_from_status(status, function):
+    """Translate a mechanical status + canonical function into a canonical
+    ExperimentOutcome. Replaces _theory_fit()'s SUPPORTS/REFUTES vocabulary on
+    the new axis. See PROOF_PROGRAM_SPEC.md §5.
+
+    Polarity rules by function:
+      CONTROL / REGRESSION_CHECK:
+        PASS -> IMPLEMENTATION_OK (falsifier armed / identity holds)
+        FAIL -> IMPLEMENTATION_BROKEN
+      PATHFINDER:
+        any decisive status -> DIRECTIONAL (branch name goes in `direction`)
+      PROOF_OBLIGATION_WITNESS / COHERENCE_WITNESS / EXPLORATORY / THEOREM_STATEMENT:
+        PASS -> CONSISTENT
+        FAIL -> INCONSISTENT
+        NOTEWORTHY/WARN -> CONSISTENT (partial but non-contradicting)
+    """
+    if function in ("CONTROL", "REGRESSION_CHECK"):
+        if status == "PASS":
+            return "IMPLEMENTATION_OK"
+        if status == "FAIL":
+            return "IMPLEMENTATION_BROKEN"
+        return "INCONCLUSIVE"
+    if function == "PATHFINDER":
+        if status in ("PASS", "FAIL", "NOTEWORTHY", "WARN"):
+            return "DIRECTIONAL"
+        return "INCONCLUSIVE"
+    # WITNESS, EXPLORATORY, THEOREM_STATEMENT
+    if status == "PASS":
+        return "CONSISTENT"
+    if status == "FAIL":
+        return "INCONSISTENT"
+    if status in ("NOTEWORTHY", "WARN"):
+        return "CONSISTENT"
+    return "INCONCLUSIVE"
+
+
+def _build_experiment_classification():
+    """Canonical single-source-of-truth classification table, emitted into
+    `meta.experiment_classification`. UI code (ExperimentSidebar etc.) should
+    read from this map instead of hardcoding a ROLE_MAP duplicate.
+    """
+    out = {}
+    all_ids = set(FUNCTION_MAP) | set(ROLE_MAP) | set(STAGE_MAP)
+    for exp_id in sorted(all_ids):
+        entry = {
+            "function": FUNCTION_MAP.get(exp_id, "EXPLORATORY"),
+            "role": ROLE_MAP.get(exp_id),
+            "stage": STAGE_MAP.get(exp_id, "unknown"),
+            "program": PROGRAM_MAP.get(exp_id, "PROGRAM_1"),
+            "epistemic_level": EPISTEMIC_LEVEL_MAP.get(exp_id, "EMPIRICAL"),
+            "inference": INFERENCE_RAILS.get(exp_id, {
+                "inference_scope": "unspecified",
+                "allowed_conclusion": [],
+                "disallowed_conclusion": ["The theorem candidate is proved."],
+            }),
+        }
+        if exp_id in OBLIGATION_MAP:
+            entry["obligation_id"] = OBLIGATION_MAP[exp_id]
+            if WITNESS_MAP_REVIEW_STATUS != "SIGNED_OFF":
+                entry["mapping_provisional"] = True
+        out[exp_id] = entry
+    return out
+
+
+def _build_proof_program(experiments, fidelity_tier):
+    """Return a fresh ProofProgram object with obligation witness lists filled
+    in from the observed `summary.experiments`. An obligation flips from OPEN
+    to WITNESSED iff at least one PROOF_OBLIGATION_WITNESS produced a
+    CONSISTENT outcome at AUTHORITATIVE fidelity. Below AUTHORITATIVE the
+    obligation stays OPEN but the witness is still recorded (with the
+    verifier's existing provisional-flag policy applied at the entry level).
+    """
+    prog = copy.deepcopy(PROOF_PROGRAM_TEMPLATE)
+    review = copy.deepcopy(WITNESS_MAP_REVIEW_TEMPLATE)
+
+    frozen_mapping = {}
+    provisional_experiments = []
+    unmapped_witness_candidates = []
+    for exp_id, entry in experiments.items():
+        if entry.get("function") != "PROOF_OBLIGATION_WITNESS":
+            continue
+        obligation_id = entry.get("obligation_id")
+        frozen_mapping[exp_id] = obligation_id
+        provisional_experiments.append(exp_id)
+        if not obligation_id:
+            unmapped_witness_candidates.append(exp_id)
+
+    review["frozen_mapping"] = {"experiment_to_obligation": frozen_mapping}
+    review["provisional_experiments"] = sorted(provisional_experiments)
+    if unmapped_witness_candidates:
+        review["unmapped_witness_candidates"] = sorted(unmapped_witness_candidates)
+
+    for obl in prog["obligations"]:
+        consistent_witnesses = []
+        any_witnesses = []
+        for exp_id, entry in experiments.items():
+            if entry.get("function") != "PROOF_OBLIGATION_WITNESS":
+                continue
+            if entry.get("obligation_id") != obl["id"]:
+                continue
+            any_witnesses.append(exp_id)
+            if entry.get("outcome") == "CONSISTENT" and not entry.get("provisional"):
+                consistent_witnesses.append(exp_id)
+        # Record every witnessing experiment (consistent or not) so consumers
+        # can see what tried to bear on this obligation; status reflects only
+        # the strong case.
+        obl["witnesses"] = any_witnesses
+        if any_witnesses and WITNESS_MAP_REVIEW_STATUS != "SIGNED_OFF":
+            note = (
+                "Witness mapping is provisional pending Sprint 3b.0 "
+                "GAP_WITNESS_MAP_REVIEW sign-off."
+            )
+            prior = obl.get("notes")
+            obl["notes"] = f"{prior} {note}".strip() if prior else note
+        if consistent_witnesses and fidelity_tier == "AUTHORITATIVE":
+            obl["status"] = "WITNESSED"
+    prog["witness_map_review"] = review
+    return prog
+
+
+# DEPRECATED (PROOF_PROGRAM_SPEC.md §6): _theory_fit() mints a theory verdict
+# (SUPPORTS/REFUTES/CANDIDATE/INFORMATIVE/CONTROL_BROKEN) from a mechanical
+# status. The new canonical axis is `function` + `outcome` via
+# _outcome_from_status(); every experiment's inference.disallowed_conclusion
+# documents what may NOT be inferred from its result.
 #
-# The mechanical `status` (PASS/FAIL/NOTEWORTHY/SKIP/...) only tells you whether
-# a numeric threshold was crossed. `theory_fit` answers the question that
-# actually matters for this project: does this experiment's outcome SUPPORT or
-# REFUTE (or INFORM) the Gauge -> Lattice -> Brittleness conjecture?
+# This function is retained for one release as a backward-compat shim so the
+# current dashboard (StageBanner, ExperimentSidebar badges) continues to
+# render during migration. Sprint 2b rewrites the consuming UI and this
+# function is removed.
 #
-# Polarity rules:
+# Polarity rules (historical, preserved for the shim):
 #   FALSIFICATION_CONTROL: PASS -> SUPPORTS, FAIL -> CONTROL_BROKEN
-#     (the decoy is *supposed* to blow up; if it doesn't, the discriminator is
-#      dead, which is theory-refuting in a serious way)
 #   PATHFINDER: any decisive outcome -> INFORMATIVE
-#     (EXP_4 TRANSLATION win, EXP_4 DILATION win, EXP_5 lattice-hit,
-#      EXP_5 lattice-miss). The pathfinder's job is to *answer a direction
-#      question*, not to confirm or refute the top-level theory.
 #   ENABLER / DETECTOR: PASS -> SUPPORTS, FAIL -> REFUTES
-#
-# Values:
-#   SUPPORTS         - observed outcome is what the theory predicted
-#   REFUTES          - observed outcome contradicts the theory
-#   CANDIDATE        - noteworthy / partial support
-#   INFORMATIVE      - pathfinder answered; outcome informs next-step choice
-#   CONTROL_BROKEN   - a falsification control failed to trigger (serious)
-#   INCONCLUSIVE     - data insufficient to judge
 def _theory_fit(status, type_str, role=None):
     if type_str == "FALSIFICATION_CONTROL" or role == "FALSIFICATION_CONTROL":
         if status == "PASS":
@@ -148,10 +674,19 @@ def _theory_fit(status, type_str, role=None):
 
 def run_verification(data=None):
     if data is None:
-        if not os.path.exists(OUTPUT_FILE):
+        source_file = OUTPUT_FILE
+        if not os.path.exists(source_file):
+            source_file = None
+            for legacy in LEGACY_OUTPUT_FILES:
+                if os.path.exists(legacy):
+                    source_file = legacy
+                    break
+        if source_file is None:
             print(" [NO] Data file not found. Run the engine first.")
             return None
-        with open(OUTPUT_FILE, "r") as f:
+        if source_file != OUTPUT_FILE:
+            print(f" [WARN] Using legacy artifact path: {source_file}")
+        with open(source_file, "r") as f:
             data = json.load(f)
 
     print("\n" + "="*75)
@@ -184,40 +719,72 @@ def run_verification(data=None):
 
     summary = {
         "engine_status": "OK",
+        # `overall` is a deprecated project-wide theory verdict (see
+        # PROOF_PROGRAM_SPEC.md Decision Log #6). Retained for one release so
+        # the current StageBanner keeps rendering; Sprint 2b removes its use.
         "overall": "PASS",
         "schema_version": EXPECTED_SCHEMA_VERSION,
         "fidelity_tier": fidelity_tier,
         "fidelity_zeros": fidelity_zeros,
         "fidelity_dps": fidelity_dps,
-        "experiments": {}
+        "experiments": {},
     }
 
     overall_pass = True
 
     def log_result(exp_id, type_str, status, metric_summary, interpretation):
         nonlocal overall_pass
+
+        # --- Canonical axes (Sprint 2a) ---------------------------------------
+        function = FUNCTION_MAP.get(exp_id, "EXPLORATORY")
+        epistemic_level = EPISTEMIC_LEVEL_MAP.get(exp_id, "EMPIRICAL")
+        program = PROGRAM_MAP.get(exp_id, "PROGRAM_1")
+        inference = INFERENCE_RAILS.get(exp_id, {
+            "inference_scope": "unspecified",
+            "allowed_conclusion": [],
+            "disallowed_conclusion": ["The theorem candidate is proved."],
+        })
+        obligation_id = OBLIGATION_MAP.get(exp_id)
+        outcome = _outcome_from_status(status, function)
+        mapping_provisional = (
+            function == "PROOF_OBLIGATION_WITNESS"
+            and obligation_id is not None
+            and WITNESS_MAP_REVIEW_STATUS != "SIGNED_OFF"
+        )
+
+        # --- Legacy axes (deprecation shim; UI still reads these) -------------
         stage = STAGE_MAP.get(exp_id, "unknown")
         role = ROLE_MAP.get(exp_id, "UNKNOWN")
         fit = _theory_fit(status, type_str, role)
 
-        # Fidelity-floor policy. FALSIFICATION_CONTROL and PATHFINDER are
-        # fidelity-independent (see FIDELITY_* comment block above).
+        # --- Fidelity-floor policy --------------------------------------------
+        # Clamp applies to WITNESS + EXPLORATORY only. CONTROL, PATHFINDER, and
+        # REGRESSION_CHECK are fidelity-independent: a control must arm
+        # regardless of N, a pathfinder compares two models on the same data,
+        # and a regression check is engine-health plumbing. The clamp is now
+        # function-driven — no legacy-role fallback, since FUNCTION_MAP is
+        # complete for every experiment in the registry.
         provisional = False
         clamped_note = None
-        if role in ("ENABLER", "DETECTOR"):
+        fidelity_sensitive_functions = (
+            "PROOF_OBLIGATION_WITNESS", "COHERENCE_WITNESS", "EXPLORATORY"
+        )
+        if function in fidelity_sensitive_functions:
             if fidelity_tier == "SMOKE":
-                if fit != "INCONCLUSIVE":
+                if fit != "INCONCLUSIVE" or outcome != "INCONCLUSIVE":
                     clamped_note = (
-                        f"[SMOKE tier: theory verdict '{fit}' suppressed below declared "
-                        f"fidelity floor; mechanical status '{status}' retained]"
+                        f"[SMOKE tier: verdict suppressed below declared fidelity floor; "
+                        f"mechanical status '{status}' retained]"
                     )
                     fit = "INCONCLUSIVE"
-            elif fidelity_tier == "STANDARD" and role == "ENABLER":
+                    outcome = "INCONCLUSIVE"
+            elif fidelity_tier == "STANDARD" and function == "PROOF_OBLIGATION_WITNESS":
                 provisional = True
 
         print(
-            f"\n[{exp_id}] ({stage}/{role}) {type_str}: {status}  "
-            f"[theory_fit={fit}{' provisional' if provisional else ''}]"
+            f"\n[{exp_id}] ({stage}/{function}) {type_str}: {status}  "
+            f"[outcome={outcome}, theory_fit={fit}"
+            f"{', provisional' if provisional else ''}]"
         )
         print(f"  > Metrics: {metric_summary}")
         if clamped_note:
@@ -228,19 +795,47 @@ def run_verification(data=None):
             f"{interpretation} {clamped_note}".strip() if clamped_note else interpretation
         )
 
+        # `direction` is populated by pathfinders into `metrics.direction`
+        # today; surface it at the record level so UI consumers can read it
+        # without inspecting the metrics blob.
+        direction = None
+        if isinstance(metric_summary, dict):
+            raw_dir = metric_summary.get("direction")
+            if isinstance(raw_dir, str):
+                direction = raw_dir
+
         entry = {
+            # === Canonical axes (PROOF_PROGRAM_SPEC.md §5/§6) =================
+            "function": function,
+            "outcome": outcome,
+            "epistemic_level": epistemic_level,
+            "inference": inference,
+            "program": program,
+
+            # === Preserved fields =============================================
             "stage": stage,
-            "role": role,
             "type": type_str,
             "status": status,
-            "theory_fit": fit,
             "metrics": metric_summary,
             "interpretation": final_interp,
+
+            # === Deprecation shims (retained for one release) =================
+            "role": role,
+            "theory_fit": fit,
         }
+        if obligation_id:
+            entry["obligation_id"] = obligation_id
+            if mapping_provisional:
+                entry["mapping_provisional"] = True
+        if direction:
+            entry["direction"] = direction
         if provisional:
             entry["provisional"] = True
         summary["experiments"][exp_id] = entry
 
+        # Legacy overall flip: keep the PASS/FAIL bit driven by the same
+        # signals as before so the deprecation-shim `overall` field matches
+        # historical semantics. Sprint 2b removes this field's UI use.
         if fit in ("REFUTES", "CONTROL_BROKEN"):
             overall_pass = False
 
@@ -734,18 +1329,19 @@ def run_verification(data=None):
     summary["zero_path_reason"] = zero_path_reason
 
     # =========================================================================
-    # STAGE ROLLUP: aggregate per-experiment theory_fit values into stage-
-    # level verdicts. This rollup is the theory-centric headline the dashboard
-    # renders; it answers "does the data support the theory at this stage?"
-    # not "did the thresholds get hit?".
+    # DEPRECATED STAGE ROLLUP (PROOF_PROGRAM_SPEC.md §6)
+    # Stage-level *theory* rollups are forbidden under the new ontology: the
+    # stage axis is a noncanonical grouping only. This block is retained as a
+    # backward-compat shim so the existing StageBanner keeps rendering through
+    # one release; Sprint 2b replaces the consuming component with
+    # `ProofProgramMap` driven by `summary.proof_program` and
+    # `summary.implementation_health` (emitted further down).
     #
-    # Precedence (most serious first):
+    # Historical precedence rules (kept verbatim for the shim):
     #   REFUTES / CONTROL_BROKEN in any member    -> stage REFUTES
     #   all members INCONCLUSIVE                  -> stage INCONCLUSIVE
     #   only INFORMATIVE (no SUPPORTS, no FAILS)  -> stage PARTIAL
-    #     (pathfinders answered but no enabler confirmed the chain yet)
     #   INFORMATIVE + SUPPORTS, no REFUTES        -> stage CANDIDATE
-    #     (pathfinders returned directions AND enablers confirmed)
     #   any CANDIDATE, rest SUPPORTS/INCONCLUSIVE -> stage CANDIDATE
     #   all SUPPORTS (ignoring INCONCLUSIVE)      -> stage SUPPORTS
     #   otherwise                                  -> stage PARTIAL
@@ -821,30 +1417,109 @@ def run_verification(data=None):
 
     summary["stage_verdicts"] = stage_verdicts
 
+    # =========================================================================
+    # IMPLEMENTATION-HEALTH ROLLUP (non-theoretic; PROOF_PROGRAM_SPEC.md §6)
+    # Replaces the theorem-level semantics of stage_verdicts. Answers "is the
+    # engine healthy in this grouping?" — not "does the theory hold?". `stage`
+    # itself remains a legitimate grouping axis (spec Decision Log #5).
+    # =========================================================================
+    implementation_health = {}
+    for stage_name in ("gauge", "lattice", "brittleness", "control"):
+        members = [
+            (exp_id, summary["experiments"][exp_id])
+            for exp_id in summary["experiments"]
+            if STAGE_MAP.get(exp_id) == stage_name
+        ]
+        if not members:
+            implementation_health[stage_name] = {
+                "status": "NO_MEMBERS",
+                "members": [],
+                "reason": "no experiments mapped to stage",
+            }
+            continue
+        outcomes = [entry.get("outcome", "INCONCLUSIVE") for _, entry in members]
+        broken = [
+            exp_id for exp_id, entry in members
+            if entry.get("outcome") == "IMPLEMENTATION_BROKEN"
+        ]
+        healthy_outcomes = {
+            "IMPLEMENTATION_OK", "CONSISTENT", "DIRECTIONAL", "INCONCLUSIVE"
+        }
+        if broken:
+            health_status = "IMPLEMENTATION_BROKEN"
+            reason = f"broken: {broken}"
+        elif all(o in healthy_outcomes for o in outcomes):
+            health_status = "IMPLEMENTATION_OK"
+            reason = f"all {len(members)} members healthy or inconclusive"
+        else:
+            health_status = "MIXED"
+            reason = f"mixed outcomes: {sorted(set(outcomes))}"
+        implementation_health[stage_name] = {
+            "status": health_status,
+            "members": [mid for mid, _ in members],
+            "reason": reason,
+        }
+    summary["implementation_health"] = implementation_health
+
+    # =========================================================================
+    # PROOF PROGRAM (canonical; PROOF_PROGRAM_SPEC.md §6)
+    # Theorem candidate + obligations (with filled-in witness lists) + open
+    # gaps. This is the surface Sprint 2b's ProofProgramMap consumes.
+    # =========================================================================
+    summary["proof_program"] = _build_proof_program(
+        summary["experiments"], fidelity_tier
+    )
+
+    # Single source of truth for the role/function/stage/obligation map. UI
+    # should read from data.meta.experiment_classification instead of
+    # duplicating ROLE_MAP. (Sprint 2c wires the sidebar to this.)
+    data.setdefault("meta", {})["experiment_classification"] = (
+        _build_experiment_classification()
+    )
+
     # Finalize
     summary["overall"] = "PASS" if overall_pass else "FAIL"
     data["summary"] = summary
 
     # =========================================================================
-    # REGRESSION LOG: append one line per verifier run to verdict_history.jsonl
-    # and shout loudly if any stage verdict flipped from the prior line.
-    # The history file is the canonical evidence trail: skeptical reviewers can
-    # diff it to see when verdicts changed and correlate with code_fingerprint.
+    # REGRESSION LOG: append one line per verifier run to verdict_history.jsonl.
+    # Canonical history axes are obligation_statuses + implementation_health.
+    # Legacy stage_verdicts remains in the record for one-release compatibility.
     # =========================================================================
     try:
+        history_read_file = HISTORY_FILE
+        if not os.path.exists(history_read_file):
+            for legacy_history in LEGACY_HISTORY_FILES:
+                if os.path.exists(legacy_history):
+                    history_read_file = legacy_history
+                    break
+
         prev_line = None
-        if os.path.exists(HISTORY_FILE):
-            with open(HISTORY_FILE, "r") as f:
+        if os.path.exists(history_read_file):
+            with open(history_read_file, "r") as f:
                 for line in f:
                     if line.strip():
                         prev_line = line
         prev_record = json.loads(prev_line) if prev_line else None
+
+        obligation_statuses = {
+            obl["id"]: obl.get("status", "OPEN")
+            for obl in summary.get("proof_program", {}).get("obligations", [])
+            if isinstance(obl, dict) and isinstance(obl.get("id"), str)
+        }
+        implementation_health_statuses = {
+            stage_name: details.get("status", "NO_MEMBERS")
+            for stage_name, details in summary.get("implementation_health", {}).items()
+            if isinstance(details, dict)
+        }
 
         record = {
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
             "schema_version": EXPECTED_SCHEMA_VERSION,
             "fidelity_tier": fidelity_tier,
             "overall": summary["overall"],
+            "obligation_statuses": obligation_statuses,
+            "implementation_health_statuses": implementation_health_statuses,
             "stage_verdicts": {
                 s: v["status"] for s, v in stage_verdicts.items()
             },
@@ -852,23 +1527,42 @@ def run_verification(data=None):
             "zero_source_info": data.get("meta", {}).get("zero_source_info", {}),
         }
 
-        if prev_record is not None:
-            flipped = []
-            prev_stages = prev_record.get("stage_verdicts", {})
-            for stage_name, curr_status in record["stage_verdicts"].items():
-                prev_status = prev_stages.get(stage_name)
+        def _collect_flips(curr_map, prev_map):
+            flips = []
+            for key, curr_status in curr_map.items():
+                prev_status = prev_map.get(key)
                 if prev_status is not None and prev_status != curr_status:
-                    flipped.append((stage_name, prev_status, curr_status))
-            if flipped:
+                    flips.append((key, prev_status, curr_status))
+            return flips
+
+        if prev_record is not None:
+            flipped_obligations = _collect_flips(
+                record["obligation_statuses"],
+                prev_record.get("obligation_statuses", {}),
+            )
+            flipped_health = _collect_flips(
+                record["implementation_health_statuses"],
+                prev_record.get("implementation_health_statuses", {}),
+            )
+            if flipped_obligations or flipped_health:
                 print("\n" + "!" * 75)
-                print(" [REGRESSION] Stage verdict FLIP(S) detected vs prior run:")
-                for s, p, c in flipped:
-                    print(f"   - {s}: {p} -> {c}")
+                print(" [REGRESSION] Canonical history FLIP(S) detected vs prior run:")
+                for obl_id, prev_status, curr_status in flipped_obligations:
+                    print(f"   - obligation {obl_id}: {prev_status} -> {curr_status}")
+                for stage_name, prev_status, curr_status in flipped_health:
+                    print(
+                        f"   - implementation_health[{stage_name}]: "
+                        f"{prev_status} -> {curr_status}"
+                    )
                 print("!" * 75)
 
-        os.makedirs(os.path.dirname(HISTORY_FILE), exist_ok=True)
-        with open(HISTORY_FILE, "a") as f:
-            f.write(json.dumps(record) + "\n")
+        history_write_targets = [HISTORY_FILE] + [
+            p for p in LEGACY_HISTORY_FILES if p != HISTORY_FILE
+        ]
+        for target in history_write_targets:
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, "a") as f:
+                f.write(json.dumps(record) + "\n")
     except Exception as exc:
         print(f" [WARN] Could not append to verdict history log: {exc}")
 
@@ -878,5 +1572,13 @@ if __name__ == "__main__":
     # Standalone run
     d = run_verification()
     if d:
+        os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
         with open(OUTPUT_FILE, "w") as f:
             json.dump(d, f, indent=2)
+        for legacy in LEGACY_OUTPUT_FILES:
+            try:
+                os.makedirs(os.path.dirname(legacy), exist_ok=True)
+                with open(legacy, "w") as f:
+                    json.dump(d, f, indent=2)
+            except Exception as exc:
+                print(f" [WARN] Could not mirror verifier output to {legacy}: {exc}")

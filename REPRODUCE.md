@@ -1,378 +1,192 @@
 # Reviewer Reproduction Guide
 
-Read this if you are about to evaluate this repository's claims. It explains
-what the project does and does not claim, how to rerun the evidence at
-varying fidelity, how to read the dashboard, and — most importantly — how
-to stress-test the conclusions yourself.
+This guide is the reviewer handoff for running and interpreting this repository
+under the canonical proof-program semantics.
+
+Read this together with:
+
+- [PROOF_PROGRAM_SPEC.md](PROOF_PROGRAM_SPEC.md) (canonical ontology)
+- [THEORY.md](THEORY.md) (theorem candidate + obligations)
+- [WITNESS_MAP_REVIEW.md](WITNESS_MAP_REVIEW.md) (provisional witness-map gate)
 
 ---
 
-## 1. The Claim (and the Non-Claim)
+## 1. Scope and claim boundaries
 
-**This repository does not re-verify RH for the first 10¹³ zeros — Odlyzko
-and Platt–Trudgian already did that.** It tests whether that verification
-*extends to other scales* via gauge/lattice structure, without
-recomputation. If the structure is rigid, the external verification
-propagates to every scale of the coordinate gauge for free. This project
-empirically stress-tests the rigidity. For the precise claim statement,
-see [THEORY.md](THEORY.md).
+This repository is a research instrument, not a theorem verdict board.
 
-The evidence is organized around a brittleness hero and two scaffolding
-stages:
+- It does not claim a formal proof of RH.
+- It does not claim to extend ordinal zero verification beyond the external
+  verification premise used at k=0.
+- It does claim to test whether RH-relevant structure is coherent under the
+  multiplicative gauge family, with explicit obligations and open gaps.
 
-> **Brittleness (the evidentiary hero).** If any zero were off the
-> critical line within the covered ordinate range, the rogue-zero
-> detection battery (EXP_2 / EXP_2B / EXP_7) would amplify it to
-> detectability under deep-zoom scaling. We run the detectors. We see
-> nothing. That is the falsifiable content.
->
-> **Gauge (scaffolding).** Coordinate scaling $X \to X/\tau^k$ is
-> covariant with the explicit formula; naive operator scaling of zeros
-> is not. The gauge is rigid. (EXP_1 witnesses, EXP_1B falsifies.)
->
-> **Lattice (scaffolding).** Zeros of $\zeta(s \cdot \tau^k)$ are exactly
-> the $\tau^{-k}$-scaled zeros of $\zeta$. This is a variable
-> substitution — EXP_8 is a plumbing check that our engine respects the
-> identity, not an independent empirical claim. $\beta$-stability
-> (EXP_6) is the load-bearing follow-up: if $\hat\beta(k) \equiv ½$,
-> known zeros at $k=0$ extend to all $k$.
+The canonical Program 1 obligations are:
 
-The **non-claim** is equally load-bearing:
+- `OBL_COORD_RECONSTRUCTION_COVARIANCE`
+- `OBL_ZERO_SCALING_EQUIVALENCE`
+- `OBL_BETA_INVARIANCE`
+- `OBL_EXACT_RH_TRANSPORT` (currently open; blocked by
+  `GAP_RH_PREDICATE_TRANSPORT`)
 
-> **This is not a proof of RH.** No formal derivation; no Lean artifact.
-> This is a falsifiability exercise: if the conjecture is wrong *in the
-> covered regime*, the experiments should detect it. A full slate of
-> `SUPPORTS` verdicts at the `Authoritative` tier means the theory
-> survived the specific falsification attempts encoded by this repo
-> over the tested range — nothing stronger. It does not extend RH beyond
-> Odlyzko's verified ordinate range.
+Program 2 (`OBL_ROGUE_DETECTABILITY`) is retained as exploratory and is not on
+the current proof-critical path.
 
-If you came expecting a proof, stop here. If you came to poke holes in an
-empirical argument, continue.
-
-### 1.1 Positioning vs prior work
-
-This repo sits on top of, and explicitly relies on:
-
-- **Odlyzko's numerical verification** of ζ's non-trivial zeros on the
-  critical line for the first ~10¹³ zeros. We consume his 100k-zero
-  high-precision file (see Overkill tier below) as a trusted external
-  witness at $k=0$.
-- **Platt–Trudgian** on RH-up-to-height bounds, which define the
-  ordinate range our external premise covers.
-
-What this repo *adds*: a structural test — are Claims 1–4 of
-[THEORY.md](THEORY.md) consistent with the numerical record? If yes,
-the external verification buys more than it bought as standalone
-numerical coverage: it buys the whole equivariance class indexed by $k$.
-What this repo *assumes*: Odlyzko's verification at $k=0$ is correct.
-That is the load-bearing external premise; if it is wrong, nothing here
-is salvageable.
+No documentation written in this sprint may phrase provisional witness mappings
+as settled theorem-directed evidence.
 
 ---
 
-## 2. How to Run
+## 2. Canonical run path
 
 ### Prerequisites
 
-- Python 3.8+ with `mpmath` (`pip install mpmath`)
-- Node.js 18+ and npm (for the dashboard)
+- Python 3.8+ with `mpmath`
+- Node.js 18+ with npm
 
-### The Five Re-run Tiers
-
-The dashboard exposes five hardcoded fidelity tiers. Each maps to a shell
-command that you can run directly — no free-text CLI passthrough exists
-in the UI (by design: the argv lists are auditable in
-[dashboard/app/api/rerun/route.ts](dashboard/app/api/rerun/route.ts)).
-
-| Tier | Command | Wall time | Purpose |
-|---|---|---|---|
-| **Re-grade** | `python verifier.py` | seconds | Re-grade the existing artifact against the current verifier rules. No recompute. |
-| **Smoke** | `python experiment_engine.py --run all --quick` | ~1 min | 100 zeros, dps=30. Plumbing check only. Verifier clamps `ENABLER`/`DETECTOR` theory verdicts to `INCONCLUSIVE` at this tier (declared fidelity floor — see §8). **Never cite as theory evidence.** |
-| **Standard** | `python experiment_engine.py --run all --zero-count 2000 --dps 40` | ~5 min | Default fidelity for iterative development. `ENABLER` verdicts emit `provisional: true`; still not reviewer-citable. |
-| **Authoritative** | `python experiment_engine.py --run all` | 20–40 min | 20k generated zeros, dps=50. **This is the evidence run.** Clamps lift entirely — all `REFUTES`/`SUPPORTS` verdicts cited in reviewer conversations should come from this tier or Overkill. |
-| **Overkill** | `python experiment_engine.py --run all --zero-source file:agent_context/zeros_100K_three_ten_power_neg_nine.gz --dps 80` | 1h+ | Odlyzko 100k zeros, dps=80. Stress-test against a high-precision external source. |
-
-After running the engine, grade with `python verifier.py`. (The engine
-auto-grades at the end by default; pass `--no-verify` to skip inline
-grading and invoke `verifier.py` as a separate step — recommended for
-reviewer-reproducible runs.)
-
-### Launching the Dashboard
+### Authoritative reproduction
 
 ```bash
-cd dashboard
+pip install mpmath
+python experiment_engine.py --run all
+python verifier.py
+```
+
+Canonical artifact path: `public/experiments.json`
+
+Canonical history log: `public/verdict_history.jsonl`
+
+### Launch the app
+
+```bash
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000. The five-button rerun bar in the top header
-lets you trigger any of the tiers above without dropping to a shell.
+Open `http://localhost:7000`.
 
 ---
 
-## 3. How to Read the Dashboard (30-second tour)
+## 3. Fidelity tiers
 
-### StageBanner (top of the page)
+The rerun controls in [`app/api/rerun/route.ts`](app/api/rerun/route.ts) map to
+fixed, auditable command shapes:
 
-Four colored cards, left to right: **Gauge**, **Lattice**, **Brittleness**,
-**Control**. The visual order follows the logical dependency chain, but
-**Brittleness is the card that carries the evidentiary weight** — Gauge
-and Lattice are scaffolding that sets up the equivalence class,
-Brittleness is the falsifiable content. Control is the meta-check that
-our detectors are armed. Read Brittleness first when scanning for
-whether the theory survived; read Gauge/Lattice to check the scaffolding
-held.
+| Tier | Command | Typical time | Intended use |
+|---|---|---|---|
+| Re-grade | `python verifier.py` | seconds | Reclassify existing artifact only. |
+| Smoke | `python experiment_engine.py --run all --quick` | ~1 min | Fast plumbing/sanity pass; not citable for theorem-directed evidence. |
+| Standard | `python experiment_engine.py --run all --zero-count 2000 --dps 40` | ~5 min | Iteration tier; witness-class results remain provisional. |
+| Authoritative | `python experiment_engine.py --run all` | 20-40 min | Canonical citation tier for empirical witness outcomes. |
+| Overkill | `python experiment_engine.py --run all --zero-source file:agent_context/zeros_100K_three_ten_power_neg_nine.gz --dps 80` | 1h+ | Stress test against high-precision external zero source. |
 
-Each card shows a stage-level status rolled up from its member
-experiments:
+Fidelity policy summary:
 
-- **Green `SUPPORTS`** — every member experiment in this stage contributed
-  a `SUPPORTS` theory_fit. The stage is consistent with the conjecture.
-- **Red `REFUTES`** — at least one `ENABLER` member returned `REFUTES`.
-  The stage has at least one counter-example.
-- **Red `CONTROL_BROKEN`** — a `FALSIFICATION_CONTROL` member failed to
-  diverge on known-bad data. The system's ability to detect bad theory is
-  compromised; all other verdicts should be distrusted.
-- **Amber `CANDIDATE` / `PARTIAL`** — mixed decisive outcomes (some
-  SUPPORTS, some REFUTES) or at least one PATHFINDER returned INFORMATIVE
-  without any REFUTES.
-- **Gray/amber `INCONCLUSIVE`** — insufficient data or no decisive member
-  outcomes yet.
-
-Each card also shows a **role breakdown** chip row (glyphs for ENABLER,
-PATHFINDER, DETECTOR, FALSIFICATION_CONTROL) summarizing the role mix
-within that stage.
-
-### Per-Experiment Rows (sidebar)
-
-Each row shows:
-
-- **Experiment id** (EXP_1, EXP_1B, etc.) and short title
-- **Stage badge** (Gauge / Lattice / Brittleness / Control)
-- **Role glyph** — the role of this experiment in the evidence chain:
-  - **Key (🔑)** — `ENABLER`: establishes a premise. A REFUTES here breaks the chain.
-  - **Compass (🧭)** — `PATHFINDER`: disambiguates mechanism. Decisive outcomes are `INFORMATIVE`, not SUPPORTS/REFUTES.
-  - **Radar** — `DETECTOR`: verifies rogue-zero detection works.
-  - **Shield** — `FALSIFICATION_CONTROL`: sanity check — must diverge on known-bad data.
-- **theory_fit badge** — the theory-centric verdict (see §4 below).
-
-### PATHFINDER "direction" metric
-
-PATHFINDER experiments (EXP_4, EXP_5) emit a `direction` field alongside
-their verdict. Example: EXP_4 returns
-`direction: "TRANSLATION"` or `direction: "DILATION"` based on which model
-wins the RMSE race. The main-panel verdict badge for a PATHFINDER reads
-e.g. "Pathfinder → TRANSLATION" — that's the *informative* output, not a
-pass/fail signal.
+- Smoke forces fidelity-sensitive functions to `INCONCLUSIVE`.
+- Standard keeps witness-class outcomes provisional.
+- Authoritative is the default citation tier for empirical witness claims.
 
 ---
 
-## 4. Verdict Vocabulary
+## 4. How to read outputs (canonical semantics)
 
-Two orthogonal axes grade each experiment. Both are visible in the
-`summary.experiments[EXP_ID]` block of `dashboard/public/experiments.json`.
+Evaluate each experiment record on four required dimensions:
 
-### `theory_fit` (the theory-centric axis)
+1. `function` (what job it does)
+2. `outcome` (what happened)
+3. `epistemic_level` (what kind of claim it licenses)
+4. `inference` rails (`inference_scope`, `allowed_conclusion`,
+   `disallowed_conclusion`)
 
-| Value | Meaning |
-|---|---|
-| `SUPPORTS` | Decisive outcome consistent with the conjecture. |
-| `REFUTES` | Decisive outcome inconsistent with the conjecture (for ENABLER / DETECTOR). |
-| `CANDIDATE` | Noteworthy signal that does not yet reach the SUPPORTS threshold. |
-| `INFORMATIVE` | A PATHFINDER emitted a decisive direction; does not pass or fail the theory — it tells you which mechanism won. |
-| `CONTROL_BROKEN` | A FALSIFICATION_CONTROL failed to diverge. The system cannot detect a known-bad input; trust in all other verdicts is degraded. |
-| `INCONCLUSIVE` | Insufficient data / insufficient separation / skipped. |
+Primary UI reading order:
 
-### `role` (the chain-function axis)
+1. `ProofProgramMap` (theorem candidate -> obligations -> status)
+2. `OpenGapsPanel` (named unresolved blockers)
+3. Active experiment card + inference rails
+4. `VerdictHistoryPanel` (history semantics)
 
-| Value | Meaning |
-|---|---|
-| `ENABLER` | PASS establishes a premise in the gauge → lattice → brittleness chain. A REFUTES here invalidates the chain. |
-| `PATHFINDER` | Disambiguates a mechanism between candidates. Any decisive outcome is `INFORMATIVE`; its job is to select a path, not to grade the theory. |
-| `DETECTOR` | Verifies the rogue-zero detection machinery works. |
-| `FALSIFICATION_CONTROL` | Sanity check: must diverge on known-bad data. A PASS (falsifier triggered) maps to `SUPPORTS`; a FAIL maps to `CONTROL_BROKEN`. |
+Positive-evidence rule:
 
-### Why two axes?
+- Only `PROOF_OBLIGATION_WITNESS` + `CONSISTENT` at citable fidelity can count
+  as theorem-directed evidence.
+- Controls, pathfinders, regression checks, and exploratory experiments are
+  necessary for research quality, but they are not direct theorem evidence.
 
-A mechanical `FAIL` does not always mean "theory refuted." EXP_3
-(β = π falsifier) is *supposed* to FAIL — that's how we know the detector
-is armed. Conversely, EXP_4 (translation-vs-dilation) is not trying to
-prove anything; it's picking a branch. The `theory_fit` axis translates
-mechanical outcomes into theory-centric semantics using the `role` axis.
+Program segmentation:
+
+- Program 1 tabs are canonical and proof-directed.
+- Program 2 tabs are exploratory by design and must not be interpreted as
+  coequal theorem evidence surfaces.
 
 ---
 
-## 5. What a `SUPPORTS` Verdict Does NOT Mean
+## 5. Reviewer stress checks
 
-> `SUPPORTS` at `Authoritative` fidelity means the experiment's numeric
-> tolerance was met under the stated theory interpretation.
->
-> It **does not** constitute a proof of RH. It **does not** extend the
-> verdict to unrun regimes (higher zeros, deeper zoom, larger k). It
-> **does not** imply the theory's informal arguments (e.g., "trillion
-> primes in a tiny real-line interval at τ⁻⁹⁹") are formally established.
+Use these to challenge the result quality:
 
-A reviewer who reads a green StageBanner and concludes "they proved RH"
-has misread this tool. The tool says: *we tried to falsify the conjecture
-in specific numerical regimes and failed*. That is a falsifiability
-result, not a theorem.
-
-### 5.1 Role declarations are up-front, not post-hoc
-
-A reasonable skeptic reading EXP_1B ("mechanical FAIL maps to theory
-`SUPPORTS`") will suspect inversion after the fact. That suspicion is
-worth addressing explicitly.
-
-Every experiment's role is declared in a single dict:
-[verifier.py:ROLE_MAP](verifier.py) (lines 48–60). EXP_1B's role is
-`FALSIFICATION_CONTROL`, meaning "must diverge on known-bad data." The
-semantic that a `FAIL` of a `FALSIFICATION_CONTROL` diverging on a
-known-wrong scaling *supports* the claim "our gauge is rigid" is encoded
-in the role axis itself, not invented per-result. Git history is the
-audit: `git blame verifier.py` on the `ROLE_MAP` dict shows when each
-role was assigned, and in particular that EXP_1B's role was set when the
-experiment was added — not after its numerical outcome was observed.
-
-If you find a case where `ROLE_MAP` appears to have been retrofitted to
-an observed outcome, that is a legitimate attack on the repo's integrity
-and we want to hear about it.
-
----
-
-## 6. How to Argue With This
-
-Concrete knobs a skeptic should tweak. Each one is a legitimate line of
-attack — if any of these flip the verdict, the theory is weaker than
-claimed.
-
-### 6.1 Swap the zero source
-
-Run `Overkill` mode. If verdicts flip between generated-cache zeros and
-Odlyzko's 100k high-precision zeros, something in the engine's zero
-generation is tilting the result:
+1. Swap zero source:
 
 ```bash
-# Generated cache (default)
 python experiment_engine.py --run all --dps 50
-
-# Odlyzko 100k
-python experiment_engine.py --run all \
-  --zero-source file:agent_context/zeros_100K_three_ten_power_neg_nine.gz \
-  --dps 80
+python experiment_engine.py --run all --zero-source file:agent_context/zeros_100K_three_ten_power_neg_nine.gz --dps 80
+python verifier.py
 ```
 
-### 6.2 Tighten thresholds
-
-Several experiments have tolerance thresholds that should be sharpened if
-the signal is as strong as claimed:
-
-- **EXP_1C drift threshold** — currently permissive. Halve it and re-run.
-- **EXP_6 β-drift threshold** — the linchpin ENABLER. How much does β̂
-  deviate from 0.5 across scales? Drop the threshold to 0.01 and see.
-
-Edit the threshold in the corresponding `run_exp*.py` file, re-run the
-engine at Authoritative fidelity, and check whether the verdict holds.
-
-### 6.3 Widen EXP_8 k-range
-
-EXP_8 (scaled-zeta zero equivalence) defaults to a narrow k-range. Widen
-it and check that equivalence still holds far from k=0:
-
-```bash
-python experiment_engine.py --run 8 --k-values -4,-3,-2,-1,0,1,2,3,4
-```
-
-### 6.4 Audit the regression trail
-
-Every successful grading appends a record to
-[dashboard/public/verdict_history.jsonl](dashboard/public/verdict_history.jsonl)
-with the code fingerprint (md5 of every `.py` in the engine) and the zero
-source metadata. This file is append-only; stage flips emit a
-`[REGRESSION]` warning at grading time.
-
-If someone claims "the verdicts have been stable for weeks," that claim
-is verifiable from this file alone. It is the audit log.
-
-### 6.5 Verify the verifier is not bypassed
-
-The engine accepts `--no-verify` to skip inline grading — that is the
-recommended mode for reviewer reproduction, because it decouples the
-experiment run from the grader. Run both steps explicitly:
+2. Tighten experiment thresholds in relevant `run_exp*.py` modules and rerun at
+   Authoritative tier.
+3. Widen EXP_8 k-range and inspect whether implementation-health and obligation
+   interpretation remain stable.
+4. Audit history deltas in `public/verdict_history.jsonl` against
+   `code_fingerprint` and `zero_source_info`.
+5. Split execution and grading explicitly:
 
 ```bash
 python experiment_engine.py --run all --no-verify
 python verifier.py
 ```
 
-Any `[REGRESSION]` warning or schema mismatch will surface in the second
-step and block a clean `overall: PASS`.
+---
+
+## 6. Known caveats
+
+- Smoke-tier outcomes are intentionally non-citable for theorem-directed claims.
+- Standard-tier witness-class outcomes are provisional by policy.
+- `OBL_EXACT_RH_TRANSPORT` remains open (`GAP_RH_PREDICATE_TRANSPORT`).
+- Program 2 remains exploratory until its non-hiding theorem gap is closed
+  (`GAP_PROGRAM2_FORMALIZATION`).
+- Witness mapping is still provisional pending the review artifact and signoff
+  in [WITNESS_MAP_REVIEW.md](WITNESS_MAP_REVIEW.md).
 
 ---
 
-## 7. The Regression Trail
+## 7. Legacy appendix (deprecated compatibility context)
 
-`dashboard/public/verdict_history.jsonl` is the project's audit log. Each
-line is a JSON record with:
+This appendix is for historical artifacts and one-release compatibility only.
+Do not use these fields as active research semantics.
 
-- `timestamp` (ISO 8601, UTC)
-- `schema_version` (current: `2026.05.0`)
-- `fidelity_tier` (`SMOKE` / `STANDARD` / `AUTHORITATIVE`)
-- `overall` (`PASS` / `FAIL`)
-- `stage_verdicts` — `{gauge, lattice, brittleness, control}` → stage-level fit
-- `code_fingerprint` — md5 of every engine Python file
-- `zero_source_info` — source path, requested/loaded counts, monotonicity flags, validation status
+### 7.1 Deprecated fields
 
-The file is append-only. Every verdict in the dashboard is traceable back
-to a specific code fingerprint and zero source. If a stage flips between
-runs, the verifier logs a `[REGRESSION]` warning referencing the prior
-timestamp.
+| Legacy field | Status | Canonical replacement |
+|---|---|---|
+| `theory_fit` | Deprecated compatibility shim | `function` + `outcome` + `inference` |
+| `role` | Deprecated compatibility shim | `function` |
+| `summary.stage_verdicts` | Deprecated compatibility shim | `summary.proof_program` + `summary.implementation_health` |
 
----
+### 7.2 Legacy vocabulary mapping
 
-## 8. Known Calibration Issues (honest list)
+| Legacy term | Canonical reading |
+|---|---|
+| `SUPPORTS` / `REFUTES` / `CANDIDATE` | Noncanonical legacy rollup language. Use function/outcome/inference rails instead. |
+| `INFORMATIVE` | Superseded by pathfinder `function = PATHFINDER` and directional outcomes. |
+| `CONTROL_BROKEN` | Superseded by `IMPLEMENTATION_BROKEN` under control/regression semantics. |
+| Stage-level verdict flips | Superseded by obligation-state and implementation-health transitions. |
 
-These are real caveats. A reviewer should know about them before judging
-a verdict:
+### 7.3 Legacy paths
 
-- **Fidelity floor: SMOKE tier clamps ENABLER/DETECTOR verdicts to
-  `INCONCLUSIVE`.** The verifier computes a `fidelity_tier`
-  (`SMOKE` / `STANDARD` / `AUTHORITATIVE`) from `meta.zeros` and
-  `meta.dps` and refuses to grade `ENABLER` or `DETECTOR` experiments at
-  `SMOKE` — `theory_fit` is forced to `INCONCLUSIVE` regardless of the
-  mechanical outcome. This is a *declared floor*, not explained-away
-  noise: at 100 zeros the β-optimizer in EXP_6 returns β̂ ≈ 0.43, which
-  is an optimizer discretization artifact rather than a gauge failure,
-  and citing a SMOKE `REFUTES` would be a category error. At `STANDARD`
-  tier, `ENABLER` verdicts are retained but marked `provisional: true`;
-  `AUTHORITATIVE` is the only citable tier. `FALSIFICATION_CONTROL` and
-  `PATHFINDER` are unaffected — the former explodes at any N, the latter
-  is a relative comparison whose noise cancels. Reviewers: **do not cite
-  SMOKE verdicts, and treat STANDARD ENABLER results as preliminary.**
-- **EXP_5 requires enough zeros in-range per k.** At k=2 in smoke mode it
-  routinely hits `INSUFFICIENT_DATA`.
-- **EXP_4 PATHFINDER requires ≥ 5% RMSE separation** between the
-  translation and dilation models to emit a decisive direction; below
-  that threshold the verdict is `INCONCLUSIVE`, not `INFORMATIVE`.
-- **Generated zeros vs Odlyzko zeros** may differ in the 30th+ decimal
-  place at high ordinates. This matters at dps ≥ 80 and is the reason
-  Overkill mode exists.
-- **The StageBanner is a summary, not a proof object.** It rolls up
-  member verdicts using rules encoded in `verifier.py`; those rules are
-  themselves a judgment call and should be read there, not trusted
-  blindly.
+Older documentation referenced `dashboard/public/...` and
+`dashboard/app/api/...`. The canonical paths are:
 
----
+- `public/experiments.json`
+- `public/verdict_history.jsonl`
+- `app/api/rerun/route.ts`
 
-## 9. Pointers
-
-- **Math specification**: [MATH_README.md](MATH_README.md) — the formal
-  statement of the theory chain, explicit-formula derivation, and
-  per-experiment math.
-- **Dashboard / UI**: [dashboard/README.md](dashboard/README.md) — the
-  Zero-Math-in-the-Browser policy and UI architecture.
-- **Engine CLI**: [experiment_engine.py](experiment_engine.py) — the
-  authoritative list of CLI flags (`--help` for the full menu).
-- **Verifier**: [verifier.py](verifier.py) — the grading logic, including
-  the role map, theory_fit mapping, and stage rollup rules.
-- **Quick-start / overview**: [README.md](README.md).

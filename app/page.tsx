@@ -6,13 +6,9 @@ import {
   RotateCcw,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
-  HelpCircle,
   Activity,
   GitBranch,
   Scale,
-  Compass,
-  Shield,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { 
@@ -31,7 +27,10 @@ import Exp5Chart from "../components/Exp5Chart";
 import Exp6Chart from "../components/Exp6Chart";
 import Exp7Chart from "../components/Exp7Chart";
 import Exp8Chart from "../components/Exp8Chart";
-import StageBanner from "../components/StageBanner";
+import ProofProgramMap from "../components/ProofProgramMap";
+import IntroPanel from "../components/IntroPanel";
+import OpenGapsPanel from "../components/OpenGapsPanel";
+import { FunctionOutcomeBadge, InferenceRailsCallout } from "../components/VerdictBadges";
 import VerdictHistoryPanel from "../components/VerdictHistoryPanel";
 import RerunButton from "../components/RerunButton";
 import { ExperimentsData, ExperimentVerdict } from "../lib/types";
@@ -57,6 +56,50 @@ const EXPERIMENT_IDS = [
 
 type ActiveExperiment = (typeof EXPERIMENT_IDS)[number];
 type ChartRow = { X: number; [key: string]: number | undefined };
+type TabColor =
+  | "blue"
+  | "purple"
+  | "emerald"
+  | "red"
+  | "pink"
+  | "orange"
+  | "cyan"
+  | "yellow"
+  | "indigo";
+type TabProgram = "PROGRAM_1" | "PROGRAM_2";
+type ExperimentTab = {
+  id: ActiveExperiment;
+  label: string;
+  sub: string;
+  color: TabColor;
+  program: TabProgram;
+};
+
+const TAB_ACTIVE_CLASS: Record<TabColor, string> = {
+  blue: "bg-blue-900/20 border-blue-500/50 text-blue-200 shadow-[0_0_10px_rgba(37,99,235,0.35)]",
+  purple: "bg-purple-900/20 border-purple-500/50 text-purple-200 shadow-[0_0_10px_rgba(126,34,206,0.35)]",
+  emerald: "bg-emerald-900/20 border-emerald-500/50 text-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.35)]",
+  red: "bg-red-900/20 border-red-500/50 text-red-200 shadow-[0_0_10px_rgba(239,68,68,0.35)]",
+  pink: "bg-pink-900/20 border-pink-500/50 text-pink-200 shadow-[0_0_10px_rgba(236,72,153,0.35)]",
+  orange: "bg-orange-900/20 border-orange-500/50 text-orange-200 shadow-[0_0_10px_rgba(249,115,22,0.35)]",
+  cyan: "bg-cyan-900/20 border-cyan-500/50 text-cyan-200 shadow-[0_0_10px_rgba(6,182,212,0.35)]",
+  yellow: "bg-yellow-900/20 border-yellow-500/50 text-yellow-200 shadow-[0_0_10px_rgba(234,179,8,0.35)]",
+  indigo: "bg-indigo-900/20 border-indigo-500/50 text-indigo-200 shadow-[0_0_10px_rgba(99,102,241,0.35)]",
+};
+
+const EXPERIMENT_TABS: ExperimentTab[] = [
+  { id: "EXP1", label: "EXP 1", sub: "Equivariance", color: "blue", program: "PROGRAM_1" },
+  { id: "EXP1B", label: "EXP 1B", sub: "Op Gauge", color: "purple", program: "PROGRAM_1" },
+  { id: "EXP1C", label: "EXP 1C", sub: "Zero Scaling", color: "emerald", program: "PROGRAM_1" },
+  { id: "EXP3", label: "EXP 3", sub: "Falsification", color: "pink", program: "PROGRAM_1" },
+  { id: "EXP4", label: "EXP 4", sub: "Dilation", color: "orange", program: "PROGRAM_1" },
+  { id: "EXP5", label: "EXP 5", sub: "Corresp", color: "cyan", program: "PROGRAM_1" },
+  { id: "EXP6", label: "EXP 6", sub: "Crit Drift", color: "yellow", program: "PROGRAM_1" },
+  { id: "EXP8", label: "EXP 8", sub: "Scaled-Zeta", color: "emerald", program: "PROGRAM_1" },
+  { id: "EXP2", label: "EXP 2", sub: "Centrifuge", color: "red", program: "PROGRAM_2" },
+  { id: "EXP2B", label: "EXP 2B", sub: "Isolation", color: "emerald", program: "PROGRAM_2" },
+  { id: "EXP7", label: "EXP 7", sub: "Centrifuge Fix", color: "indigo", program: "PROGRAM_2" },
+];
 
 const isActiveExperiment = (value: string): value is ActiveExperiment =>
   (EXPERIMENT_IDS as readonly string[]).includes(value);
@@ -65,6 +108,7 @@ export default function Home() {
   const [data, setData] = useState<ExperimentsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeExp, setActiveExp] = useState<ActiveExperiment>("EXP1");
+  const runAuthToken = process.env.NEXT_PUBLIC_RESEARCH_RUN_TOKEN?.trim();
   
   const [viewMode, setViewMode] = useState<"lattice" | "overlay">("lattice");
   
@@ -112,6 +156,7 @@ export default function Home() {
 
       try {
           const queue = [...config.selectedExperiments];
+          let failed = false;
           
           for (const expId of queue) {
               setLogs(prev => [...prev, `\n>>> STARTING EXPERIMENT ${expId.toUpperCase()} <<<\n`]);
@@ -126,7 +171,18 @@ export default function Home() {
               if (config.betaOffset !== undefined) url += `&beta_offset=${config.betaOffset}`;
               if (config.kPower !== undefined) url += `&k_power=${config.kPower}`;
 
-              const response = await fetch(url);
+              const headers: HeadersInit = {};
+              if (runAuthToken) headers.Authorization = `Bearer ${runAuthToken}`;
+              const response = await fetch(url, { headers });
+              if (!response.ok) {
+                  const body = (await response.json().catch(() => ({}))) as { error?: string };
+                  failed = true;
+                  setLogs(prev => [
+                      ...prev,
+                      `\n> Exp ${expId} request failed (${response.status}): ${body.error ?? "run request failed"}\n`,
+                  ]);
+                  break;
+              }
               const reader = response.body?.getReader();
               const decoder = new TextDecoder();
 
@@ -144,8 +200,12 @@ export default function Home() {
               // Refresh Data
               await fetchData();
           }
-          
-          setLogs(prev => [...prev, "\nALL TASKS COMPLETED SUCCESSFULLY.\n"]);
+
+          if (failed) {
+              setLogs(prev => [...prev, "\nRUN SEQUENCE ABORTED.\n"]);
+          } else {
+              setLogs(prev => [...prev, "\nALL TASKS COMPLETED SUCCESSFULLY.\n"]);
+          }
 
       } catch (err) {
           console.error("Experiment Execution Failed", err);
@@ -180,68 +240,14 @@ export default function Home() {
 
 
 
-  // Theory-fit aware verdict label. For PATHFINDER experiments, we surface
-  // the direction the pathfinder returned (e.g. "Pathfinder -> TRANSLATION")
-  // rather than a mechanical PASS/FAIL, because pathfinders answer direction
-  // questions; the theory_fit axis is INFORMATIVE regardless of which branch
-  // triggered. For FALSIFICATION_CONTROL we label accordingly so reviewers
-  // remember PASS means "the decoy blew up as expected".
-  const getVerdictBadge = (verdict: ExperimentVerdict | undefined) => {
-    if (!verdict) return null;
-
-    const theoryFit = verdict.theory_fit;
-    const role = verdict.role;
-    const status = verdict.status;
-    const metrics = verdict.metrics ?? {};
-    const direction =
-      typeof (metrics as Record<string, unknown>).direction === "string"
-        ? ((metrics as Record<string, unknown>).direction as string)
-        : undefined;
-
-    const wrap = "text-[10px] px-2 py-0.5 rounded border flex items-center gap-1";
-
-    if (role === "PATHFINDER") {
-        const tail = direction ?? (typeof status === "string" ? status : "—");
-        return (
-            <span className={`${wrap} bg-cyan-900/50 text-cyan-300 border-cyan-500/40`}>
-                <Compass size={10} /> Pathfinder &rarr; {tail}
-            </span>
-        );
-    }
-    if (role === "FALSIFICATION_CONTROL") {
-        if (theoryFit === "CONTROL_BROKEN") {
-            return <span className={`${wrap} bg-red-900/60 text-red-300 border-red-500/50`}><XCircle size={10} /> Control Broken</span>;
-        }
-        if (theoryFit === "SUPPORTS") {
-            return <span className={`${wrap} bg-emerald-900/50 text-emerald-300 border-emerald-500/40`}><Shield size={10} /> Control Armed</span>;
-        }
-    }
-
-    switch (theoryFit) {
-        case "SUPPORTS":
-            return <span className={`${wrap} bg-emerald-900/50 text-emerald-400 border-emerald-500/30`}><CheckCircle2 size={10} /> SUPPORTS</span>;
-        case "REFUTES":
-            return <span className={`${wrap} bg-red-900/50 text-red-400 border-red-500/30`}><XCircle size={10} /> REFUTES</span>;
-        case "CANDIDATE":
-            return <span className={`${wrap} bg-amber-900/50 text-amber-400 border-amber-500/30`}><AlertTriangle size={10} /> CANDIDATE</span>;
-        case "INFORMATIVE":
-            return <span className={`${wrap} bg-cyan-900/50 text-cyan-300 border-cyan-500/40`}><Compass size={10} /> INFORMATIVE</span>;
-        case "CONTROL_BROKEN":
-            return <span className={`${wrap} bg-red-900/60 text-red-300 border-red-500/50`}><XCircle size={10} /> CONTROL BROKEN</span>;
-        case "INCONCLUSIVE":
-            return <span className={`${wrap} bg-amber-900/50 text-amber-400 border-amber-500/30`}><AlertTriangle size={10} /> INCONCLUSIVE</span>;
-    }
-
-    // Fallback: render mechanical status for pre-theory_fit artifacts.
-    switch (status) {
-        case "PASS": return <span className={`${wrap} bg-emerald-900/50 text-emerald-400 border-emerald-500/30`}><CheckCircle2 size={10} /> PASS</span>;
-        case "FAIL": return <span className={`${wrap} bg-red-900/50 text-red-400 border-red-500/30`}><XCircle size={10} /> FAIL</span>;
-        case "WARN":
-        case "NOTEWORTHY":
-            return <span className={`${wrap} bg-amber-900/50 text-amber-400 border-amber-500/30`}><AlertTriangle size={10} /> {status}</span>;
-        default: return <span className={`${wrap} bg-gray-800 text-gray-400 border-gray-600/30`}><HelpCircle size={10} /> {status ?? "???"}</span>;
-    }
-  };
+  // Per-experiment verdict badge now delegates to FunctionOutcomeBadge, which
+  // renders function + outcome (PROOF_PROGRAM_SPEC.md §5/§8). The legacy
+  // SUPPORTS/REFUTES/CANDIDATE mapping is retired; for artifacts predating
+  // Sprint 2a (no verdict.function) FunctionOutcomeBadge defaults to an
+  // EXPLORATORY + INCONCLUSIVE pair, which reads correctly as "not graded".
+  const getVerdictBadge = (verdict: ExperimentVerdict | undefined) => (
+    <FunctionOutcomeBadge verdict={verdict} />
+  );
 
   // Returns the full verdict record; null when artifact predates the summary schema.
   const getExperimentVerdict = (expId: string): ExperimentVerdict | undefined => {
@@ -340,19 +346,19 @@ export default function Home() {
         )}>
            {viewMode === "lattice" ? (
                <>
-                   <strong>Log-Gauge Visualizer:</strong> 
+                   <strong>Log-Gauge Visualizer:</strong>
                    Plotting on a <strong>Logarithmic X-Axis</strong> against the <strong>Physical Coordinate</strong>.
                    <br/><br/>
-                   Because X<sub>phys</sub> = X<sub>eff</sub> · τ<sup>k</sup>, the identical prime staircases appear separated by constant horizontal shifts.
-                   This reveals the <strong>Infinite Bidirectional Lattice</strong>.
+                   Because X<sub>phys</sub> = X<sub>eff</sub> · τ<sup>k</sup>, the identical reconstruction staircases appear separated by constant horizontal shifts.
+                   This view witnesses <strong>coordinate-gauge coherence</strong>: scaling the coordinate system does not change the object, only its representation.
                </>
            ) : (
                <>
                    <strong>Equivariance Overlay:</strong>
                    Plotting against the <strong>Effective Coordinate</strong> (X<sub>eff</sub> = X<sub>phys</sub> / τ<sup>k</sup>).
                    <br/><br/>
-                   If the Explicit Zero Scaling is correct, all curves should <strong>collapse onto a single trajectory</strong>.
-                   This visually confirms that the scaled zeros ($\rho\tau^k$) precisely reconstruct the function at scaled coordinates.
+                   If the reconstruction is covariant under X ↦ X/τ<sup>k</sup>, all curves should <strong>collapse onto a single trajectory</strong>.
+                   This tests <strong>coordinate equivariance only</strong>. It does <em>not</em> assume or test the zero-scaling hypothesis — that is EXP_1C&apos;s job.
                </>
            )}
         </div>
@@ -421,16 +427,11 @@ export default function Home() {
             <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded text-sm text-purple-200">
                 {variant1B === "gamma" ? (
                     <>
-                        <strong>Gamma Scaling (Frequency):</strong> We scale deviations γ → γ·τ<sup>k</sup>. 
-                        The wave frequencies shift. If the zeros are not symmetric under this, the reconstruction will drift nicely.
-                        This is a control test for the Operator Gauge.
+                        <strong>Gamma Scaling (Frequency) — Control:</strong> We scale deviations γ → γ·τ<sup>k</sup> while leaving the coordinate fixed. Wave frequencies shift; the reconstruction should drift significantly because this is the <em>wrong</em> group action. The control passes (implementation OK / falsifier armed) precisely when this naive operator scaling visibly breaks — arming the coordinate-gauge coherence claim. A passing control is not evidence for the theorem candidate.
                     </>
                 ) : (
                     <>
-                         <strong>Rho Scaling (Full):</strong> We scale ρ → ρ·τ<sup>k</sup>. 
-                         This includes β → β·τ<sup>k</sup>. Since x<sup>β</sup> determines amplitude, 
-                         at k=1 (β ≈ 3), x<sup>3</sup> grows explosively compared to x<sup>0.5</sup>. 
-                         This confirms the formulation is falsifiable.
+                         <strong>Rho Scaling (Full) — Control:</strong> We scale ρ → ρ·τ<sup>k</sup>, which drags β → β·τ<sup>k</sup>. At k=1 the amplitude term x<sup>β</sup> with β ≈ 3 grows explosively compared to x<sup>0.5</sup>. Visible divergence here means the engine can tell the difference between the right and wrong group action — it <em>arms</em> the falsifier, nothing more. This control&apos;s pass is a precondition for trusting EXP_1&apos;s coherence witness, not itself theorem-directed evidence.
                     </>
                 )}
             </div>
@@ -545,12 +546,9 @@ export default function Home() {
             </ResponsiveContainer>
           </div>
           <div className="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded text-sm text-emerald-200">
-             <strong>Zero Scaling Hypothesis:</strong> 
-             The Green Line (Operator Hypothesis) uses scaled zeros $\gamma \tau^k$ at physical coordinates.
-             The Blue Dashed Line (Baseline) uses standard zeros at effective coordinates.
+             <strong>Zero-scaling coherence witness:</strong> The green line (Operator) uses scaled zeros γ·τ<sup>k</sup> at physical coordinates; the blue dashed line (Baseline) uses standard zeros at effective coordinates.
              <br/>
-             If the green line perfectly overlays the blue dashed line (Drift ~ 0), the hypothesis holds:
-             <strong>Scaling the zeros by $\tau^k$ is isometric to scaling the lattice by $\tau^k$.</strong>
+             Overlay to within documented drift/ratio tolerances witnesses that <em>on the tested k-range, at the declared fidelity,</em> scaling zeros by τ<sup>k</sup> is numerically isometric to scaling the lattice by τ<sup>k</sup>. This is a <em>coherence witness</em> bearing on <code>OBL_ZERO_SCALING_EQUIVALENCE</code>; it does not prove the obligation, and it does not, by itself, support the theorem candidate.
           </div>
         </div>
       );
@@ -602,8 +600,7 @@ export default function Home() {
           </ResponsiveContainer>
         </div>
         <div className="bg-red-900/10 border border-red-500/20 p-4 rounded text-sm text-red-200">
-           <strong>Centrifuge Test:</strong> At k=-20 (Scale ~10^16), even a microscopic deviation (0.0001) in Beta 
-           should cause the Error (Red) to explode exponentially compared to Control (Blue).
+           <strong>Centrifuge — Program 2 exploratory.</strong> At k=-20 (effective scale ~10<sup>16</sup>), a planted β=0.5001 perturbation produces visible error amplification relative to the clean control. Under the canonical Program 1 posture this experiment is <em>not</em> on the proof-critical path; it is retained as diagnostic tooling and calibrates the Program 2 contradiction-by-detectability route, which lacks a formal non-hiding theorem (see <code>GAP_PROGRAM2_FORMALIZATION</code>). A consistent result here does not support the theorem candidate.
         </div>
       </div>
     );
@@ -633,10 +630,7 @@ export default function Home() {
               </ResponsiveContainer>
             </div>
              <div className="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded text-sm text-emerald-200">
-                <strong>Rogue Isolation Prediction:</strong> 
-                The Green Line (Residual) calculates <code>ObservedRatio / PredictedRatio</code>.
-                Since it stays close to 1.0 (or is flat), it confirms our theory: the error is dominated by the single perturbed zero term 
-                x<sup>(0.5+δ)</sup>.
+                <strong>Rogue Isolation — Program 2 exploratory.</strong> The green line (Residual = Observed / Predicted) stays near 1.0 when the deviation behaves as the single-perturbed-zero model predicts — i.e. the error scales like x<sup>(0.5+δ)</sup>. This is consistent with the rogue-isolation model <em>on this run&apos;s settings</em>; it does not formalize Program 2&apos;s non-hiding theorem and does not support the theorem candidate.
             </div>
         </div>
       );
@@ -673,8 +667,7 @@ export default function Home() {
           </ResponsiveContainer>
         </div>
         <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded text-sm text-purple-200">
-           <strong>Falsification Test:</strong> If the Pink line (β=π) diverges from the Green steps, 
-           the hypothesis that zeros shift to Re(s)=π at k=1 is falsified.
+           <strong>β=π counterfactual — Control.</strong> Known-bad input: the pink line substitutes β=π for the critical-line value. Visible divergence from the true π(X) steps means the engine detects the counterfactual — i.e. the control passes, arming <code>OBL_BETA_INVARIANCE</code>&apos;s falsifier. A passing control is a precondition for trusting EXP_6&apos;s β-invariance witness, not itself theorem-directed evidence.
         </div>
       </div>
     );
@@ -725,19 +718,33 @@ export default function Home() {
       betaOffset: 0.0001,
       kPower: -20
   });
-  const experimentTabs: Array<{ id: ActiveExperiment; label: string; sub: string; color: string }> = [
-    { id: "EXP1", label: "EXP 1", sub: "Equivariance", color: "blue" },
-    { id: "EXP1B", label: "EXP 1B", sub: "Op Gauge", color: "purple" },
-    { id: "EXP1C", label: "EXP 1C", sub: "Zero Scaling", color: "emerald" },
-    { id: "EXP2", label: "EXP 2", sub: "Centrifuge", color: "red" },
-    { id: "EXP2B", label: "EXP 2B", sub: "Isolation", color: "emerald" },
-    { id: "EXP3", label: "EXP 3", sub: "Falsification", color: "pink" },
-    { id: "EXP4", label: "EXP 4", sub: "Dilation", color: "orange" },
-    { id: "EXP5", label: "EXP 5", sub: "Corresp", color: "cyan" },
-    { id: "EXP6", label: "EXP 6", sub: "Crit Drift", color: "yellow" },
-    { id: "EXP7", label: "EXP 7", sub: "Centrifuge Fix", color: "indigo" },
-    { id: "EXP8", label: "EXP 8", sub: "Scaled-Zeta", color: "emerald" },
-  ];
+  const program1Tabs = EXPERIMENT_TABS.filter((tab) => tab.program === "PROGRAM_1");
+  const program2Tabs = EXPERIMENT_TABS.filter((tab) => tab.program === "PROGRAM_2");
+
+  const renderTab = (exp: ExperimentTab) => {
+    const isActive = activeExp === exp.id;
+    const activeClass =
+      exp.program === "PROGRAM_2"
+        ? "bg-purple-900/30 border-purple-400/50 text-purple-100 shadow-[0_0_10px_rgba(88,28,135,0.35)]"
+        : TAB_ACTIVE_CLASS[exp.color];
+    const inactiveClass =
+      exp.program === "PROGRAM_2"
+        ? "border-purple-500/10 text-purple-300/60 hover:border-purple-400/40 hover:text-purple-200 hover:bg-purple-900/10"
+        : "border-transparent hover:bg-white/5 text-gray-500 hover:text-gray-300";
+    return (
+      <button
+        key={exp.id}
+        onClick={() => setActiveExp(exp.id)}
+        className={clsx(
+          "px-3 py-1.5 rounded text-xs font-mono transition-all border flex flex-col items-start min-w-[80px]",
+          isActive ? activeClass : inactiveClass
+        )}
+      >
+        <span className="font-bold leading-none">{exp.label}</span>
+        <span className="text-[8px] opacity-60 leading-none mt-0.5">{exp.sub}</span>
+      </button>
+    );
+  };
 
   return (
     <div className="flex flex-col h-screen bg-[#020408] text-gray-300 font-sans selection:bg-blue-500/30 selection:text-blue-200 overflow-hidden">
@@ -755,22 +762,20 @@ export default function Home() {
               <div className="h-8 w-px bg-white/10 mx-2"></div>
 
               {/* Navigation Tabs */}
-              <nav className="flex items-center gap-1 overflow-x-auto scrollbar-none mask-fade-right">
-                  {experimentTabs.map(exp => (
-                      <button
-                          key={exp.id}
-                          onClick={() => setActiveExp(exp.id)}
-                          className={clsx(
-                              "px-3 py-1.5 rounded text-xs font-mono transition-all border flex flex-col items-start min-w-[80px]",
-                              activeExp === exp.id 
-                                  ? `bg-${exp.color}-900/20 border-${exp.color}-500/50 text-${exp.color}-200 shadow-[0_0_10px_rgba(0,0,0,0.5)]`
-                                  : "border-transparent hover:bg-white/5 text-gray-500 hover:text-gray-300"
-                          )}
-                      >
-                          <span className="font-bold leading-none">{exp.label}</span>
-                          <span className="text-[8px] opacity-60 leading-none mt-0.5">{exp.sub}</span>
-                      </button>
-                  ))}
+              <nav className="flex items-center gap-2 overflow-x-auto scrollbar-none mask-fade-right">
+                  <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] uppercase tracking-wider font-mono text-blue-300/80 px-2 py-1 rounded border border-blue-500/20 bg-blue-900/10 whitespace-nowrap">
+                          Program 1
+                      </span>
+                      {program1Tabs.map(renderTab)}
+                  </div>
+                  <div className="h-6 w-px bg-white/10 shrink-0" />
+                  <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] uppercase tracking-wider font-mono text-purple-300/80 px-2 py-1 rounded border border-purple-500/20 bg-purple-900/10 whitespace-nowrap">
+                          Program 2 exploratory
+                      </span>
+                      {program2Tabs.map(renderTab)}
+                  </div>
               </nav>
           </div>
 
@@ -799,14 +804,29 @@ export default function Home() {
               {!loading && (
                   <div className="max-w-[1600px] mx-auto space-y-6">
 
-                      {/* Theory-stage headline: SUPPORTS/REFUTES per Gauge/Lattice/Brittleness/Control. */}
-                      <StageBanner
-                          stageVerdicts={data?.summary?.stage_verdicts}
-                          overall={data?.summary?.overall}
+                      {/* Onboarding framing: research instrument, not theory-verdict dashboard. */}
+                      <IntroPanel />
+
+                      {/* Proof Program Map: theorem candidate + obligations + open gaps.
+                         Replaces the retired StageBanner per PROOF_PROGRAM_SPEC.md §8. */}
+                      <ProofProgramMap
+                          proofProgram={data?.summary?.proof_program}
+                          implementationHealth={data?.summary?.implementation_health}
                           schemaVersion={data?.meta?.schema_version}
                           fidelityTier={data?.summary?.fidelity_tier}
                           fidelityZeros={data?.summary?.fidelity_zeros}
                           fidelityDps={data?.summary?.fidelity_dps}
+                          onJumpToGaps={() =>
+                              document
+                                  .getElementById("open-gaps-panel")
+                                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                      />
+
+                      {/* Named open-gaps surface (PROOF_PROGRAM_SPEC.md §11). */}
+                      <OpenGapsPanel
+                          id="open-gaps-panel"
+                          openGaps={data?.summary?.proof_program?.open_gaps}
                       />
 
                       {/* Re-grade / re-run controls: verify-only, quick, or full. */}
@@ -817,13 +837,17 @@ export default function Home() {
                           <RerunButton onFinished={() => fetchData()} />
                       </div>
 
-                      {/* Regression trail: last 10 verifier runs with flip indicators. */}
+                      {/* Canonical trail: obligation + implementation-health flips. */}
                       <VerdictHistoryPanel />
 
                       {/* Header for Active View */}
-                      <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
-                          <div>
-                              <h2 className="text-2xl font-light text-white flex items-center gap-3">
+                      {(() => {
+                        const activeVerdict = getExperimentVerdict(activeExp.replace("EXP", "EXP_"));
+                        return (
+                          <div className="space-y-3 border-b border-white/5 pb-4 mb-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h2 className="text-2xl font-light text-white flex items-center gap-3">
                                   {activeExp === "EXP1" && <><Scale className="text-blue-500" /> EQUIVARIANCE C-01</>}
                                   {activeExp === "EXP1B" && <><GitBranch className="text-purple-500" /> OPERATOR GAUGE</>}
                                   {activeExp === "EXP1C" && <><RotateCcw className="text-emerald-500" /> ZERO SCALING</>}
@@ -835,35 +859,43 @@ export default function Home() {
                                   {activeExp === "EXP6" && <><Activity className="text-yellow-500" /> CRITICAL DRIFT</>}
                                   {activeExp === "EXP7" && <><Scale className="text-indigo-500" /> RELATIVE AMPLIFICATION</>}
                                   {activeExp === "EXP8" && <><RotateCcw className="text-emerald-500" /> SCALED-ZETA EQUIVALENCE</>}
-                              </h2>
-                              <div className="flex gap-2 mt-2">
-                                  {getVerdictBadge(getExperimentVerdict(activeExp.replace("EXP", "EXP_")))}
+                                </h2>
+                                <div className="flex gap-2 mt-2">
+                                  {getVerdictBadge(activeVerdict)}
+                                </div>
                               </div>
+
+                              {/* Active K Toggles embedded in header for Exp 1/1B/1C */}
+                              {["EXP1", "EXP1B", "EXP1C"].includes(activeExp) && (
+                                  <div className="flex gap-1 bg-black/40 p-1 rounded-lg border border-white/10">
+                                      {[-2, -1, 0, 1, 2].map(k => (
+                                          <button
+                                              key={k}
+                                              onClick={() => {
+                                                  if (activeK.includes(k)) setActiveK(prev => prev.filter(x => x !== k));
+                                                  else setActiveK(prev => [...prev, k].sort((a,b)=>a-b));
+                                              }}
+                                              className={clsx(
+                                                  "w-8 h-8 flex items-center justify-center rounded text-xs font-bold transition-all",
+                                                  activeK.includes(k)
+                                                      ? "bg-blue-600 text-white"
+                                                      : "text-gray-500 hover:bg-white/5"
+                                              )}
+                                          >
+                                              {k}
+                                          </button>
+                                      ))}
+                                  </div>
+                              )}
+                            </div>
+
+                            {/* Mandatory inference rails — surfaces what MAY and MUST NOT be
+                               inferred from this experiment's current outcome. Required
+                               under PROOF_PROGRAM_SPEC.md §5/§8. */}
+                            <InferenceRailsCallout rails={activeVerdict?.inference} />
                           </div>
-                          
-                          {/* Active K Toggles embedded in header for Exp 1/1B/1C */}
-                          {["EXP1", "EXP1B", "EXP1C"].includes(activeExp) && (
-                              <div className="flex gap-1 bg-black/40 p-1 rounded-lg border border-white/10">
-                                  {[-2, -1, 0, 1, 2].map(k => (
-                                      <button
-                                          key={k}
-                                          onClick={() => {
-                                              if (activeK.includes(k)) setActiveK(prev => prev.filter(x => x !== k));
-                                              else setActiveK(prev => [...prev, k].sort((a,b)=>a-b));
-                                          }}
-                                          className={clsx(
-                                              "w-8 h-8 flex items-center justify-center rounded text-xs font-bold transition-all",
-                                              activeK.includes(k) 
-                                                  ? "bg-blue-600 text-white" 
-                                                  : "text-gray-500 hover:bg-white/5"
-                                          )}
-                                      >
-                                          {k}
-                                      </button>
-                                  ))}
-                              </div>
-                          )}
-                      </div>
+                        );
+                      })()}
 
                       {activeExp === "EXP1" && renderExperiment1()}
                       {activeExp === "EXP1B" && renderExperiment1B()}
@@ -901,13 +933,14 @@ export default function Home() {
             onConfigChange={setExpConfig}
             onRun={() => runExperiment(expConfig)}
             isRunning={isRunning}
-            stageVerdicts={data?.summary?.stage_verdicts}
+            implementationHealth={data?.summary?.implementation_health}
             experimentStatuses={
                 data?.summary?.experiments
                     ? Object.fromEntries(
                           Object.entries(data.summary.experiments).map(([k, v]) => [
                               k,
-                              v.theory_fit ?? v.status,
+                              // Prefer canonical outcome over deprecated theory_fit
+                              v.outcome ?? v.theory_fit ?? v.status,
                           ])
                       )
                     : undefined
@@ -922,6 +955,7 @@ export default function Home() {
                       )
                     : undefined
             }
+            experimentClassification={data?.meta?.experiment_classification}
           />
       
       </div>

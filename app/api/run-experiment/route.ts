@@ -1,73 +1,102 @@
-import { NextResponse } from 'next/server';
-import { spawn } from 'child_process';
-import path from 'path';
+import path from "path";
+import { assertRunAuth } from "../../../lib/run-auth";
+import { getRunLogs, getRunStatus, startCustomRun } from "../../../lib/run-manager";
 
-// This function tells Next.js that this route is dynamic and should not be statically optimized
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const streamRunLogs = (runId: string) => {
+    const encoder = new TextEncoder();
+    return new ReadableStream({
+        start(controller) {
+            let offset = 0;
+            const timer = setInterval(() => {
+                const page = getRunLogs(runId, offset);
+                if (!page) {
+                    controller.enqueue(encoder.encode("[run] log stream unavailable\n"));
+                    clearInterval(timer);
+                    controller.close();
+                    return;
+                }
+                if (page.chunk) controller.enqueue(encoder.encode(page.chunk));
+                offset = page.next;
+                if (page.done) {
+                    clearInterval(timer);
+                    controller.close();
+                }
+            }, 120);
+        },
+    });
+};
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const runScope = searchParams.get('run') || 'all';
-  const zeroSource = searchParams.get('zero_source') || 'generated';
-  const zeroCount = searchParams.get('zero_count');
-  const dps = searchParams.get('dps');
-  const resolution = searchParams.get('resolution');
-  const xStart = searchParams.get('x_start');
-  const xEnd = searchParams.get('x_end');
-  const betaOffset = searchParams.get('beta_offset');
-  const kPower = searchParams.get('k_power');
+    const auth = assertRunAuth(request);
+    if (auth) return auth;
 
-  const encoder = new TextEncoder();
+    const { searchParams } = new URL(request.url);
+    const runScope = searchParams.get("run") || "all";
+    const zeroSource = searchParams.get("zero_source") || "generated";
+    const zeroCount = searchParams.get("zero_count");
+    const dps = searchParams.get("dps");
+    const resolution = searchParams.get("resolution");
+    const xStart = searchParams.get("x_start");
+    const xEnd = searchParams.get("x_end");
+    const betaOffset = searchParams.get("beta_offset");
+    const kPower = searchParams.get("k_power");
 
-  // Create a transform stream to handle the output
-  const stream = new ReadableStream({
-    start(controller) {
-      const scriptPath = path.resolve(process.cwd(), '..', 'experiment_engine.py');
-      const pythonCommand = 'python'; 
-      
-      const args = ['-u', scriptPath, '--run', runScope, '--zero-source', zeroSource];
-      if (zeroCount) args.push('--zero-count', zeroCount);
-      if (dps) args.push('--dps', dps);
-      if (resolution) args.push('--resolution', resolution);
-      if (xStart) args.push('--x-start', xStart);
-      if (xEnd) args.push('--x-end', xEnd);
-      if (betaOffset) args.push('--beta-offset', betaOffset);
-      if (kPower) args.push('--k-power', kPower);
+    const args = [
+        "-u",
+        path.resolve(process.cwd(), "experiment_engine.py"),
+        "--run",
+        runScope,
+        "--zero-source",
+        zeroSource,
+    ];
 
-      console.log(`Spawning python process: ${pythonCommand} ${args.join(' ')}`);
-      
-      const pythonProcess = spawn(pythonCommand, args, {
-        cwd: path.resolve(process.cwd(), '..'), // Run in the root folder
-      });
+    if (zeroCount) args.push("--zero-count", zeroCount);
+    if (dps) args.push("--dps", dps);
+    if (resolution) args.push("--resolution", resolution);
+    if (xStart) args.push("--x-start", xStart);
+    if (xEnd) args.push("--x-end", xEnd);
+    if (betaOffset) args.push("--beta-offset", betaOffset);
+    if (kPower) args.push("--k-power", kPower);
 
-      const send = (data: string) => {
-        controller.enqueue(encoder.encode(data));
-      };
+    const started = startCustomRun(`legacy:${runScope}`, args, process.cwd());
+    if ("status" in started) {
+        return new Response(
+            JSON.stringify({ error: started.error }),
+            { status: started.status, headers: { "Content-Type": "application/json" } },
+        );
+    }
 
-      pythonProcess.stdout.on('data', (data) => {
-        send(data.toString());
-      });
+    const run = getRunStatus(started.run.run_id);
+    const stream = streamRunLogs(started.run.run_id);
+    const prefix = `[run-experiment] run_id=${started.run.run_id} status=${run?.status ?? "UNKNOWN"}\n`;
+    const first = new TextEncoder().encode(prefix);
+    const combined = new ReadableStream({
+        start(controller) {
+            controller.enqueue(first);
+            const reader = stream.getReader();
+            const pump = (): void => {
+                reader.read().then(({ done, value }) => {
+                    if (done) {
+                        controller.close();
+                        return;
+                    }
+                    if (value) controller.enqueue(value);
+                    pump();
+                });
+            };
+            pump();
+        },
+    });
 
-      pythonProcess.stderr.on('data', (data) => {
-        send(`[STDERR] ${data.toString()}`);
-      });
-
-      pythonProcess.on('close', (code) => {
-        send(`\nProcess exited with code ${code}\n`);
-        controller.close();
-      });
-
-      pythonProcess.on('error', (err) => {
-        send(`\nFailed to start process: ${err.message}\n`);
-        controller.close();
-      });
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Transfer-Encoding': 'chunked',
-    },
-  });
+    return new Response(combined, {
+        headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Transfer-Encoding": "chunked",
+            "Cache-Control": "no-store",
+        },
+    });
 }
+

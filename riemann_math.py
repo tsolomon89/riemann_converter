@@ -11,7 +11,11 @@ mpmath.mp.dps = 50   # Default
 ZERO_COUNT = 20000  # Default number of zeros to compute
 PRECISION = 50    # Default Decimal places of precision
 PRIMES_FILE = "agent_context/primes.csv"
-OUTPUT_FILE = "dashboard/public/experiments.json"
+# Canonical artifact path (Next.js serves repo-root `public/`).
+# Legacy path is retained for one release as a non-authoritative mirror/fallback.
+OUTPUT_FILE = "public/experiments.json"
+LEGACY_OUTPUT_FILE = "dashboard/public/experiments.json"
+OUTPUT_FILE_READ_ORDER = (OUTPUT_FILE, LEGACY_OUTPUT_FILE)
 ZEROS_FILE = "agent_context/zeros.dat"
 TAU = 2 * mpmath.pi
 _PRIMES_CACHE = None
@@ -475,12 +479,16 @@ def find_nearest_zero(target, zeros):
 # -----------------------------------------------------------------------------
 
 def load_or_init_results():
-    if os.path.exists(OUTPUT_FILE):
-        try:
-            with open(OUTPUT_FILE, "r") as f:
-                return json.load(f)
-        except:
-            pass
+    for path in OUTPUT_FILE_READ_ORDER:
+        if os.path.exists(path):
+            try:
+                with open(path, "r") as f:
+                    data = json.load(f)
+                if path != OUTPUT_FILE:
+                    print(f"  [WARN] Loaded legacy artifact path: {path}")
+                return data
+            except Exception as exc:
+                print(f"  [WARN] Failed reading {path}: {exc}")
     return {
         "meta": {
             "dps": int(mpmath.mp.dps),
@@ -542,6 +550,15 @@ def save_results(data):
         clean_data = recursive_float_cast(data)
         with open(OUTPUT_FILE, "w") as f:
             json.dump(clean_data, f)
+
+        # One-release compatibility mirror. Canonical readers must treat
+        # `public/experiments.json` as the source of truth.
+        try:
+            os.makedirs(os.path.dirname(LEGACY_OUTPUT_FILE), exist_ok=True)
+            with open(LEGACY_OUTPUT_FILE, "w") as f:
+                json.dump(clean_data, f)
+        except Exception as legacy_exc:
+            print(f"[WARN] Could not mirror artifact to legacy path: {legacy_exc}")
     except Exception as e:
         print(f"CRITICAL ERROR SAVING JSON: {e}")
 

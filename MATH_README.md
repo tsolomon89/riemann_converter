@@ -1,8 +1,20 @@
 # Riemann Scale-Gauge Research Engine: Mathematical Framework
 
+> **Relationship to [PROOF_PROGRAM_SPEC.md](PROOF_PROGRAM_SPEC.md).** This document retains the mathematical derivations (explicit formula, Möbius inversion, adaptive tolerances, algorithms). The *interpretation* of what the engine's outputs mean for the research program — theorem candidate, proof obligations, witnesses, controls, pathfinders — lives in the spec. Where this file conflicts with the spec, the spec wins.
+>
+> **Claim ↔ Obligation mapping.** The historical "Claim 1–4" decomposition in [THEORY.md](THEORY.md) has been recast as proof obligations of the canonical theorem candidate. Cross-reference:
+>
+> | Historical claim                       | Canonical obligation ID                     | Program |
+> |---|---|---|
+> | Claim 1 — Coordinate equivariance      | `OBL_COORD_RECONSTRUCTION_COVARIANCE`       | P1 |
+> | Claim 2 — Zero equivariance (lattice)  | `OBL_ZERO_SCALING_EQUIVALENCE`              | P1 |
+> | Claim 3 — β-stability under scaling    | `OBL_BETA_INVARIANCE`                       | P1 |
+> | Claim 4 — Brittleness / detectability  | `OBL_ROGUE_DETECTABILITY` *(exploratory)*   | P2 |
+> | (implicit in the conclusion)           | `OBL_EXACT_RH_TRANSPORT`                    | P1 |
+
 ## 1. System Overview: The Analytic Interferometer
 
-The **Riemann Scale-Gauge Research Engine** is an **Analytic Interferometer** designed to stress-test the Riemann Hypothesis (RH) under discrete scale-gauge transformations. By subjecting the explicit formula to extreme scaling ($X \to X/\tau^k$) and parameter perturbation ($\beta \to \beta + \epsilon$), the system visualizes the structural stability of the analytic continuation.
+The **Riemann Scale-Gauge Research Engine** is an instrument that stress-tests the Riemann Hypothesis under discrete scale-gauge transformations. By subjecting the explicit formula to extreme scaling ($X \to X/\tau^k$) and parameter perturbation ($\beta \to \beta + \epsilon$), the system visualizes the structural stability of the analytic continuation and produces the witness / coherence / control / pathfinder / regression data that the proof program consumes.
 
 ### 1.1 Strict Separation of Concerns (The "Oracle" Pattern)
 To eliminate floating-point errors (IEEE-754) and ensure mathematical rigor, the system uses a strict **Oracle-Observer** architecture:
@@ -78,56 +90,49 @@ The `experiment_engine.py` CLI orchestrates the generation process:
 1.  **Initialization**: Sets precision to 50 DPS and loads/computes Riemann Zeros (default 20,000; quick mode: 100).
 2.  **State Management**: Loads existing `experiments.json` so partial runs don't destroy prior results.
 3.  **Experiment Execution**: Walks the `EXPERIMENT_REGISTRY` in `experiment_engine.py` and dispatches to `run_exp1.py`…`run_exp8.py`. Runs the subset selected by `--run` (or all).
-4.  **Verification**: Runs `verifier.py` to grade the results, attach a theory `stage` (gauge / lattice / brittleness / control) to each verdict, and emit a `stage_verdicts` rollup.
-5.  **Persistence**: Saves the merged dataset with metadata and verdicts to `dashboard/public/experiments.json`.
+4.  **Verification**: Runs `verifier.py` to grade the results and emit the canonical ontology — `function`, `outcome`, `epistemic_level`, mandatory `inference` rails, `proof_program`, `implementation_health`, and `meta.experiment_classification`. Legacy compatibility fields (`theory_fit`, `role`, `stage_verdicts`) may remain for one release but are not canonical semantics.
+5.  **Persistence**: Saves the merged dataset with metadata and verdicts to `public/experiments.json` (the Next.js static root).
 
 ---
 
 ## 3. Experimental Configurations
 
-The engine runs eleven experiment stages across four theory groups. Each verdict records a `stage` field so the `summary.stage_verdicts` rollup can report a single headline status per stage.
+The engine runs eleven experiments. Each verdict carries a canonical `function` (what job the experiment does in the proof program), an `outcome` (what happened on this run), an `epistemic_level` (what kind of claim the result licenses), and mandatory `inference` rails (`inference_scope` / `allowed_conclusion` / `disallowed_conclusion`). See [PROOF_PROGRAM_SPEC.md §5–§6](PROOF_PROGRAM_SPEC.md) for the full ontology.
 
-### 3.0 Theory Stages
+### 3.0 Stage groupings (noncanonical, navigation only)
 
-The engine tests a three-stage layered conjecture, in this order:
+Every experiment also carries a `stage` label — `gauge`, `lattice`, `brittleness`, or `control`. **This axis is a grouping/navigation affordance only.** It does not carry theorem semantics. There is no stage-level theorem-verdict rollup, no implied proof-progress ordering, and no "stage is load-bearing" hierarchy. Under the canonical Program 1 posture (direct invariance), the proof-directed surface is the obligation list, not the stage list. See [PROOF_PROGRAM_SPEC.md §6 "On the stage axis"](PROOF_PROGRAM_SPEC.md).
 
-1.  **Gauge** — The explicit formula has a rigid scale-gauge symmetry under τ = 2π. Coordinate scaling preserves the reconstruction isometrically; operator scaling (ρ or γ alone) breaks it.
-    *   Members: **EXP_1** (coordinate gauge), **EXP_1B** (operator-gauge falsification), **EXP_6** (β-stability under scaling).
-2.  **Lattice** — Scaled zeros γ·τ^k correspond to true Riemann zeros — an arithmetic self-similarity, not just a coordinate reparametrization.
-    *   Members: **EXP_1C** (τ-Lattice direct test), **EXP_4** (translation vs dilation), **EXP_5** (zero correspondence), **EXP_8** (scaled-ζ zero equivalence).
-3.  **Brittleness** — Once Gauge and Lattice hold, a single rogue zero with β ≠ ½ produces detectably amplified error under deep zoom, giving a constructive RH falsification path.
-    *   Members: **EXP_2** (centrifuge stress test), **EXP_2B** (rogue isolation), **EXP_7** (calibrated sensitivity).
+Stage memberships (for the sidebar / docs anchors):
 
-The **Control** group (**EXP_3**, β=π falsification) sits outside the narrative; its PASS means the obviously-wrong hypothesis diverged as expected.
+| Stage | Members |
+|---|---|
+| `gauge` | EXP_1, EXP_1B, EXP_6 |
+| `lattice` | EXP_1C, EXP_4, EXP_5, EXP_8 |
+| `brittleness` | EXP_2, EXP_2B, EXP_7 *(Program 2 exploratory)* |
+| `control` | EXP_3 |
 
-### 3.0.1 Test Roles (orthogonal axis)
+### 3.0.1 Function + program classification (canonical)
 
-The `stage` axis tells you *where* a test lives in the theory. The `role` axis tells you *what job the test does* in the proof-by-contradiction chain (conformality ⇒ compression ⇒ any β≠½ zero is detectable in a vanishingly small interval ⇒ RH). An experiment can belong to any stage and independently play any role; the two axes cross.
+The `function` axis tells you what job each experiment does in the proof program. The `program` axis tells you which named research program it belongs to — P1 (direct invariance, canonical) or P2 (contradiction-by-detectability, exploratory). These replace the legacy `role` + `theory_fit` axes.
 
-| Role | Meaning | How a PASS reads | How a non-PASS reads |
-|---|---|---|---|
-| **ENABLER** (key 🔑) | Establishes a premise in the chain. | `theory_fit=SUPPORTS` — the chain keeps going. | `theory_fit=REFUTES` — the chain is blocked at this link. |
-| **PATHFINDER** (compass 🧭) | Disambiguates *which* mechanism is in play (e.g. coord-reparam vs operator dilation) or *which* path to build out next. | `theory_fit=INFORMATIVE` with a `direction` metric. | `theory_fit=INFORMATIVE` with the opposing `direction`. A pathfinder never fails — it *answers*. |
-| **DETECTOR** (radar 📡) | Verifies the rogue-zero detection machinery fires as designed. | `theory_fit=SUPPORTS` — detector is armed. | `theory_fit=REFUTES` — the detector is dead. |
-| **FALSIFICATION_CONTROL** (shield 🛡️) | Sanity check that the system can fail on known-bad data. | `theory_fit=SUPPORTS` (the decoy *did* blow up as expected). | `theory_fit=CONTROL_BROKEN` — a dead discriminator, which is theory-refuting. |
+| Exp | Function | Program | Obligation witnessed | Notes |
+|---|---|---|---|---|
+| EXP_1  | `COHERENCE_WITNESS`          | P1 | `OBL_COORD_RECONSTRUCTION_COVARIANCE` (indirect) | coordinate reconstruction coherence |
+| EXP_1B | `CONTROL`                    | P1 | arms coordinate-gauge claim | naive operator scaling must break |
+| EXP_1C | `COHERENCE_WITNESS`          | P1 | `OBL_ZERO_SCALING_EQUIVALENCE` (indirect) | zero-scaling isometry coherence |
+| EXP_2  | `EXPLORATORY`                | P2 | (optional) `OBL_ROGUE_DETECTABILITY` | centrifuge — Program 2 only |
+| EXP_2B | `EXPLORATORY`                | P2 | (optional) `OBL_ROGUE_DETECTABILITY` | rogue isolation — Program 2 only |
+| EXP_3  | `CONTROL`                    | P1 | arms β-invariance | β=π counterfactual must diverge |
+| EXP_4  | `PATHFINDER`                 | P1 | — | TRANSLATION / DILATION branch selection |
+| EXP_5  | `PATHFINDER`                 | P1 | — | lattice-hit / weak / negative branch |
+| EXP_6  | `PROOF_OBLIGATION_WITNESS` *(provisional)* | P1 | `OBL_BETA_INVARIANCE` | currently the clearest candidate for theorem-directed evidence on tested settings; subject to `GAP_WITNESS_MAP_REVIEW` and [WITNESS_MAP_REVIEW.md](WITNESS_MAP_REVIEW.md) signoff |
+| EXP_7  | `EXPLORATORY`                | P2 | (optional) `OBL_ROGUE_DETECTABILITY` | calibrated ε-sweep — Program 2 only |
+| EXP_8  | `REGRESSION_CHECK`           | P1 | — | engine-health plumbing, not evidence |
 
-Role assignments:
+**Only** a record with `function = PROOF_OBLIGATION_WITNESS`, `outcome = CONSISTENT`, and AUTHORITATIVE fidelity contributes theorem-directed evidence. A passing control / regression / pathfinder / coherence-witness is a *precondition* for trusting evidence, not itself evidence. Every record's `inference.disallowed_conclusion` documents what may not be inferred from it.
 
-| Exp | Stage | Role | Chain role |
-|---|---|---|---|
-| EXP_1 | gauge | ENABLER | coordinate-scaling is conformal on the explicit formula |
-| EXP_1B | gauge | FALSIFICATION_CONTROL | naive operator-scaling must break |
-| EXP_1C | lattice | ENABLER | zeros carry a τ-lattice structure |
-| EXP_2 | brittleness | DETECTOR | rogue amplifies at deep k |
-| EXP_2B | brittleness | DETECTOR | rogue isolation is theoretically clean |
-| EXP_3 | control | FALSIFICATION_CONTROL | β=π diverges vs true π(x) |
-| EXP_4 | lattice | **PATHFINDER** | is scaling coord-trivial (TRANSLATION) or op-nontrivial (DILATION)? |
-| EXP_5 | lattice | **PATHFINDER** | do scaled zeros land on existing zeros (lattice-hit) or between them (lattice-path-negative)? |
-| EXP_6 | gauge | ENABLER | **linchpin**: compression preserves the critical line; without this the RH-contradiction path collapses |
-| EXP_7 | brittleness | DETECTOR | detector sensitivity is calibrated |
-| EXP_8 | lattice | ENABLER | ζ(s·τ^k) zeros vs τ^k·γₙ — zeta-operator-level equivalence |
-
-Why PATHFINDER is a first-class role: EXP_4 and EXP_5 are not theory-confirmers, they are *direction-setters*. EXP_4 tells you whether the scaling is a coordinate reparametrization (TRANSLATION branch) or a genuine operator dilation (DILATION branch), both of which are theoretically admissible — they just route you down different downstream investigations. EXP_5 tells you whether to pursue the naive τ-lattice ("scaled zeros land on true zeros") or to treat the lattice as emergent from the explicit-formula equivariance. Forcing either experiment into PASS/FAIL pretends there's a binary answer when there isn't; `theory_fit=INFORMATIVE` makes the axis honest.
+No documentation in this sprint may present provisional witness mappings as settled theorem-directed evidence.
 
 ### Experiment 1A: Equivariance (Coordinate Gauge)
 **Hypothesis**: The distribution of primes is scale-invariant under the gauge $\tau = 2\pi$.
@@ -240,55 +245,82 @@ The amplitude term $x^\pi$ dominates instantly, causing massive divergence.
 | **Operator Gauge** | `run_exp1.py::run_experiment_1b` | $\rho' = \rho \cdot \tau^k$ |
 | **τ-Lattice** | `run_exp1.py::run_experiment_1c` | $\gamma' = \gamma \cdot \tau^k$ at $X_{phys}$ |
 | **Scaled-ζ Zeros** | `run_exp8.py` | zeros of $\zeta(s \cdot \tau^k)$ |
-| **Verification** | `verifier.py` | Stage rollups, adaptive tolerances, regression log |
+| **Verification** | `verifier.py` | Canonical classification, adaptive tolerances, proof-program summary, implementation-health summary, regression log |
 
 ---
 
 ## 5. Data Artifact Specification (`experiments.json`)
 
-The output file is the contract between the Python Oracle and the React Observer. The shape is versioned via `meta.schema_version`; the verifier refuses artifacts whose version does not match `EXPECTED_SCHEMA_VERSION`. The engine produces the raw data + `meta`; `verifier.py` adds the `summary` block and appends to `verdict_history.jsonl`.
+The output file is the contract between the Python Oracle and the Next.js Observer. The shape is versioned via `meta.schema_version`; the verifier refuses to grade artifacts whose version does not match `EXPECTED_SCHEMA_VERSION`. The engine produces the raw data + `meta`; `verifier.py` adds the `summary` block, emits the canonical ontology, and appends to `verdict_history.jsonl`.
 
-Each experiment verdict carries **three orthogonal axes**:
+Each experiment verdict carries the **three orthogonal canonical axes** (PROOF_PROGRAM_SPEC.md §5):
 
-- `status` — the *mechanical* outcome (`PASS`/`FAIL`/...). Did the numeric threshold get crossed?
-- `theory_fit` — the *theory-centric* outcome (`SUPPORTS`/`REFUTES`/`CANDIDATE`/`INFORMATIVE`/`CONTROL_BROKEN`/`INCONCLUSIVE`). Does the observed result support, refute, or inform the Gauge→Lattice→Brittleness conjecture?
-- `role` — the *chain-role* (`ENABLER`/`PATHFINDER`/`DETECTOR`/`FALSIFICATION_CONTROL`). What job does this test do in the proof-by-contradiction chain? See §3.0.1.
+- `function` — what job the experiment does in the proof program (`THEOREM_STATEMENT` / `PROOF_OBLIGATION_WITNESS` / `COHERENCE_WITNESS` / `CONTROL` / `PATHFINDER` / `REGRESSION_CHECK` / `EXPLORATORY`).
+- `outcome` — what happened on this run (`CONSISTENT` / `INCONSISTENT` / `DIRECTIONAL` / `INCONCLUSIVE` / `IMPLEMENTATION_OK` / `IMPLEMENTATION_BROKEN`).
+- `epistemic_level` — what kind of claim the result licenses (`FORMAL` / `EMPIRICAL` / `HEURISTIC` / `INSTRUMENTAL`).
 
-Polarity matters: for `FALSIFICATION_CONTROL` experiments, mechanical `PASS` (the falsifier exploded as predicted) maps to `theory_fit = SUPPORTS`; mechanical `FAIL` (the falsifier did not trigger — a dead discriminator) maps to `theory_fit = CONTROL_BROKEN`. For `PATHFINDER` experiments, any decisive outcome (hit OR miss) maps to `theory_fit = INFORMATIVE` — a pathfinder's job is to pick a direction, not to pass/fail the theory. Stage rollups aggregate over `theory_fit`, not `status`.
+Every record additionally carries a mandatory `inference` block (`inference_scope`, `allowed_conclusion`, `disallowed_conclusion`) — the drift guardrail. `status` is retained for debugging but is not a theory signal. Legacy compatibility fields (`role`, `theory_fit`, `summary.stage_verdicts`) are deprecated and should only be used for backward-compat reads.
 
 ```json
 {
   "meta": {
-    "schema_version": "2026.04.3",
+    "schema_version": "2026.05.0",
     "dps": 50,
     "zeros": 1000,
     "tau": 6.28318...,
     "code_fingerprint": { "<filename>": "<md5>", ... },
     "zero_source_info": { "source_path": "...", "declared_decimals": 46, ... },
-    "reproducibility_instructions": "python experiment_engine.py ..."
+    "reproducibility_instructions": "python experiment_engine.py ...",
+    "experiment_classification": {
+      "EXP_1":  { "function": "COHERENCE_WITNESS", "stage": "gauge", "program": "PROGRAM_1", "epistemic_level": "EMPIRICAL", "inference": {"inference_scope": "...", "allowed_conclusion": [...], "disallowed_conclusion": [...]} },
+      "EXP_6":  { "function": "PROOF_OBLIGATION_WITNESS", "stage": "gauge", "program": "PROGRAM_1", "epistemic_level": "EMPIRICAL", "obligation_id": "OBL_BETA_INVARIANCE", "inference": {...}, "provisional": true },
+      "EXP_8":  { "function": "REGRESSION_CHECK", "stage": "lattice", "program": "PROGRAM_1", "epistemic_level": "INSTRUMENTAL", "inference": {...} },
+      "...": "EXP_1B, EXP_1C, EXP_2, EXP_2B, EXP_3, EXP_4, EXP_5, EXP_7"
+    }
   },
   "summary": {
-    "schema_version": "2026.04.3",
+    "schema_version": "2026.05.0",
     "engine_status": "OK",
     "overall": "PASS|FAIL",
     "experiments": {
-      "EXP_1": {
-        "stage": "gauge|lattice|brittleness|control",
-        "role": "ENABLER|PATHFINDER|DETECTOR|FALSIFICATION_CONTROL",
-        "type": "VALIDATION|HYPOTHESIS_TEST|FALSIFICATION_CONTROL",
-        "status": "PASS|FAIL|NOTEWORTHY|INCONCLUSIVE|INSUFFICIENT_DATA|INSUFFICIENT_SEPARATION|SKIP",
-        "theory_fit": "SUPPORTS|REFUTES|CANDIDATE|INFORMATIVE|CONTROL_BROKEN|INCONCLUSIVE",
-        "metrics": { "...": "numeric metrics; PATHFINDER rows include 'direction' e.g. 'TRANSLATION', 'lattice-hit', 'lattice-path-negative'" },
-        "interpretation": "..."
+      "EXP_6": {
+        "function": "PROOF_OBLIGATION_WITNESS",
+        "outcome": "CONSISTENT|INCONSISTENT|INCONCLUSIVE",
+        "epistemic_level": "EMPIRICAL",
+        "inference": {
+          "inference_scope": "this run, tested k-range, AUTHORITATIVE fidelity required",
+          "allowed_conclusion": ["beta_hat(k) = 1/2 to within optimizer tolerance on the tested k-range at AUTHORITATIVE fidelity."],
+          "disallowed_conclusion": ["beta is invariant at untested k.", "The RH predicate transports exactly under the gauge.", "OBL_BETA_INVARIANCE is formally proven.", "The theorem candidate is proved."]
+        },
+        "program": "PROGRAM_1",
+        "obligation_id": "OBL_BETA_INVARIANCE",
+        "stage": "gauge",
+        "type": "HYPOTHESIS_TEST",
+        "status": "PASS|FAIL|...",
+        "metrics": { "beta_hat": 0.5, "drift": 0.0, "...": "..." },
+        "interpretation": "...",
+        "provisional": true
       },
-      "...": "EXP_1B, EXP_1C, EXP_2, EXP_2B, EXP_3, EXP_4, EXP_5, EXP_6, EXP_7, EXP_8"
+      "...": "EXP_1, EXP_1B, EXP_1C, EXP_2, EXP_2B, EXP_3, EXP_4, EXP_5, EXP_7, EXP_8"
     },
-    "stage_verdicts": {
-      "gauge":       { "status": "SUPPORTS|REFUTES|CANDIDATE|PARTIAL|INCONCLUSIVE", "reason": "...", "members": ["EXP_1", "EXP_1B", "EXP_6"], "member_fits": {"EXP_1": "SUPPORTS", ...}, "role_breakdown": {"ENABLER": 2, "FALSIFICATION_CONTROL": 1} },
-      "lattice":     { "status": "...", "reason": "...", "members": ["EXP_1C", "EXP_4", "EXP_5", "EXP_8"], "member_fits": {...}, "role_breakdown": {"ENABLER": 2, "PATHFINDER": 2} },
-      "brittleness": { "status": "...", "reason": "...", "members": ["EXP_2", "EXP_2B", "EXP_7"], "member_fits": {...}, "role_breakdown": {"DETECTOR": 3} },
-      "control":     { "status": "...", "reason": "...", "members": ["EXP_3"], "member_fits": {...}, "role_breakdown": {"FALSIFICATION_CONTROL": 1} }
+    "proof_program": {
+      "theorem_candidate": { "formal_statement": "...", "plain_language": "...", "non_claims": [...], "working_gauge": {"base": "tau = 2*pi", "unique": false} },
+      "obligations": [
+        { "id": "OBL_COORD_RECONSTRUCTION_COVARIANCE", "status": "OPEN|WITNESSED|FORMALLY_PROVEN", "witnesses": [...], "program": "PROGRAM_1", "inference": {...}, "...": "..." },
+        "OBL_ZERO_SCALING_EQUIVALENCE, OBL_BETA_INVARIANCE, OBL_EXACT_RH_TRANSPORT, OBL_ROGUE_DETECTABILITY"
+      ],
+      "open_gaps": [
+        { "id": "GAP_RH_PREDICATE_TRANSPORT", "title": "...", "description": "...", "blocker_for": ["OBL_EXACT_RH_TRANSPORT"] },
+        "GAP_TAU_UNIQUENESS, GAP_COVERAGE_TRANSPORT, GAP_PROGRAM2_FORMALIZATION, GAP_WITNESS_MAP_REVIEW"
+      ]
     },
+    "implementation_health": {
+      "gauge":       { "status": "IMPLEMENTATION_OK|IMPLEMENTATION_BROKEN|MIXED|NO_MEMBERS", "members": ["EXP_1", "EXP_1B", "EXP_6"], "reason": "..." },
+      "lattice":     { "status": "...", "members": ["EXP_1C", "EXP_4", "EXP_5", "EXP_8"] },
+      "brittleness": { "status": "...", "members": ["EXP_2", "EXP_2B", "EXP_7"] },
+      "control":     { "status": "...", "members": ["EXP_3"] }
+    },
+    "stage_verdicts": "@deprecated compatibility field; replaced by implementation_health + proof_program",
     "zero_path_decision": "SCALE_AD_HOC|COMPUTE_PER_K|UNDECIDED",
     "zero_path_reason": "..."
   },
@@ -308,10 +340,10 @@ Polarity matters: for `FALSIFICATION_CONTROL` experiments, mechanical `PASS` (th
 
 ### Regression log (`verdict_history.jsonl`)
 
-`verifier.py` appends one JSON line per run to `dashboard/public/verdict_history.jsonl`:
+`verifier.py` appends one JSON line per run to `public/verdict_history.jsonl`:
 
 ```json
-{"timestamp": "...Z", "schema_version": "2026.04.3", "overall": "PASS|FAIL", "stage_verdicts": {"gauge": "SUPPORTS", ...}, "code_fingerprint": {...}, "zero_source_info": {...}}
+{"timestamp": "...Z", "schema_version": "2026.05.0", "overall": "PASS|FAIL", "proof_program_status": {"OBL_BETA_INVARIANCE": "WITNESSED", "...": "..."}, "implementation_health": {"gauge": "IMPLEMENTATION_OK", "...": "..."}, "code_fingerprint": {...}, "zero_source_info": {...}, "stage_verdicts": {"...": "... (deprecated compatibility)"}}
 ```
 
-A stage verdict flip vs. the prior line prints a loud `[REGRESSION]` warning. The dashboard's `VerdictHistoryPanel` reads the last 10 lines of this file.
+The canonical regression surface compares obligation status and implementation-health transitions versus prior runs. Legacy `stage_verdicts` may still appear for one-release compatibility.

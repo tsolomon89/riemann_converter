@@ -122,6 +122,13 @@ export interface Experiment8 {
 }
 
 // Theoretical stage ordering: Gauge -> Lattice -> Brittleness, plus Control.
+//
+// Under PROOF_PROGRAM_SPEC.md (§6, "On the stage axis"), `stage` is preserved
+// as a *noncanonical* grouping and navigation axis: sidebar sections, filter
+// chips, docs anchors. It is FORBIDDEN from carrying theorem semantics:
+// no stage-level SUPPORTS/REFUTES rollup, no implied proof-progress ordering,
+// no contribution to the theorem candidate. The theorem-directed surface is
+// `ProofProgram` (below), grouped by obligation, not by stage.
 export type TheoryStage = "gauge" | "lattice" | "brittleness" | "control";
 
 export type VerdictStatus =
@@ -134,12 +141,12 @@ export type VerdictStatus =
   | "INSUFFICIENT_SEPARATION"
   | "SKIP";
 
-// Theory-fit is the theory-centric verdict axis: it answers "does this
-// outcome support or refute the conjecture?" rather than "did a numeric
-// threshold get hit?". Critically, control experiments invert: a control's
-// mechanical PASS (falsifier triggered) maps to theory_fit=SUPPORTS.
-// Pathfinder experiments emit INFORMATIVE for any decisive outcome (hit OR
-// miss) because their job is to select a path, not to pass/fail the theory.
+/**
+ * @deprecated PROOF_PROGRAM_SPEC.md §6: replaced by `ExperimentFunction`
+ * (what job does the experiment do?) + `ExperimentOutcome` (what happened?).
+ * Retained for one release as a backward-compat shim so existing artifacts and
+ * pre-migration UI keep rendering while Sprint 2b rewrites the surfaces.
+ */
 export type TheoryFit =
     | "SUPPORTS"
     | "REFUTES"
@@ -148,21 +155,21 @@ export type TheoryFit =
     | "CONTROL_BROKEN"
     | "INCONCLUSIVE";
 
-// Role of each experiment in the theory chain (orthogonal to `stage`).
-//   ENABLER              - PASS establishes a premise in the conformality
-//                          -> compression -> RH-contradiction chain.
-//   PATHFINDER           - disambiguates a mechanism; any decisive outcome
-//                          is INFORMATIVE.
-//   DETECTOR             - verifies the rogue-zero detection works.
-//   FALSIFICATION_CONTROL - sanity check that the system can fail on
-//                          known-bad data.
+/**
+ * @deprecated PROOF_PROGRAM_SPEC.md §6: replaced by `ExperimentFunction`.
+ * Retained for one release as a backward-compat shim.
+ */
 export type ExperimentRole =
     | "ENABLER"
     | "PATHFINDER"
     | "DETECTOR"
     | "FALSIFICATION_CONTROL";
 
-// Stage-level rollup verdicts (aggregation of member theory_fits).
+/**
+ * @deprecated PROOF_PROGRAM_SPEC.md §6: stage-level *theory* rollup is forbidden.
+ * Use `ImplementationHealth` for a non-theoretic per-stage aggregate instead.
+ * Retained for one release as a backward-compat shim.
+ */
 export type StageFit =
     | "SUPPORTS"
     | "REFUTES"
@@ -170,6 +177,11 @@ export type StageFit =
     | "PARTIAL"
     | "INCONCLUSIVE";
 
+/**
+ * @deprecated PROOF_PROGRAM_SPEC.md §6: the theory-level rollup this encodes
+ * is forbidden under the new ontology. Sprint 2b replaces the consuming UI
+ * with `ProofProgramMap` driven by `ProofProgram` and `ImplementationHealth`.
+ */
 export interface StageVerdict {
     status: StageFit | string;
     reason: string;
@@ -178,27 +190,191 @@ export interface StageVerdict {
     role_breakdown?: { [role: string]: number };
 }
 
+// ---------------------------------------------------------------------------
+// CANONICAL ONTOLOGY (Sprint 2a) — PROOF_PROGRAM_SPEC.md §5/§6
+// ---------------------------------------------------------------------------
+
+/**
+ * Axis A — the job this experiment does in the proof program. Canonical
+ * replacement for `ExperimentRole` + the theorem-verdict connotation of
+ * `TheoryFit`. See PROOF_PROGRAM_SPEC.md §5.
+ */
+export type ExperimentFunction =
+    | "THEOREM_STATEMENT"
+    | "PROOF_OBLIGATION_WITNESS"
+    | "COHERENCE_WITNESS"
+    | "CONTROL"
+    | "PATHFINDER"
+    | "REGRESSION_CHECK"
+    | "EXPLORATORY";
+
+/**
+ * Axis B — what happened on this run. Canonical replacement for the
+ * SUPPORTS/REFUTES/CANDIDATE vocabulary. Only (function=PROOF_OBLIGATION_WITNESS
+ * + outcome=CONSISTENT + AUTHORITATIVE fidelity) produces theorem-directed
+ * evidence; see PROOF_PROGRAM_SPEC.md §5 "Positive-evidence rule".
+ */
+export type ExperimentOutcome =
+    | "CONSISTENT"
+    | "INCONSISTENT"
+    | "DIRECTIONAL"
+    | "INCONCLUSIVE"
+    | "IMPLEMENTATION_OK"
+    | "IMPLEMENTATION_BROKEN";
+
+/**
+ * Axis C — what kind of claim this result licenses. FORMAL holds by proof;
+ * EMPIRICAL is measured at finite precision; HEURISTIC is qualitative;
+ * INSTRUMENTAL is about the engine, not about zeta.
+ */
+export type EpistemicLevel = "FORMAL" | "EMPIRICAL" | "HEURISTIC" | "INSTRUMENTAL";
+
+/**
+ * Which of the two named research programs this experiment or obligation
+ * belongs to. PROGRAM_1 (direct invariance) is canonical; PROGRAM_2
+ * (contradiction-by-detectability) is exploratory only. See
+ * PROOF_PROGRAM_SPEC.md Decision Log #2 and §7.
+ */
+export type ProgramId = "PROGRAM_1" | "PROGRAM_2";
+
+/**
+ * Mandatory inference guardrails (PROOF_PROGRAM_SPEC.md §5/§6). Every
+ * experiment verdict and every proof obligation must populate these.
+ * `disallowed_conclusion` MUST include at least one theorem-level overreach
+ * disclaimer. Surfaces that render a result must render at least one of
+ * `allowed_conclusion` / `disallowed_conclusion` near the verdict.
+ */
+export interface InferenceRails {
+    inference_scope: string;
+    allowed_conclusion: string[];
+    disallowed_conclusion: string[];
+}
+
+/**
+ * Status of a proof obligation in the program. `OPEN` means no witness;
+ * `WITNESSED` means at least one PROOF_OBLIGATION_WITNESS is CONSISTENT at
+ * AUTHORITATIVE fidelity; `FORMALLY_PROVEN` is reserved for a future Lean/Coq
+ * artifact and is not currently set by the verifier.
+ */
+export type ObligationStatus = "OPEN" | "WITNESSED" | "FORMALLY_PROVEN";
+
+export interface ProofObligation {
+    id: string;
+    title: string;
+    statement: string;
+    status: ObligationStatus;
+    witnesses: string[];
+    inference: InferenceRails;
+    program: ProgramId;
+    notes?: string;
+}
+
+export interface OpenGap {
+    id: string;
+    title: string;
+    description: string;
+    blocker_for?: string[];
+}
+
+export interface ProofProgram {
+    theorem_candidate: {
+        formal_statement: string;
+        plain_language: string;
+        non_claims: string[];
+        working_gauge: { base: string; unique: boolean };
+    };
+    obligations: ProofObligation[];
+    open_gaps: OpenGap[];
+    witness_map_review?: {
+        gate_id: string;
+        status: string;
+        api_contract_ready: boolean;
+        notes: string[];
+        frozen_mapping?: { experiment_to_obligation: Record<string, string | null | undefined> };
+        provisional_experiments?: string[];
+        unmapped_witness_candidates?: string[];
+    };
+}
+
+/**
+ * Non-theoretic per-stage aggregate. Replaces the theorem-level role of
+ * `StageVerdict`. Answers "is the engine healthy in this grouping?" — not
+ * "does the theory hold?". See PROOF_PROGRAM_SPEC.md §6.
+ */
+export interface ImplementationHealth {
+    status: "IMPLEMENTATION_OK" | "IMPLEMENTATION_BROKEN" | "MIXED" | "NO_MEMBERS";
+    members: string[];
+    reason?: string;
+}
+
+/**
+ * Per-experiment classification table emitted in `meta.experiment_classification`.
+ * This is the single source of truth that replaces the previously duplicated
+ * ROLE_MAP between verifier.py and ExperimentSidebar.tsx — UI code should read
+ * from this map rather than hardcoding role assignments.
+ */
+export interface ExperimentClassification {
+    function: ExperimentFunction;
+    role?: ExperimentRole;          // legacy, kept during deprecation window
+    stage: TheoryStage;              // grouping only (see TheoryStage doc)
+    program: ProgramId;
+    epistemic_level: EpistemicLevel;
+    obligation_id?: string;          // set iff function === "PROOF_OBLIGATION_WITNESS"
+    /** True while GAP_WITNESS_MAP_REVIEW remains unsigned. */
+    mapping_provisional?: boolean;
+    inference: InferenceRails;
+}
+
 // Fidelity tier declared by the verifier. Below AUTHORITATIVE, the verifier
 // either hard-clamps theory_fit to INCONCLUSIVE (SMOKE) or flags ENABLER
 // verdicts as provisional (STANDARD). See verifier.compute_fidelity_tier.
 export type FidelityTier = "SMOKE" | "STANDARD" | "AUTHORITATIVE";
 
 export interface ExperimentVerdict {
+    // === Canonical axes (Sprint 2a, PROOF_PROGRAM_SPEC.md §5/§6) ===========
+    /** What job does this experiment do in the proof program? */
+    function?: ExperimentFunction;
+    /** What happened on this run? */
+    outcome?: ExperimentOutcome;
+    /** What kind of claim does this result license? */
+    epistemic_level?: EpistemicLevel;
+    /** Mandatory inference guardrails — surfaces must render at least one. */
+    inference?: InferenceRails;
+    /** Research program this record belongs to. */
+    program?: ProgramId;
+    /** Required iff function === "PROOF_OBLIGATION_WITNESS". */
+    obligation_id?: string;
+    /** True while GAP_WITNESS_MAP_REVIEW remains unsigned. */
+    mapping_provisional?: boolean;
+    /** Required iff function === "PATHFINDER" && outcome === "DIRECTIONAL". */
+    direction?: string;
+
+    // === Preserved fields ==================================================
+    /** Noncanonical grouping/navigation axis. Forbidden from theorem rollups. */
     stage?: TheoryStage | string;
-    role?: ExperimentRole | string;
     type: string;
+    /** Raw mechanical outcome. Kept for debugging; not a theory signal. */
     status: VerdictStatus | string;
-    theory_fit?: TheoryFit | string;
     interpretation: string;
     metrics: Record<string, unknown>;
+    /** Fidelity-tier provisional flag (policy unchanged in Sprint 2a). */
     provisional?: boolean;
+
+    // === Deprecation shims (retained for one release) ======================
+    /** @deprecated use `function` */
+    role?: ExperimentRole | string;
+    /** @deprecated use `function` + `outcome` */
+    theory_fit?: TheoryFit | string;
 }
 
 export interface VerdictHistoryEntry {
     timestamp: string;
     schema_version?: string;
     overall: string;
-    stage_verdicts: { [stage: string]: string };
+    obligation_statuses?: { [obligationId: string]: string };
+    implementation_health_statuses?: { [stage: string]: string };
+    /** @deprecated legacy compatibility only; do not drive active UI semantics. */
+    stage_verdicts?: { [stage: string]: string };
     code_fingerprint?: { [fname: string]: string };
     zero_source_info?: Record<string, unknown>;
 }
@@ -215,9 +391,16 @@ export interface ExperimentsData {
     };
     code_fingerprint?: { [fname: string]: string };
     zero_source_info?: Record<string, unknown>;
+    /**
+     * Single-source-of-truth classification table (Sprint 2a). Replaces the
+     * previously duplicated ROLE_MAP in ExperimentSidebar.tsx. UI should read
+     * role / function / stage / obligation_id / inference from here.
+     */
+    experiment_classification?: { [summaryKey: string]: ExperimentClassification };
   };
   summary?: {
       engine_status?: string;
+      /** @deprecated PROOF_PROGRAM_SPEC.md Decision Log #6: no project-wide theory verdict. */
       overall: string;
       schema_version?: string;
       fidelity_tier?: FidelityTier;
@@ -226,9 +409,20 @@ export interface ExperimentsData {
       experiments: {
           [key: string]: ExperimentVerdict;
       };
+      /**
+       * @deprecated PROOF_PROGRAM_SPEC.md §6: stage-level theory rollup is forbidden.
+       * Retained for one release so the current UI keeps rendering; Sprint 2b
+       * replaces the consuming component with `ProofProgramMap`.
+       */
       stage_verdicts?: {
           [stage: string]: StageVerdict;
       };
+      /** Non-theoretic per-stage engine-health aggregate (canonical replacement). */
+      implementation_health?: {
+          [stage: string]: ImplementationHealth;
+      };
+      /** Canonical proof program: theorem candidate, obligations, open gaps. */
+      proof_program?: ProofProgram;
       zero_path_decision?: string;
       zero_path_reason?: string;
   };

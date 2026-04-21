@@ -7,7 +7,7 @@ from riemann_math import get_zeros, get_last_zero_source_info, load_or_init_resu
 
 from verifier import run_verification
 
-# Schema version of dashboard/public/experiments.json.
+# Schema version of public/experiments.json.
 # Bump when adding/removing/renaming top-level fields or the summary structure.
 # Verifier refuses to grade artifacts with a mismatched version.
 SCHEMA_VERSION = "2026.05.0"
