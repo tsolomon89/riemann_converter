@@ -255,7 +255,7 @@ export async function POST(request: Request) {
         return jsonRpcError(id, -32601, `Method not found: ${method}`);
     }
 
-    const params = (rpc.params ?? {}) as McpToolCallParams;
+    const params = (rpc.params ?? {}) as unknown as McpToolCallParams;
     const name = params.name;
     if (!name || typeof name !== "string") {
         return jsonRpcError(id, -32602, "Invalid params: tool name is required.");
@@ -281,4 +281,3 @@ export async function POST(request: Request) {
         return jsonRpcError(id, -32603, String(error));
     }
 }
-

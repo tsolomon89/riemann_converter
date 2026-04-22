@@ -69,9 +69,17 @@ export async function GET(request: Request) {
         );
     }
 
-    const run = getRunStatus(started.run.run_id);
-    const stream = streamRunLogs(started.run.run_id);
-    const prefix = `[run-experiment] run_id=${started.run.run_id} status=${run?.status ?? "UNKNOWN"}\n`;
+    const runId = started.run.run_id;
+    if (!runId) {
+        return new Response(
+            JSON.stringify({ error: "Run manager returned an invalid run identifier." }),
+            { status: 500, headers: { "Content-Type": "application/json" } },
+        );
+    }
+
+    const run = getRunStatus(runId);
+    const stream = streamRunLogs(runId);
+    const prefix = `[run-experiment] run_id=${runId} status=${run?.status ?? "UNKNOWN"}\n`;
     const first = new TextEncoder().encode(prefix);
     const combined = new ReadableStream({
         start(controller) {
@@ -99,4 +107,3 @@ export async function GET(request: Request) {
         },
     });
 }
-

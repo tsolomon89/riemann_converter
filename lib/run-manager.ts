@@ -3,6 +3,7 @@ import type { ChildProcess } from "child_process";
 import type { CanonicalRunMode, RunLogsPayload, RunStatus, RunStatusPayload } from "./research-types";
 
 type SpawnFn = typeof spawn;
+type ActiveRunStatusPayload = RunStatusPayload & { run_id: string; started_at: string };
 
 interface RunRecord {
     id: string;
@@ -126,7 +127,7 @@ const startProcess = (
 export const startCanonicalRun = (
     mode: CanonicalRunMode,
     cwd = process.cwd(),
-): { run: RunStatusPayload } | { status: 409; error: string } => {
+): { run: ActiveRunStatusPayload } | { status: 409; error: string } => {
     const started = startProcess(mode, canonicalArgsForMode(mode), cwd);
     if ("status" in started) return started;
     return { run: toRunStatus(started.run) };
@@ -136,13 +137,13 @@ export const startCustomRun = (
     mode: string,
     args: string[],
     cwd = process.cwd(),
-): { run: RunStatusPayload } | { status: 409; error: string } => {
+): { run: ActiveRunStatusPayload } | { status: 409; error: string } => {
     const started = startProcess(mode, args, cwd);
     if ("status" in started) return started;
     return { run: toRunStatus(started.run) };
 };
 
-const toRunStatus = (run: RunRecord): RunStatusPayload => ({
+const toRunStatus = (run: RunRecord): ActiveRunStatusPayload => ({
     run_id: run.id,
     mode: run.mode,
     status: run.status,
@@ -151,7 +152,7 @@ const toRunStatus = (run: RunRecord): RunStatusPayload => ({
     exit_code: run.exit_code,
 });
 
-export const getRunStatus = (runId?: string): RunStatusPayload | null => {
+export const getRunStatus = (runId?: string): ActiveRunStatusPayload | null => {
     const state = getState();
     const id = runId ?? state.current_run_id ?? null;
     if (!id) return null;
