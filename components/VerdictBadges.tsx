@@ -32,22 +32,30 @@ import type {
 
 const FUNCTION_LABEL: Record<ExperimentFunction, string> = {
     THEOREM_STATEMENT: "Theorem",
+    CORE_CALCULATION: "Main Calc",
+    VISUALIZATION: "Visualization",
     PROOF_OBLIGATION_WITNESS: "Witness",
     COHERENCE_WITNESS: "Coherence",
     CONTROL: "Control",
     PATHFINDER: "Pathfinder",
     REGRESSION_CHECK: "Regression",
     EXPLORATORY: "Exploratory",
+    RESEARCH_NOTE: "Research Note",
+    DEMONSTRATION: "Demo",
 };
 
 const FUNCTION_ICON: Record<ExperimentFunction, React.ReactNode> = {
     THEOREM_STATEMENT: <BadgeCheck size={10} />,
+    CORE_CALCULATION: <Microscope size={10} />,
+    VISUALIZATION: <Microscope size={10} />,
     PROOF_OBLIGATION_WITNESS: <Key size={10} />,
     COHERENCE_WITNESS: <Microscope size={10} />,
     CONTROL: <ShieldAlert size={10} />,
     PATHFINDER: <Compass size={10} />,
     REGRESSION_CHECK: <Wrench size={10} />,
     EXPLORATORY: <HelpCircle size={10} />,
+    RESEARCH_NOTE: <Microscope size={10} />,
+    DEMONSTRATION: <HelpCircle size={10} />,
 };
 
 // Outcome color is function-aware: CONSISTENT is green only for a
@@ -70,6 +78,9 @@ function outcomeStyles(fn: ExperimentFunction, oc: ExperimentOutcome) {
     if (oc === "DIRECTIONAL") {
         return { cls: "bg-cyan-900/30 border-cyan-500/40 text-cyan-300", icon: <Compass size={10} /> };
     }
+    if (oc === "INFORMATIONAL") {
+        return { cls: "bg-violet-900/30 border-violet-500/40 text-violet-300", icon: <HelpCircle size={10} /> };
+    }
     if (oc === "INCONSISTENT") {
         return { cls: "bg-red-900/40 border-red-500/40 text-red-300", icon: <XCircle size={10} /> };
     }
@@ -77,7 +88,7 @@ function outcomeStyles(fn: ExperimentFunction, oc: ExperimentOutcome) {
     if (fn === "PROOF_OBLIGATION_WITNESS") {
         return { cls: "bg-emerald-900/30 border-emerald-500/40 text-emerald-300", icon: <CheckCircle2 size={10} /> };
     }
-    if (fn === "COHERENCE_WITNESS") {
+    if (fn === "CORE_CALCULATION" || fn === "COHERENCE_WITNESS") {
         return { cls: "bg-blue-900/30 border-blue-500/40 text-blue-300", icon: <CheckCircle2 size={10} /> };
     }
     if (fn === "EXPLORATORY") {
@@ -96,6 +107,8 @@ function outcomeLabel(fn: ExperimentFunction, oc: ExperimentOutcome, direction?:
             return "Inconsistent";
         case "DIRECTIONAL":
             return direction ? `→ ${direction}` : "Directional";
+        case "INFORMATIONAL":
+            return "Informational";
         case "INCONCLUSIVE":
             return "Inconclusive";
         case "IMPLEMENTATION_OK":

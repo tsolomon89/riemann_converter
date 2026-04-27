@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CheckCircle2, XCircle, AlertTriangle, HelpCircle, Scale, RotateCcw, Activity, Shield, Compass, Key, Radar } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, HelpCircle, Scale, RotateCcw, Activity, Shield, Compass, Key, Radar, Lightbulb } from "lucide-react";
 import clsx from "clsx";
 import type { FidelityTier, StageVerdict, TheoryStage } from "../lib/types";
 
@@ -29,27 +29,44 @@ const fidelityStyle = (tier: FidelityTier | undefined) => {
     }
 };
 
-const STAGE_ORDER: TheoryStage[] = ["gauge", "lattice", "brittleness", "control"];
+const STAGE_ORDER: TheoryStage[] = [
+    "gauge",
+    "core_visualization",
+    "lattice",
+    "brittleness",
+    "control",
+    "demonstration",
+    "transport",
+];
 
 const STAGE_LABELS: Record<TheoryStage, string> = {
     gauge: "Gauge",
+    core_visualization: "Core Visualization",
     lattice: "Lattice",
     brittleness: "Brittleness",
     control: "Control",
+    demonstration: "Demonstration",
+    transport: "Transport",
 };
 
 const STAGE_SUBTITLES: Record<TheoryStage, string> = {
     gauge: "Coordinate symmetry",
+    core_visualization: "Zeta-direct descriptive view",
     lattice: "Zero-scaling equivalence",
     brittleness: "Rogue-zero amplification",
     control: "Falsification sanity",
+    demonstration: "Bounded-view mechanics",
+    transport: "Zeta-direct gauge residuals",
 };
 
 const STAGE_ICONS: Record<TheoryStage, React.ComponentType<{ size?: number; className?: string }>> = {
     gauge: Scale,
+    core_visualization: Radar,
     lattice: RotateCcw,
     brittleness: Activity,
     control: Shield,
+    demonstration: Lightbulb,
+    transport: Compass,
 };
 
 // Maps both stage-level (SUPPORTS/REFUTES/CANDIDATE/PARTIAL/INCONCLUSIVE) and

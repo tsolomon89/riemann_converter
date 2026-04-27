@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
     ApiError,
+    cancelRunEnvelope,
     compareRunsEnvelope,
     compareScalesEnvelope,
     compareVerdictsEnvelope,
@@ -8,16 +9,21 @@ import {
     getHistoryEnvelope,
     getImplementationHealthEnvelope,
     getManifestEnvelope,
+    getProgramDocsEnvelope,
     getObligationEnvelope,
     getObligationsEnvelope,
     getOpenGapsEnvelope,
+    getRunEventsEnvelope,
     getRunLogsEnvelope,
     getRunStatusEnvelope,
     getSeriesEnvelope,
     getTheoremCandidateEnvelope,
     parseCanonicalMode,
+    resumeRunEnvelope,
+    startCustomRunEnvelope,
     startRunEnvelope,
 } from "../../../../lib/research-api";
+import { getDeploymentCapabilities, getReadOnlyErrorResponse } from "../../../../lib/deployment-policy";
 import { assertRunAuth } from "../../../../lib/run-auth";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +53,9 @@ const dispatchGet = async (request: Request, segments: string[]) => {
     }
     if (segments.length === 1 && head === "theorem-candidate") {
         return NextResponse.json(getTheoremCandidateEnvelope());
+    }
+    if (segments.length === 1 && head === "program-docs") {
+        return NextResponse.json(getProgramDocsEnvelope());
     }
     if (segments.length === 1 && head === "obligations") {
         return NextResponse.json(getObligationsEnvelope());
@@ -79,15 +88,31 @@ const dispatchGet = async (request: Request, segments: string[]) => {
         return NextResponse.json(compareVerdictsEnvelope(url.searchParams));
     }
     if (segments.length === 1 && head === "run") {
+        if (!getDeploymentCapabilities().run_controls_enabled) {
+            return getReadOnlyErrorResponse();
+        }
         const auth = assertRunAuth(request);
         if (auth) return auth;
         return NextResponse.json(getRunStatusEnvelope(url.searchParams.get("run_id")));
     }
     if (segments.length === 2 && head === "run" && id === "logs") {
+        if (!getDeploymentCapabilities().run_controls_enabled) {
+            return getReadOnlyErrorResponse();
+        }
         const auth = assertRunAuth(request);
         if (auth) return auth;
         return NextResponse.json(
             getRunLogsEnvelope(url.searchParams.get("run_id"), url.searchParams.get("from")),
+        );
+    }
+    if (segments.length === 2 && head === "run" && id === "events") {
+        if (!getDeploymentCapabilities().run_controls_enabled) {
+            return getReadOnlyErrorResponse();
+        }
+        const auth = assertRunAuth(request);
+        if (auth) return auth;
+        return NextResponse.json(
+            getRunEventsEnvelope(url.searchParams.get("run_id"), url.searchParams.get("from")),
         );
     }
 
@@ -95,13 +120,46 @@ const dispatchGet = async (request: Request, segments: string[]) => {
 };
 
 const dispatchPost = async (request: Request, segments: string[]) => {
-    const [head] = segments;
+    const [head, id] = segments;
     if (segments.length === 1 && head === "run") {
+        if (!getDeploymentCapabilities().run_controls_enabled) {
+            return getReadOnlyErrorResponse();
+        }
+        const auth = assertRunAuth(request);
+        if (auth) return auth;
+        const body = (await request.json().catch(() => ({}))) as {
+            kind?: unknown;
+            mode?: unknown;
+            custom?: unknown;
+            config?: unknown;
+        };
+        if (body.kind === "custom" || body.mode === "custom" || body.custom || body.config) {
+            return NextResponse.json(
+                startCustomRunEnvelope(body.custom ?? body.config),
+                { status: 202 },
+            );
+        }
+        const mode = parseCanonicalMode(body.mode);
+        return NextResponse.json(startRunEnvelope(mode), { status: 202 });
+    }
+    if (segments.length === 2 && head === "run" && id === "cancel") {
+        if (!getDeploymentCapabilities().run_controls_enabled) {
+            return getReadOnlyErrorResponse();
+        }
+        const auth = assertRunAuth(request);
+        if (auth) return auth;
+        const body = (await request.json().catch(() => ({}))) as { run_id?: string };
+        return NextResponse.json(cancelRunEnvelope(body.run_id ?? null));
+    }
+    if (segments.length === 2 && head === "run" && id === "resume") {
+        if (!getDeploymentCapabilities().run_controls_enabled) {
+            return getReadOnlyErrorResponse();
+        }
         const auth = assertRunAuth(request);
         if (auth) return auth;
         const body = (await request.json().catch(() => ({}))) as { mode?: unknown };
         const mode = parseCanonicalMode(body.mode);
-        return NextResponse.json(startRunEnvelope(mode), { status: 202 });
+        return NextResponse.json(resumeRunEnvelope(mode), { status: 202 });
     }
     return NextResponse.json({ error: "Not found." }, { status: 404 });
 };
@@ -123,4 +181,3 @@ export async function POST(request: Request, context: RouteContext) {
         return handleError(error);
     }
 }
-

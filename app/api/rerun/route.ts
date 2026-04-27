@@ -1,4 +1,5 @@
 import { assertRunAuth } from "../../../lib/run-auth";
+import { getDeploymentCapabilities, getReadOnlyErrorResponse } from "../../../lib/deployment-policy";
 import { getRunLogs, getRunStatus, startCanonicalRun } from "../../../lib/run-manager";
 import type { CanonicalRunMode } from "../../../lib/research-types";
 
@@ -11,6 +12,7 @@ const MODES: CanonicalRunMode[] = [
     "standard",
     "authoritative",
     "overkill",
+    "overkill_full",
 ];
 
 const parseMode = (value: string | undefined): CanonicalRunMode =>
@@ -41,6 +43,10 @@ const streamRunLogs = (runId: string) => {
 };
 
 export async function POST(request: Request) {
+    if (!getDeploymentCapabilities().run_controls_enabled) {
+        return getReadOnlyErrorResponse();
+    }
+
     const auth = assertRunAuth(request);
     if (auth) return auth;
 
@@ -94,6 +100,10 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+    if (!getDeploymentCapabilities().run_controls_enabled) {
+        return getReadOnlyErrorResponse();
+    }
+
     const auth = assertRunAuth(request);
     if (auth) return auth;
 

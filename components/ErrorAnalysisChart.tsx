@@ -1,5 +1,4 @@
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -10,25 +9,50 @@ import {
   ComposedChart
 } from "recharts";
 
+type ErrorChartRow = {
+  X?: number | string;
+  Li?: number | string;
+  TruePi?: number | string;
+  SchoenfeldBound?: number | string;
+  [key: string]: unknown;
+};
+
+type TooltipEntry = {
+  name?: string;
+  value?: number | string;
+  color?: string;
+};
+
+type ChartTooltipProps = {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: number | string;
+};
+
 interface ErrorChartProps {
-  data: any[];
+  data: ErrorChartRow[];
   k: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const toNumber = (value: unknown, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-[#0a0f18]/95 backdrop-blur-xl border border-red-500/20 p-4 shadow-2xl text-xs text-white ring-1 ring-red-500/10 min-w-[200px]">
         <div className="mb-3 border-b border-white/10 pb-2">
             <span className="font-serif text-gray-400 italic mr-2">X =</span>
-            <span className="font-mono text-emerald-400 text-sm tracking-tight">{Number(label).toFixed(4)}</span>
+            <span className="font-mono text-emerald-400 text-sm tracking-tight">{toNumber(label).toFixed(4)}</span>
         </div>
         <div className="space-y-1">
-          {payload.map((entry: any) => (
-            <div key={entry.name} className="flex justify-between items-center gap-4">
+          {payload.map((entry) => (
+            <div key={String(entry.name)} className="flex justify-between items-center gap-4">
               <span className="font-serif text-gray-300 italic" style={{ color: entry.color }}>{entry.name}:</span>
               <span className="font-mono font-bold text-white">
-                {Number(entry.value).toExponential(4)}
+                {toNumber(entry.value).toExponential(4)}
               </span>
             </div>
           ))}
@@ -42,8 +66,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function ErrorAnalysisChart({ data, k }: ErrorChartProps) {
   // Pre-process data to calculate errors
   const processedData = data.map(row => {
-      const li = parseFloat(row.Li);
-      const pi = row.TruePi;
+      const li = toNumber(row.Li);
+      const pi = toNumber(row.TruePi);
       const error = Math.abs(pi - li);
       
       // Also error for reconstructions? 
@@ -52,7 +76,7 @@ export default function ErrorAnalysisChart({ data, k }: ErrorChartProps) {
       return {
           ...row,
           ErrorTerm: error,
-          BoundValue: parseFloat(row.SchoenfeldBound || "0")
+          BoundValue: toNumber(row.SchoenfeldBound)
       };
   });
 

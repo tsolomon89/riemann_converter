@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "riemann-research": {
+      "command": "node",
+      "args": ["./mcp-bridge.mjs"],
+      "env": {
+        "MCP_BRIDGE_LOCAL_PORT": "7000",
+        "RESEARCH_RUN_TOKEN": "${RESEARCH_RUN_TOKEN}"
+      }
+    }
+  }
+}

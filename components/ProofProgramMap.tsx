@@ -51,19 +51,25 @@ const fidelityStyle = (tier: FidelityTier | undefined) => {
 
 const obligationStatusStyle = (status: ProofObligation["status"]) => {
     switch (status) {
+        case "PROVEN":
+            return {
+                wrap: "bg-blue-900/20 border-blue-500/30",
+                badge: "bg-blue-500/20 text-blue-300 border-blue-500/40",
+                icon: <CheckCircle2 size={10} />,
+            };
         case "WITNESSED":
             return {
                 wrap: "bg-emerald-900/20 border-emerald-500/30",
                 badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
                 icon: <CheckCircle2 size={10} />,
             };
-        case "FORMALLY_PROVEN":
+        case "BLOCKED":
             return {
-                wrap: "bg-blue-900/20 border-blue-500/30",
-                badge: "bg-blue-500/20 text-blue-300 border-blue-500/40",
-                icon: <CheckCircle2 size={10} />,
+                wrap: "bg-amber-900/15 border-amber-500/30",
+                badge: "bg-amber-500/20 text-amber-200 border-amber-500/40",
+                icon: <AlertTriangle size={10} />,
             };
-        case "OPEN":
+        case "CONJECTURAL":
         default:
             return {
                 wrap: "bg-gray-900/40 border-white/10",
@@ -72,6 +78,12 @@ const obligationStatusStyle = (status: ProofObligation["status"]) => {
             };
     }
 };
+
+// A BLOCKED chip: amber for an unmet prereq obligation, red for a GAP_* blocker.
+const blockerChipStyle = (blockerId: string) =>
+    blockerId.startsWith("GAP_")
+        ? "bg-red-500/15 text-red-300 border-red-500/40"
+        : "bg-amber-500/15 text-amber-200 border-amber-500/40";
 
 const programStyle = (program: ProgramId) =>
     program === "PROGRAM_1"
@@ -142,15 +154,25 @@ export default function ProofProgramMap({
             {/* Theorem candidate */}
             <section className="space-y-3">
                 <div className="text-[10px] font-mono uppercase tracking-widest text-blue-400">
-                    Theorem Candidate
+                    Theorem Target
                 </div>
                 <div className="bg-black/30 rounded-lg border border-blue-500/20 p-4 space-y-3">
                     <div className="text-[11px] font-mono uppercase tracking-wider text-gray-500">
                         Formal statement
                     </div>
-                    <p className="text-sm text-gray-200 leading-relaxed">
+                    <p className="text-sm text-gray-100 leading-relaxed font-medium">
                         {theorem_candidate.formal_statement}
                     </p>
+                    {theorem_candidate.bounded_view_corollary && (
+                        <>
+                            <div className="text-[11px] font-mono uppercase tracking-wider text-gray-500 pt-2">
+                                Operational corollary
+                            </div>
+                            <p className="text-sm text-gray-200/90 leading-relaxed">
+                                {theorem_candidate.bounded_view_corollary}
+                            </p>
+                        </>
+                    )}
                     <div className="text-[11px] font-mono uppercase tracking-wider text-gray-500 pt-2">
                         Plain language
                     </div>
@@ -180,104 +202,24 @@ export default function ProofProgramMap({
                             uniqueness: {theorem_candidate.working_gauge.unique ? "required" : "not required"}
                         </span>
                     </div>
-                    {theorem_candidate.non_claims.length > 0 && (
-                        <details className="pt-2">
-                            <summary className="text-[10px] font-mono uppercase tracking-wider text-gray-500 cursor-pointer hover:text-gray-300">
-                                Non-claims ({theorem_candidate.non_claims.length})
-                            </summary>
-                            <ul className="mt-2 space-y-1 text-[11px] text-gray-400 list-disc pl-5">
-                                {theorem_candidate.non_claims.map((nc, i) => (
-                                    <li key={i}>{nc}</li>
-                                ))}
-                            </ul>
-                        </details>
-                    )}
                 </div>
+                {theorem_candidate.non_claims.length > 0 && (
+                    <details className="pt-1">
+                        <summary className="text-[10px] font-mono uppercase tracking-wider text-gray-500 cursor-pointer hover:text-gray-300">
+                            What this does not claim ({theorem_candidate.non_claims.length})
+                        </summary>
+                        <ul className="mt-2 space-y-1 text-[11px] text-gray-400 list-disc pl-5">
+                            {theorem_candidate.non_claims.map((nc, i) => (
+                                <li key={i}>{nc}</li>
+                            ))}
+                        </ul>
+                    </details>
+                )}
             </section>
 
-            {/* Obligations */}
-            <section className="space-y-3">
-                <div className="flex items-center justify-between">
-                    <div className="text-[10px] font-mono uppercase tracking-widest text-blue-400">
-                        Proof obligations ({obligations.length})
-                    </div>
-                    <div className="text-[9px] font-mono text-gray-500 italic">
-                        Only `PROOF_OBLIGATION_WITNESS` + `CONSISTENT` + AUTHORITATIVE counts as theorem-directed evidence.
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 gap-2">
-                    {obligations.map((obl) => {
-                        const s = obligationStatusStyle(obl.status);
-                        return (
-                            <div
-                                key={obl.id}
-                                className={clsx(
-                                    "rounded-lg border p-3 flex flex-col gap-2",
-                                    s.wrap,
-                                )}
-                            >
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="text-[11px] font-bold text-gray-100 truncate">
-                                            {obl.title}
-                                        </span>
-                                        <code className="text-[9px] font-mono text-gray-500 truncate">
-                                            {obl.id}
-                                        </code>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <span
-                                            className={clsx(
-                                                "text-[9px] font-mono px-2 py-0.5 rounded border uppercase tracking-tight",
-                                                programStyle(obl.program),
-                                            )}
-                                            title={
-                                                obl.program === "PROGRAM_1"
-                                                    ? "Program 1: direct invariance (canonical)"
-                                                    : "Program 2: contradiction-by-detectability (exploratory only)"
-                                            }
-                                        >
-                                            {obl.program === "PROGRAM_1" ? "P1 canonical" : "P2 exploratory"}
-                                        </span>
-                                        <span
-                                            className={clsx(
-                                                "text-[10px] font-mono px-2 py-0.5 rounded border flex items-center gap-1 uppercase tracking-tight",
-                                                s.badge,
-                                            )}
-                                        >
-                                            {s.icon}
-                                            {obl.status}
-                                        </span>
-                                    </div>
-                                </div>
-                                <p className="text-[11px] text-gray-300 leading-relaxed">
-                                    {obl.statement}
-                                </p>
-                                <div className="flex items-center justify-between text-[10px] font-mono text-gray-500">
-                                    <span>
-                                        witnesses:{" "}
-                                        {obl.witnesses.length > 0 ? (
-                                            <code className="text-emerald-300">
-                                                {obl.witnesses.join(", ")}
-                                            </code>
-                                        ) : (
-                                            <span className="text-gray-600 italic">none</span>
-                                        )}
-                                    </span>
-                                    {obl.inference.disallowed_conclusion.length > 0 && (
-                                        <span
-                                            className="italic text-amber-300/80 truncate max-w-[60%]"
-                                            title={obl.inference.disallowed_conclusion.join(" · ")}
-                                        >
-                                            ✗ {obl.inference.disallowed_conclusion[0]}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </section>
+            {/* Obligation ladder */}
+            <ObligationLadder obligations={obligations} />
+
 
             {/* Open gaps strip */}
             {open_gaps.length > 0 && (
@@ -319,7 +261,7 @@ export default function ProofProgramMap({
                         </span>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {(["gauge", "lattice", "brittleness", "control"] as const).map((stg) => {
+                        {(["gauge", "lattice", "brittleness", "control", "demonstration"] as const).map((stg) => {
                             const h = implementationHealth[stg];
                             if (!h) return null;
                             return (
@@ -360,4 +302,214 @@ export default function ProofProgramMap({
             </div>
         </div>
     );
+}
+
+// Topologically-ordered obligation ladder. Program 1 obligations render as the
+// proof-critical chain (foundations first, load-bearing last); Program 2
+// obligations render below as the Contradiction Track formalization lane.
+// BLOCKED obligations surface `blocked_by` chips inline on the card (not in
+// tooltips) so blockers are visibly load-bearing, per PROOF_TARGET.md.
+function ObligationLadder({ obligations }: { obligations: ProofObligation[] }) {
+    const ordered = React.useMemo(() => topologicalOrder(obligations), [obligations]);
+    const p1 = ordered.filter((o) => o.program === "PROGRAM_1");
+    const p2 = ordered.filter((o) => o.program === "PROGRAM_2");
+
+    return (
+        <section className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div className="text-[10px] font-mono uppercase tracking-widest text-blue-400">
+                    Proof obligation ladder ({obligations.length})
+                </div>
+                <div className="text-[9px] font-mono text-gray-500 italic">
+                    Only `PROOF_OBLIGATION_WITNESS` + `CONSISTENT` + AUTHORITATIVE counts as theorem-directed evidence.
+                </div>
+            </div>
+
+            {p1.length > 0 && (
+                <div className="space-y-2">
+                    <div className="text-[9px] font-mono uppercase tracking-wider text-blue-300/80">
+                        Program 1 · proof-critical chain
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        {p1.map((obl, idx) => (
+                            <ObligationCard
+                                key={obl.id}
+                                obl={obl}
+                                step={idx + 1}
+                                isLast={idx === p1.length - 1}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {p2.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-dashed border-white/10">
+                    <div className="text-[9px] font-mono uppercase tracking-wider text-purple-300/80">
+                        Contradiction Track - formalization incomplete
+                    </div>
+                    <div className="hidden">
+                        Program 2 · exploratory · outside the critical chain
+                    </div>
+                    <div className="flex flex-col gap-2 opacity-90">
+                        {p2.map((obl) => (
+                            <ObligationCard key={obl.id} obl={obl} exploratory />
+                        ))}
+                    </div>
+                </div>
+            )}
+        </section>
+    );
+}
+
+function ObligationCard({
+    obl,
+    step,
+    isLast,
+    exploratory,
+}: {
+    obl: ProofObligation;
+    step?: number;
+    isLast?: boolean;
+    exploratory?: boolean;
+}) {
+    const s = obligationStatusStyle(obl.status);
+    const prereqs = obl.depends_on ?? [];
+    const blockers = obl.blocked_by ?? [];
+
+    return (
+        <div
+            className={clsx(
+                "rounded-lg border p-3 flex flex-col gap-2 relative",
+                s.wrap,
+                exploratory && "border-dashed",
+            )}
+        >
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                    {typeof step === "number" && (
+                        <span className="text-[10px] font-mono text-gray-500 shrink-0">
+                            {step}.
+                        </span>
+                    )}
+                    <span className="text-[11px] font-bold text-gray-100 truncate">
+                        {obl.title}
+                    </span>
+                    <code className="text-[9px] font-mono text-gray-500 truncate">
+                        {obl.id}
+                    </code>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                    <span
+                        className={clsx(
+                            "text-[9px] font-mono px-2 py-0.5 rounded border uppercase tracking-tight",
+                            programStyle(obl.program),
+                        )}
+                        title={
+                            obl.program === "PROGRAM_1"
+                                ? "Program 1: direct invariance (canonical)"
+                                : "Contradiction Track: detectability / no-hiding / closure formalization"
+                        }
+                    >
+                        {obl.program === "PROGRAM_1" ? "P1 transport" : "P2 contradiction"}
+                    </span>
+                    <span
+                        className={clsx(
+                            "text-[10px] font-mono px-2 py-0.5 rounded border flex items-center gap-1 uppercase tracking-tight",
+                            s.badge,
+                        )}
+                    >
+                        {s.icon}
+                        {obl.status}
+                    </span>
+                </div>
+            </div>
+
+            <p className="text-[11px] text-gray-300 leading-relaxed">
+                {obl.statement}
+            </p>
+
+            {prereqs.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
+                    <span className="text-gray-500">requires:</span>
+                    {prereqs.map((dep) => (
+                        <code
+                            key={dep}
+                            className="px-1.5 py-0.5 rounded border border-white/10 bg-gray-800/40 text-gray-300"
+                        >
+                            {dep}
+                        </code>
+                    ))}
+                </div>
+            )}
+
+            {obl.status === "BLOCKED" && blockers.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
+                    <span className="text-amber-300/90">blocked by:</span>
+                    {blockers.map((b) => (
+                        <code
+                            key={b}
+                            className={clsx(
+                                "px-1.5 py-0.5 rounded border",
+                                blockerChipStyle(b),
+                            )}
+                            title={
+                                b.startsWith("GAP_")
+                                    ? "Open gap — formal work required"
+                                    : "Upstream obligation not yet WITNESSED/PROVEN"
+                            }
+                        >
+                            {b}
+                        </code>
+                    ))}
+                </div>
+            )}
+
+            <div className="flex items-center justify-between gap-3 text-[10px] font-mono text-gray-500">
+                <span>
+                    witnesses:{" "}
+                    {obl.witnesses.length > 0 ? (
+                        <code className="text-emerald-300">
+                            {obl.witnesses.join(", ")}
+                        </code>
+                    ) : (
+                        <span className="text-gray-600 italic">none</span>
+                    )}
+                </span>
+                {obl.inference.disallowed_conclusion.length > 0 && (
+                    <span
+                        className="italic text-amber-300/70 truncate max-w-[40%]"
+                        title={obl.inference.disallowed_conclusion.join(" · ")}
+                    >
+                        ✗ {obl.inference.disallowed_conclusion[0]}
+                    </span>
+                )}
+            </div>
+
+            {!isLast && !exploratory && typeof step === "number" && (
+                <div
+                    className="absolute left-[14px] -bottom-2 h-2 w-px bg-blue-500/30"
+                    aria-hidden
+                />
+            )}
+        </div>
+    );
+}
+
+function topologicalOrder(obligations: ProofObligation[]): ProofObligation[] {
+    const byId = new Map(obligations.map((o) => [o.id, o]));
+    const order: ProofObligation[] = [];
+    const visited = new Set<string>();
+
+    const visit = (id: string) => {
+        if (visited.has(id)) return;
+        const node = byId.get(id);
+        if (!node) return;
+        visited.add(id);
+        for (const dep of node.depends_on ?? []) visit(dep);
+        order.push(node);
+    };
+
+    for (const o of obligations) visit(o.id);
+    return order;
 }

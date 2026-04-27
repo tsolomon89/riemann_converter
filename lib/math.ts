@@ -9,13 +9,18 @@
  */
 
 export function ExplicitPsi(x: number, gammas: number[]): number {
+    void x;
+    void gammas;
     throw new Error("Client-side math is forbidden. Use experiment_engine.py.");
 }
 
 export function ExplicitPi(x: number, gammas: number[]): number {
+    void x;
+    void gammas;
     throw new Error("Client-side math is forbidden. Use experiment_engine.py.");
 }
 
 export function SchoenfeldBound(x: number): number {
+    void x;
     throw new Error("Client-side math is forbidden. Use experiment_engine.py.");
 }

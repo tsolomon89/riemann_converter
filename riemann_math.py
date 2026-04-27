@@ -3,6 +3,7 @@ import os
 import json
 import math
 import re
+from decimal import Decimal, InvalidOperation
 
 # -----------------------------------------------------------------------------
 # MASTER CONFIGURATION
@@ -11,24 +12,48 @@ mpmath.mp.dps = 50   # Default
 ZERO_COUNT = 20000  # Default number of zeros to compute
 PRECISION = 50    # Default Decimal places of precision
 PRIMES_FILE = "agent_context/primes.csv"
+PRIME_MIN_COUNT = 0
+PRIME_TARGET_COUNT = 0
 # Canonical artifact path (Next.js serves repo-root `public/`).
-# Legacy path is retained for one release as a non-authoritative mirror/fallback.
 OUTPUT_FILE = "public/experiments.json"
-LEGACY_OUTPUT_FILE = "dashboard/public/experiments.json"
-OUTPUT_FILE_READ_ORDER = (OUTPUT_FILE, LEGACY_OUTPUT_FILE)
 ZEROS_FILE = "agent_context/zeros.dat"
 TAU = 2 * mpmath.pi
 _PRIMES_CACHE = None
+_PRIMES_CACHE_INFO = {"bad_rows": 0}
 LAST_ZERO_SOURCE_INFO = {}
+LAST_PRIME_SOURCE_INFO = {}
 NUMERIC_TOKEN_RE = re.compile(r"^[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$")
+PRIME_TOKEN_RE = re.compile(r"^[+-]?\d[\d,]*(?:\.\d+)?$")
+_STATIC_MOBIUS_TERMS = ((1, 1), (2, -1), (3, -1), (5, -1), (6, 1), (7, -1))
+_MOBIUS_SCHEDULE_CACHE = {}
+_MOBIUS_SCHEDULE_CACHE_LIMIT = 50000
 
-def configure(dps=50, zero_count=20000):
+def configure(dps=50, zero_count=20000, prime_min_count=None, prime_target_count=None):
     global PRECISION, ZERO_COUNT, TAU
     mpmath.mp.dps = dps
     PRECISION = dps
     ZERO_COUNT = zero_count
     TAU = 2 * mpmath.pi # Recompute TAU with new precision
+    configure_prime_policy(prime_min_count=prime_min_count, prime_target_count=prime_target_count)
     print(f"  [Math Config] Precision: {dps} DPS, Zeros: {zero_count}")
+
+def _sanitize_nonnegative_int(value, default=0):
+    if value is None:
+        return int(default)
+    try:
+        out = int(value)
+    except Exception:
+        return int(default)
+    return max(0, out)
+
+def configure_prime_policy(prime_min_count=None, prime_target_count=None):
+    global PRIME_MIN_COUNT, PRIME_TARGET_COUNT
+    if prime_min_count is not None:
+        PRIME_MIN_COUNT = _sanitize_nonnegative_int(prime_min_count)
+    if prime_target_count is not None:
+        PRIME_TARGET_COUNT = _sanitize_nonnegative_int(prime_target_count)
+    if PRIME_TARGET_COUNT < PRIME_MIN_COUNT:
+        PRIME_TARGET_COUNT = PRIME_MIN_COUNT
 
 def _extract_numeric_token(line):
     parts = line.strip().split()
@@ -102,6 +127,86 @@ def _finalize_zero_source_info(info, gammas, line_count=0, decimal_hist=None):
 def get_last_zero_source_info():
     return dict(LAST_ZERO_SOURCE_INFO) if isinstance(LAST_ZERO_SOURCE_INFO, dict) else {}
 
+def _build_prime_source_info(max_val, target_count, min_required_count):
+    return {
+        "source_path": PRIMES_FILE,
+        "source_kind": "uninitialized",
+        "target_max_val": float(max_val),
+        "target_count": int(target_count),
+        "min_required_count": int(min_required_count),
+        "loaded_count": 0,
+        "max_prime": None,
+        "line_count": 0,
+        "bad_rows": 0,
+        "valid": True,
+        "errors": [],
+        "warnings": [],
+    }
+
+def get_last_prime_source_info():
+    return dict(LAST_PRIME_SOURCE_INFO) if isinstance(LAST_PRIME_SOURCE_INFO, dict) else {}
+
+def _parse_prime_token(token):
+    candidate = token.strip().strip('"').strip("'")
+    if not candidate:
+        return None
+    if not PRIME_TOKEN_RE.match(candidate):
+        return None
+    candidate = candidate.replace(",", "")
+    try:
+        dec = Decimal(candidate)
+    except (InvalidOperation, ValueError):
+        return None
+    if dec != dec.to_integral_value():
+        return None
+    val = int(dec)
+    if val < 2:
+        return None
+    return val
+
+def _parse_prime_line(line):
+    s = line.strip()
+    if not s or s.startswith("#"):
+        return None, False
+
+    # Most files are one value per line. As a fallback, try final whitespace token.
+    tokens = [s]
+    parts = s.split()
+    if parts and parts[-1] != s:
+        tokens.append(parts[-1])
+
+    for token in tokens:
+        parsed = _parse_prime_token(token)
+        if parsed is not None:
+            return parsed, True
+
+    return None, True
+
+def _sieve_primes(limit):
+    cap = max(3, int(limit))
+    sieve = bytearray(b"\x01") * cap
+    sieve[0:2] = b"\x00\x00"
+    root = int(cap ** 0.5) + 1
+    for i in range(2, root):
+        if sieve[i]:
+            start = i * i
+            step = i
+            sieve[start:cap:step] = b"\x00" * (((cap - 1 - start) // step) + 1)
+    return [i for i in range(2, cap) if sieve[i]]
+
+def _sieve_primes_with_floor(min_count, max_val):
+    target_count = max(0, int(min_count))
+    floor_val = max(2, int(math.ceil(float(max_val))))
+    limit = max(floor_val + 1024, 2048)
+
+    while True:
+        primes = _sieve_primes(limit)
+        if len(primes) >= target_count and primes and primes[-1] >= floor_val:
+            return primes
+        if limit > 200_000_000:
+            raise ValueError("Prime sieve limit exceeded while satisfying minimum count.")
+        limit = int(limit * 1.6) + 1024
+
 # -----------------------------------------------------------------------------
 # DATA LOADERS
 # -----------------------------------------------------------------------------
@@ -112,44 +217,118 @@ def get_primes(max_val):
     Used for the TruePi step function.
     Reads from agent_context/primes.csv.
     """
-    global _PRIMES_CACHE
+    global _PRIMES_CACHE, _PRIMES_CACHE_INFO, LAST_PRIME_SOURCE_INFO
     print(f"Loading primes (target max_val={max_val})...")
 
-    if _PRIMES_CACHE is not None and len(_PRIMES_CACHE) > 0:
+    target_max = max(2, int(math.ceil(float(max_val))))
+    min_required_count = _sanitize_nonnegative_int(PRIME_MIN_COUNT)
+    target_count = _sanitize_nonnegative_int(PRIME_TARGET_COUNT)
+    if target_count < min_required_count:
+        target_count = min_required_count
+
+    required_count = max(target_count, min_required_count)
+    info = _build_prime_source_info(target_max, target_count, min_required_count)
+
+    if (
+        _PRIMES_CACHE is not None
+        and len(_PRIMES_CACHE) > 0
+        and len(_PRIMES_CACHE) >= required_count
+        and _PRIMES_CACHE[-1] >= target_max
+    ):
+        info["source_kind"] = "memory_cache"
+        info["loaded_count"] = int(len(_PRIMES_CACHE))
+        info["max_prime"] = int(_PRIMES_CACHE[-1])
+        info["bad_rows"] = int((_PRIMES_CACHE_INFO or {}).get("bad_rows", 0))
+        LAST_PRIME_SOURCE_INFO = info
         print(f"  > Using cached prime file ({len(_PRIMES_CACHE)} primes, Max: {_PRIMES_CACHE[-1]}).")
         return _PRIMES_CACHE
 
     primes = []
     if os.path.exists(PRIMES_FILE):
         try:
-            with open(PRIMES_FILE, "r") as f:
+            info["source_kind"] = "prime_file"
+            bad_rows = 0
+            line_count = 0
+            with open(PRIMES_FILE, "r", encoding="utf-8", errors="replace") as f:
                 for line in f:
-                    line = line.strip()
-                    if not line:
+                    line_count += 1
+                    parsed, candidate = _parse_prime_line(line)
+                    if parsed is None:
+                        if candidate:
+                            bad_rows += 1
                         continue
-                    primes.append(int(line))
+
+                    if primes and parsed <= primes[-1]:
+                        # Keep a strictly increasing sequence.
+                        if parsed != primes[-1]:
+                            bad_rows += 1
+                        continue
+                    primes.append(parsed)
+
+                    if len(primes) >= required_count and primes[-1] >= target_max:
+                        break
+
+            info["line_count"] = int(line_count)
+            info["bad_rows"] = int(bad_rows)
             if primes:
-                _PRIMES_CACHE = primes
-                print(f"  > Loaded full prime file ({len(primes)} primes, Max: {primes[-1]}).")
-                return _PRIMES_CACHE
+                info["loaded_count"] = int(len(primes))
+                info["max_prime"] = int(primes[-1])
+                if bad_rows > 0:
+                    info["warnings"].append(
+                        f"Skipped {bad_rows} malformed/unsorted prime rows."
+                    )
+
+                if len(primes) < required_count:
+                    info["valid"] = False
+                    info["errors"].append(
+                        f"Prime file ended at {len(primes)} values; required >= {required_count}."
+                    )
+                elif primes[-1] < target_max:
+                    info["valid"] = False
+                    info["errors"].append(
+                        f"Prime file max {primes[-1]} below required max_val {target_max}."
+                    )
+
+                if info["valid"]:
+                    _PRIMES_CACHE = primes
+                    _PRIMES_CACHE_INFO = {"bad_rows": int(bad_rows)}
+                    LAST_PRIME_SOURCE_INFO = info
+                    print(
+                        f"  > Loaded prime file ({len(primes)} primes, Max: {primes[-1]}, "
+                        f"bad rows: {bad_rows})."
+                    )
+                    return _PRIMES_CACHE
         except Exception as e:
+            info["valid"] = False
+            info["errors"].append(f"Error reading prime file: {e}")
             print(f"  > Error reading primes file: {e}. Falling back to sieve.")
+    else:
+        info["warnings"].append("Prime file not found; using sieve fallback.")
 
-    # Fallback to Sieve if file missing/broken
-    print(f"  > Generating primes via sieve...")
-    limit = int(max_val) + 1000 # Buffer
-    sieve = [True] * limit
-    for i in range(2, int(limit**0.5) + 1):
-        if sieve[i]:
-            for j in range(i*i, limit, i):
-                sieve[j] = False
-    
-    primes = [i for i in range(2, limit) if sieve[i]]
-    _PRIMES_CACHE = primes
-    print(f"  > Generated {len(primes)} primes.")
-    return _PRIMES_CACHE
+    # Fallback to Sieve if file missing/broken/insufficient.
+    print("  > Generating primes via sieve...")
+    try:
+        sieve_count = max(required_count, 0)
+        primes = _sieve_primes_with_floor(sieve_count, target_max)
+        _PRIMES_CACHE = primes
+        _PRIMES_CACHE_INFO = {"bad_rows": int(info.get("bad_rows", 0))}
+        info["source_kind"] = "sieve_fallback"
+        info["loaded_count"] = int(len(primes))
+        info["max_prime"] = int(primes[-1]) if primes else None
+        LAST_PRIME_SOURCE_INFO = info
+        print(f"  > Generated {len(primes)} primes.")
+        if required_count > 0 and len(primes) < required_count:
+            raise ValueError(
+                f"Prime policy requires >= {required_count} primes; generated {len(primes)}."
+            )
+        return _PRIMES_CACHE
+    except Exception as sieve_exc:
+        info["valid"] = False
+        info["errors"].append(f"Sieve fallback failed: {sieve_exc}")
+        LAST_PRIME_SOURCE_INFO = info
+        raise
 
-def get_zeros(n, source="generated", allow_corrupt_cache=False):
+def get_zeros(n, source="generated", allow_corrupt_cache=False, progress_callback=None):
     """
     Returns first n imaginary parts of Riemann zeros (gammas).
     source: "generated" (default), or "file:<path>"
@@ -194,6 +373,13 @@ def get_zeros(n, source="generated", allow_corrupt_cache=False):
                     decimal_hist[d] = decimal_hist.get(d, 0) + 1
                     line_count += 1
                     count += 1
+                    if callable(progress_callback) and count % 1000 == 0:
+                        progress_callback(
+                            count,
+                            n,
+                            message="loading external zero source",
+                            payload={"source_kind": "external_file"},
+                        )
                     if count >= n:
                         break
             info = _finalize_zero_source_info(info, gammas, line_count=line_count, decimal_hist=decimal_hist)
@@ -205,6 +391,13 @@ def get_zeros(n, source="generated", allow_corrupt_cache=False):
                 return []
             LAST_ZERO_SOURCE_INFO = info
             print(f"  > Loaded {len(gammas)} zeros from {path}.")
+            if callable(progress_callback):
+                progress_callback(
+                    len(gammas),
+                    n,
+                    message="external zero load complete",
+                    payload={"source_kind": "external_file"},
+                )
             return gammas
         except Exception as e:
             print(f"  > Error reading zero file: {e}")
@@ -258,6 +451,13 @@ def get_zeros(n, source="generated", allow_corrupt_cache=False):
         print(f"  > Cache sufficient. Using first {n} zeros.")
         info["loaded_count"] = int(n)
         LAST_ZERO_SOURCE_INFO = info
+        if callable(progress_callback):
+            progress_callback(
+                n,
+                n,
+                message="zero cache already sufficient",
+                payload={"source_kind": "generated_cache"},
+            )
         return gammas[:n]
         
     # 3. Compute missing zeros
@@ -285,6 +485,13 @@ def get_zeros(n, source="generated", allow_corrupt_cache=False):
                 print(f"  > Warning: Failed to save batch: {e}")
                 
             print(f"  > {i}/{n} (Saved)", end='\r')
+            if callable(progress_callback):
+                progress_callback(
+                    i,
+                    n,
+                    message="computing additional zeros",
+                    payload={"source_kind": "generated_computed"},
+                )
             
     print("")
     if not decimal_hist:
@@ -299,6 +506,13 @@ def get_zeros(n, source="generated", allow_corrupt_cache=False):
         print("  > ERROR: Generated zero list integrity failed after computation.")
         return []
     LAST_ZERO_SOURCE_INFO = info
+    if callable(progress_callback):
+        progress_callback(
+            len(gammas),
+            n,
+            message="zero generation complete",
+            payload={"source_kind": info.get("source_kind")},
+        )
     return gammas
 
 # -----------------------------------------------------------------------------
@@ -336,6 +550,21 @@ def J_Wave(X, betas, gammas):
         
     return LogIntegral(X) - total_sum + TrivialZeros(X)
 
+def J_Wave_equal_beta(X, beta, gammas, ln_X=None):
+    """
+    Optimized J-wave path when every beta is identical.
+    """
+    if X < 2:
+        return mpmath.mpf(0)
+
+    beta_mp = mpmath.mpf(beta)
+    ln_val = mpmath.log(X) if ln_X is None else ln_X
+    pre_factor = (mpmath.power(X, beta_mp) / ln_val) * 2
+    sum_osc = mpmath.mpf(0)
+    for g in gammas:
+        sum_osc += mpmath.sin(g * ln_val) / g
+    return LogIntegral(X) - (pre_factor * sum_osc) + TrivialZeros(X)
+
 def mobius(n):
     """
     Computes the Mobius function mu(n).
@@ -366,45 +595,80 @@ def mobius(n):
         
     return -1 if p % 2 != 0 else 1
 
-def MobiusPi(X, betas, gammas, use_dynamic=True):
+def _schedule_cache_key(X, use_dynamic, max_dynamic_m):
+    x_key = mpmath.nstr(X, n=min(40, max(20, int(mpmath.mp.dps // 2))))
+    return (x_key, bool(use_dynamic), int(max_dynamic_m))
+
+def get_mobius_schedule(X, use_dynamic=True, max_dynamic_m=1000):
     """
-    Applies Möbius Inversion.
-    If use_dynamic is True, it generates terms until X^(1/k) < 2.
-    If False, it uses the hardcoded fast set (valid for X < 50).
+    Return a reusable M?bius schedule of (m, mu, root_X) tuples for X.
     """
-    if X < 2: return mpmath.mpf(0)
-    
+    if X < 2:
+        return tuple()
+
+    key = _schedule_cache_key(X, use_dynamic, max_dynamic_m)
+    cached = _MOBIUS_SCHEDULE_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    schedule = []
     if not use_dynamic:
-        # Fast path for small X (Exp 1A, Exp 3)
-        mobius_terms = {1: 1, 2: -1, 3: -1, 5: -1, 6: 1, 7: -1}
-        pi_reconstructed = mpmath.mpf(0)
-        
-        for m, mu in mobius_terms.items():
-            root_X = mpmath.power(X, mpmath.mpf(1)/m)
-            if root_X < 2: break 
-                
-            J_val = J_Wave(root_X, betas, gammas)
-            pi_reconstructed += (mpmath.mpf(mu) / m) * J_val
-            
-        return pi_reconstructed
+        for m, mu in _STATIC_MOBIUS_TERMS:
+            root_X = mpmath.power(X, mpmath.mpf(1) / m)
+            if root_X < 2:
+                break
+            schedule.append((int(m), int(mu), root_X))
     else:
-        # Dynamic path for arbitrary X (Exp 1B, Exp 2, etc)
-        pi_reconstructed = mpmath.mpf(0)
         m = 1
         while True:
-            root_X = mpmath.power(X, mpmath.mpf(1)/m)
-            if root_X < 2: break
-            
+            root_X = mpmath.power(X, mpmath.mpf(1) / m)
+            if root_X < 2:
+                break
             mu = mobius(m)
             if mu != 0:
-                J_val = J_Wave(root_X, betas, gammas)
-                pi_reconstructed += (mpmath.mpf(mu) / m) * J_val
-            
+                schedule.append((int(m), int(mu), root_X))
             m += 1
-            # Safety break for sanity, though X^(1/m) < 2 should trigger first
-            if m > 1000: break
-            
-        return pi_reconstructed
+            if m > int(max_dynamic_m):
+                break
+
+    out = tuple(schedule)
+    _MOBIUS_SCHEDULE_CACHE[key] = out
+    if len(_MOBIUS_SCHEDULE_CACHE) > _MOBIUS_SCHEDULE_CACHE_LIMIT:
+        _MOBIUS_SCHEDULE_CACHE.pop(next(iter(_MOBIUS_SCHEDULE_CACHE)))
+    return out
+
+def MobiusPi_equal_beta(X, beta, gammas, use_dynamic=True, schedule=None, max_dynamic_m=1000):
+    """
+    M?bius inversion optimized for the common equal-beta case.
+    """
+    if X < 2:
+        return mpmath.mpf(0)
+
+    sched = schedule if schedule is not None else get_mobius_schedule(
+        X, use_dynamic=use_dynamic, max_dynamic_m=max_dynamic_m
+    )
+    pi_reconstructed = mpmath.mpf(0)
+    beta_mp = mpmath.mpf(beta)
+    for m, mu, root_X in sched:
+        J_val = J_Wave_equal_beta(root_X, beta_mp, gammas)
+        pi_reconstructed += (mpmath.mpf(mu) / m) * J_val
+    return pi_reconstructed
+
+def MobiusPi(X, betas, gammas, use_dynamic=True, schedule=None, max_dynamic_m=1000):
+    """
+    Applies M?bius Inversion.
+    """
+    if X < 2:
+        return mpmath.mpf(0)
+
+    sched = schedule if schedule is not None else get_mobius_schedule(
+        X, use_dynamic=use_dynamic, max_dynamic_m=max_dynamic_m
+    )
+    pi_reconstructed = mpmath.mpf(0)
+    for m, mu, root_X in sched:
+        J_val = J_Wave(root_X, betas, gammas)
+        pi_reconstructed += (mpmath.mpf(mu) / m) * J_val
+    return pi_reconstructed
 
 # -----------------------------------------------------------------------------
 # SCALE-INVARIANT HELPER FUNCTIONS (Exp 4, 5, 6)
@@ -479,16 +743,12 @@ def find_nearest_zero(target, zeros):
 # -----------------------------------------------------------------------------
 
 def load_or_init_results():
-    for path in OUTPUT_FILE_READ_ORDER:
-        if os.path.exists(path):
-            try:
-                with open(path, "r") as f:
-                    data = json.load(f)
-                if path != OUTPUT_FILE:
-                    print(f"  [WARN] Loaded legacy artifact path: {path}")
-                return data
-            except Exception as exc:
-                print(f"  [WARN] Failed reading {path}: {exc}")
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as exc:
+            print(f"  [WARN] Failed reading {OUTPUT_FILE}: {exc}")
     return {
         "meta": {
             "dps": int(mpmath.mp.dps),
@@ -506,6 +766,7 @@ def load_or_init_results():
         "experiment_6": {},
         "experiment_7": {},
         "experiment_8": {},
+        "experiment_9": {},
     }
 
 def save_results(data):
@@ -548,17 +809,10 @@ def save_results(data):
 
     try:
         clean_data = recursive_float_cast(data)
-        with open(OUTPUT_FILE, "w") as f:
+        tmp_output = f"{OUTPUT_FILE}.tmp"
+        with open(tmp_output, "w", encoding="utf-8") as f:
             json.dump(clean_data, f)
-
-        # One-release compatibility mirror. Canonical readers must treat
-        # `public/experiments.json` as the source of truth.
-        try:
-            os.makedirs(os.path.dirname(LEGACY_OUTPUT_FILE), exist_ok=True)
-            with open(LEGACY_OUTPUT_FILE, "w") as f:
-                json.dump(clean_data, f)
-        except Exception as legacy_exc:
-            print(f"[WARN] Could not mirror artifact to legacy path: {legacy_exc}")
+        os.replace(tmp_output, OUTPUT_FILE)
     except Exception as e:
         print(f"CRITICAL ERROR SAVING JSON: {e}")
 

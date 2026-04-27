@@ -44,7 +44,7 @@ export default function Exp5Chart({ data }: Props) {
         </LineChart>
       </ResponsiveContainer>
        <div className="mt-2 text-xs text-gray-400 text-center">
-        Values &lt; 0.1 indicate "Spectral Locking" (Zeros map to Zeros). 
+        Values &lt; 0.1 indicate &quot;Spectral Locking&quot; (Zeros map to Zeros). 
         Values around 0.5 indicate random distribution.
       </div>
     </div>

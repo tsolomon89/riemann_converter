@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -10,8 +9,22 @@ import {
   ComposedChart
 } from "recharts";
 
+type ResearchChartRow = Record<string, number | string | null | undefined>;
+
+type TooltipEntry = {
+  name?: string;
+  value?: number | string;
+  color?: string;
+};
+
+type ChartTooltipProps = {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: number | string;
+};
+
 interface ResearchChartProps {
-  data: any[]; // Expects merged data
+  data: ResearchChartRow[]; // Expects merged data
   activeK: number[]; // List of active Ks
   scaleFactors: Record<number, string>; // Map of K to scale factor string
   showTruePi?: boolean; 
@@ -28,7 +41,7 @@ const K_COLORS: Record<number, string> = {
   2: "#8b5cf6",  // Violet
 };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
   if (active && payload && payload.length) {
     const labelNum = Number(label);
     const labelStr = labelNum > 1000 ? labelNum.toExponential(4) : labelNum.toFixed(4);
@@ -40,8 +53,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             <span className="font-mono text-emerald-400 text-sm tracking-tight">{labelStr}</span>
         </div>
         <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-          {payload.map((entry: any) => (
-            <div key={entry.name} className="flex justify-between items-center gap-4">
+          {payload.map((entry) => (
+            <div key={String(entry.name)} className="flex justify-between items-center gap-4">
               <span className="font-serif text-gray-300 italic" style={{ color: entry.color }}>{entry.name}:</span>
               <span className="font-mono font-bold text-white">
                 {Number(entry.value).toFixed(4)}
@@ -105,6 +118,20 @@ export default function RiemannResearchChart({
             domain={['auto', 'auto']}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#ffffff20' }} />
+
+          {showLi && (
+            <Line
+              type="monotone"
+              dataKey="Li"
+              stroke="#94a3b8"
+              strokeWidth={1}
+              strokeDasharray="4 4"
+              dot={false}
+              name="Li(x)"
+              isAnimationActive={false}
+              connectNulls={true}
+            />
+          )}
 
           {/* Reconstruction Lines */}
           {activeK.flatMap(k => {

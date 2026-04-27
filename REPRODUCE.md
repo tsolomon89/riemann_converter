@@ -183,10 +183,9 @@ Do not use these fields as active research semantics.
 
 ### 7.3 Legacy paths
 
-Older documentation referenced `dashboard/public/...` and
-`dashboard/app/api/...`. The canonical paths are:
+Older documentation referenced a nested dashboard workspace. That workspace has
+been removed; the canonical paths are:
 
 - `public/experiments.json`
 - `public/verdict_history.jsonl`
 - `app/api/rerun/route.ts`
-

@@ -15,8 +15,12 @@ import type {
     ManifestPayload,
     OpenGapsPayload,
     ObligationsPayload,
+    ProgramDocsPayload,
     ResearchEnvelope,
     RunLogsPayload,
+    RunEventsPayload,
+    RunCancelPayload,
+    RunResumePayload,
     RunStartPayload,
     RunStatusPayload,
     ScaleComparisonItem,
@@ -24,10 +28,21 @@ import type {
     StatusDelta,
     TheoremCandidatePayload,
 } from "./research-types";
-import { readArtifact, readHistory, resolveWitnessMapStatus } from "./research-service";
-import { getRunLogs, getRunStatus, startCanonicalRun } from "./run-manager";
+import { getDeploymentCapabilities } from "./deployment-policy";
+import { readArtifact, readHistory, readProgramDocsSections, resolveWitnessMapStatus } from "./research-service";
+import {
+    cancelRun,
+    getRunEvents,
+    getRunLogs,
+    getRunStatus,
+    resumeCanonicalRun,
+    startCanonicalRun,
+    startConfiguredRun,
+    type CustomRunConfig,
+} from "./run-manager";
 
 const EXP_SUMMARY_TO_DATA: Record<string, keyof ExperimentsData> = {
+    EXP_0: "experiment_0",
     EXP_1: "experiment_1",
     EXP_1B: "experiment_1b",
     EXP_1C: "experiment_1c",
@@ -39,7 +54,51 @@ const EXP_SUMMARY_TO_DATA: Record<string, keyof ExperimentsData> = {
     EXP_6: "experiment_6",
     EXP_7: "experiment_7",
     EXP_8: "experiment_8",
+    EXP_9: "experiment_9",
+    EXP_10: "experiment_10",
 };
+
+const EXP_ALIAS_TO_ID: Record<string, string> = {
+    "ZETA-0": "EXP_0",
+    POLAR: "EXP_0",
+    "POLAR-TRACE": "EXP_0",
+    "TRANS-1": "EXP_10",
+    TRANSPORT: "EXP_10",
+    "ZETA-TRANSPORT": "EXP_10",
+    "CORE-1": "EXP_1",
+    HARMONIC: "EXP_1",
+    "HARMONIC-CONVERTER": "EXP_1",
+    CONVERTER: "EXP_1",
+    "CTRL-1": "EXP_1B",
+    "OPERATOR-CONTROL": "EXP_1B",
+    "OPERATOR-SCALING-CONTROL": "EXP_1B",
+    "NOTE-1": "EXP_1C",
+    "ZERO-REUSE": "EXP_1C",
+    "ZERO-REUSE-NOTE": "EXP_1C",
+    "P2-1": "EXP_2",
+    "ROGUE-CENTRIFUGE": "EXP_2",
+    "P2-2": "EXP_2B",
+    "ROGUE-ISOLATION": "EXP_2B",
+    "CTRL-2": "EXP_3",
+    "BETA-CONTROL": "EXP_3",
+    "BETA-COUNTERFACTUAL": "EXP_3",
+    "PATH-1": "EXP_4",
+    "TRANSLATION-DILATION": "EXP_4",
+    "PATH-2": "EXP_5",
+    "ZERO-CORRESPONDENCE": "EXP_5",
+    "VAL-1": "EXP_6",
+    "BETA-STABILITY": "EXP_6",
+    "BETA-VALIDATION": "EXP_6",
+    "P2-3": "EXP_7",
+    "CALIBRATED-AMPLIFICATION": "EXP_7",
+    "REG-1": "EXP_8",
+    "SCALED-ZETA-REGRESSION": "EXP_8",
+    "DEMO-1": "EXP_9",
+    "BOUNDED-VIEW": "EXP_9",
+};
+
+const normalizeAliasKey = (value: string): string =>
+    value.trim().toUpperCase().replace(/_/g, "-").replace(/\s+/g, "-");
 
 export class ApiError extends Error {
     status: number;
@@ -53,6 +112,8 @@ const normalizeExperimentId = (value: string): string => {
     const raw = value.trim().toUpperCase();
     if (/^EXP_[0-9]+[A-Z]?$/.test(raw)) return raw;
     if (/^EXP[0-9]+[A-Z]?$/.test(raw)) return raw.replace(/^EXP/, "EXP_");
+    const alias = EXP_ALIAS_TO_ID[normalizeAliasKey(value)];
+    if (alias) return alias;
     throw new ApiError(400, `Invalid experiment id: ${value}`);
 };
 
@@ -73,6 +134,45 @@ const toInt = (value: string | null, fallback: number): number => {
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === "object" && value !== null;
+
+const optionalString = (
+    input: Record<string, unknown>,
+    key: string,
+    fallback?: string,
+): string | undefined => {
+    const value = input[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    return fallback;
+};
+
+const optionalNumber = (
+    input: Record<string, unknown>,
+    key: string,
+): number | undefined => {
+    const value = input[key];
+    if (value === undefined || value === null || value === "") return undefined;
+    const num = typeof value === "number" ? value : Number(value);
+    if (!Number.isFinite(num)) throw new ApiError(400, `Invalid numeric custom run value: ${key}`);
+    return num;
+};
+
+const parseCustomRunConfig = (value: unknown): CustomRunConfig => {
+    if (!isObject(value)) throw new ApiError(400, "Missing custom run configuration.");
+    return {
+        run: optionalString(value, "run", "all") ?? "all",
+        zero_source: optionalString(value, "zero_source", "generated"),
+        zero_count: optionalNumber(value, "zero_count"),
+        dps: optionalNumber(value, "dps"),
+        resolution: optionalNumber(value, "resolution"),
+        x_start: optionalNumber(value, "x_start"),
+        x_end: optionalNumber(value, "x_end"),
+        beta_offset: optionalNumber(value, "beta_offset"),
+        k_power: optionalNumber(value, "k_power"),
+        workers: optionalNumber(value, "workers"),
+        prime_min_count: optionalNumber(value, "prime_min_count"),
+        prime_target_count: optionalNumber(value, "prime_target_count"),
+    };
+};
 
 const deepClone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
@@ -100,12 +200,14 @@ const buildEnvelope = <T>(
     provisionalFields: string[] = [],
 ): ResearchEnvelope<T> => {
     const status = resolveWitnessMapStatus(artifact);
+    const capabilities = getDeploymentCapabilities();
     return {
         authority: {
             witness_map_status: status,
             authoritative: status === "SIGNED_OFF",
             provisional_fields: status === "SIGNED_OFF" ? [] : provisionalFields,
         },
+        capabilities,
         data,
     };
 };
@@ -123,6 +225,14 @@ const getHistorySafe = (): VerdictHistoryEntry[] => {
         return readHistory();
     } catch {
         return [];
+    }
+};
+
+const getArtifactIfAvailable = (): ExperimentsData | undefined => {
+    try {
+        return readArtifact();
+    } catch {
+        return undefined;
     }
 };
 
@@ -196,12 +306,140 @@ const buildSeriesPoints = (
     expId: string,
     variant: string | null,
     k: string | null,
+    base: string | null = null,
 ): Record<string, unknown>[] => {
     const dataKey = EXP_SUMMARY_TO_DATA[expId];
     const blob = artifact[dataKey];
     if (blob === undefined || blob === null) throw new ApiError(404, `No data for ${expId}`);
 
-    if (expId === "EXP_1" || expId === "EXP_1C") {
+    if (expId === "EXP_0") {
+        const picked = variant ?? "polar";
+        if (!["polar", "zero_markers", "dual", "dual-uncompressed", "dual-compressed"].includes(picked)) {
+            throw new ApiError(400, `variant must be polar|zero_markers|dual|dual-uncompressed|dual-compressed for ${expId}`);
+        }
+        const exp0 = blob as NonNullable<ExperimentsData["experiment_0"]>;
+        if (picked === "polar") return asPoints(exp0.polar_trace?.samples ?? []);
+        if (picked === "zero_markers") return asPoints(exp0.polar_trace?.zero_markers ?? []);
+
+        const uncompressed = asPoints(exp0.dual_window?.uncompressed ?? [])
+            .map((row) => ({ branch: "uncompressed", ...row }));
+        const compressed = asPoints(exp0.dual_window?.compressed ?? [])
+            .map((row) => ({ branch: "compressed", ...row }));
+        if (picked === "dual-uncompressed") return uncompressed;
+        if (picked === "dual-compressed") return compressed;
+        return [...uncompressed, ...compressed];
+    }
+
+    if (expId === "EXP_10") {
+        const picked = variant ?? "max-by-k";
+        if (!["max-by-k", "residuals"].includes(picked)) {
+            throw new ApiError(400, `variant must be max-by-k|residuals for ${expId}`);
+        }
+        const exp10 = blob as NonNullable<ExperimentsData["experiment_10"]>;
+        const bases = exp10.bases ?? {};
+
+        if (picked === "max-by-k") {
+            return Object.entries(bases).flatMap(([baseName, perK]) =>
+                Object.entries(perK ?? {}).flatMap(([kValue, stats]) => {
+                    if (k && k !== kValue) return [];
+                    const summary = {
+                        count: stats.count,
+                        max: stats.max,
+                        mean: stats.mean,
+                        median: stats.median,
+                        p95: stats.p95,
+                        scale: stats.scale,
+                    };
+                    return [{ base: baseName, k: kValue, ...summary }];
+                }),
+            );
+        }
+
+        const baseNames = Object.keys(bases);
+        const selectedBase = base ?? exp10.config?.bases?.[0] ?? baseNames[0];
+        if (!selectedBase || !(selectedBase in bases)) {
+            throw new ApiError(400, `base=${selectedBase ?? ""} is not available for ${expId}/residuals`);
+        }
+        const perK = bases[selectedBase] ?? {};
+        const kNames = Object.keys(perK);
+        const configuredK = exp10.config?.k_values;
+        const fallbackK = configuredK && configuredK.length > 0
+            ? String(configuredK[configuredK.length - 1])
+            : kNames[kNames.length - 1];
+        const selectedK = k ?? fallbackK;
+        if (!selectedK || !(selectedK in perK)) {
+            throw new ApiError(400, `k=${selectedK ?? ""} is not available for ${expId}/residuals`);
+        }
+        const stats = perK[selectedK];
+        const residuals = Array.isArray(stats.raw_residuals) ? stats.raw_residuals : [];
+        const t0 = exp10.config?.T0 ?? 0;
+        const length = exp10.config?.L ?? 0;
+        const count = residuals.length;
+        const step = count > 1 ? length / (count - 1) : 0;
+        return residuals.map((residual, index) => ({
+            base: selectedBase,
+            k: selectedK,
+            index,
+            t: t0 + index * step,
+            residual,
+        }));
+    }
+
+    if (expId === "EXP_1") {
+        const picked = variant ?? "main";
+        if (!["main", "harmonic", "mobius", "stress", "schoenfeld"].includes(picked)) {
+            throw new ApiError(400, `variant must be main|harmonic|mobius|stress|schoenfeld for ${expId}`);
+        }
+        const exp1 = blob as ExperimentsData["experiment_1"];
+        if (picked === "schoenfeld") {
+            const matrix = exp1.support?.schoenfeld_bound?.by_k;
+            if (!matrix) {
+                if (k) throw new ApiError(400, `k=${k} is not available for ${expId}/${picked}`);
+                return [];
+            }
+            if (k) {
+                if (!matrix[k]) throw new ApiError(400, `k=${k} is not available for ${expId}/${picked}`);
+                return asPoints(matrix[k]).map((row) => ({ k, ...row }));
+            }
+            return Object.entries(matrix).flatMap(([kValue, rows]) =>
+                asPoints(rows).map((row) => ({ k: kValue, ...row })),
+            );
+        }
+        const matrix =
+            picked === "stress"
+                ? exp1.support?.scaled_coordinate_stress?.by_k
+                : exp1.main?.by_k;
+        if (!matrix) {
+            if (k) throw new ApiError(400, `k=${k} is not available for ${expId}/${picked}`);
+            return [];
+        }
+        const rowsFor = (kValue: string, rows: unknown[]) =>
+            asPoints(rows).map((row) => {
+                if (picked === "main" || picked === "stress") return { k: kValue, ...row };
+                const filtered: Record<string, unknown> = { k: kValue };
+                const prefix = picked === "harmonic" ? "harmonic_N_" : "mobius_N_";
+                for (const [key, value] of Object.entries(row)) {
+                    if (
+                        key === "X" ||
+                        key === "x_eff" ||
+                        key === "tau_power" ||
+                        key === "y_true" ||
+                        key === "li" ||
+                        key.startsWith(prefix)
+                    ) {
+                        filtered[key] = value;
+                    }
+                }
+                return filtered;
+            });
+        if (k) {
+            if (!matrix[k]) throw new ApiError(400, `k=${k} is not available for ${expId}/${picked}`);
+            return rowsFor(k, matrix[k] as unknown[]);
+        }
+        return Object.entries(matrix).flatMap(([kValue, rows]) => rowsFor(kValue, rows as unknown[]));
+    }
+
+    if (expId === "EXP_1C") {
         const matrix = blob as Record<string, unknown[]>;
         if (k) {
             if (!matrix[k]) throw new ApiError(400, `k=${k} is not available for ${expId}`);
@@ -271,6 +509,19 @@ export const getManifestEnvelope = (): ResearchEnvelope<ManifestPayload> => {
     const obligations = artifact.summary?.proof_program?.obligations ?? [];
     const openGaps = artifact.summary?.proof_program?.open_gaps ?? [];
     const experimentIds = Object.keys(artifact.summary?.experiments ?? {});
+    const classification = artifact.meta?.experiment_classification ?? {};
+    const experiments = Object.entries(classification)
+        .map(([stableId, entry]) => ({ stable_id: stableId, ...entry }))
+        .sort((a, b) => (a.display_id ?? a.stable_id ?? "").localeCompare(b.display_id ?? b.stable_id ?? ""));
+    const experimentAliases = experiments.reduce<Record<string, string>>((acc, entry) => {
+        const stableId = entry.stable_id;
+        if (!stableId) return acc;
+        if (entry.display_id) acc[entry.display_id] = stableId;
+        for (const alias of entry.cli_aliases ?? []) {
+            acc[alias] = stableId;
+        }
+        return acc;
+    }, {});
 
     const payload: ManifestPayload = {
         project: "riemann_converter",
@@ -279,10 +530,25 @@ export const getManifestEnvelope = (): ResearchEnvelope<ManifestPayload> => {
         obligation_ids: obligations.map((obl) => obl.id),
         open_gap_ids: openGaps.map((gap) => gap.id),
         experiment_ids: experimentIds,
+        experiments,
+        experiment_aliases: experimentAliases,
         zero_source_info: artifact.meta?.zero_source_info,
         last_run_timestamp: history.length > 0 ? history[history.length - 1].timestamp : undefined,
     };
     return buildEnvelope(artifact, payload);
+};
+
+export const getProgramDocsEnvelope = (): ResearchEnvelope<ProgramDocsPayload> => {
+    let artifact: ExperimentsData | undefined;
+    try {
+        artifact = getArtifactOrThrow();
+    } catch {
+        artifact = undefined;
+    }
+    return buildEnvelope(artifact, {
+        refreshed_at: new Date().toISOString(),
+        sections: readProgramDocsSections(),
+    });
 };
 
 export const getTheoremCandidateEnvelope = (): ResearchEnvelope<TheoremCandidatePayload> => {
@@ -299,7 +565,13 @@ export const getObligationsEnvelope = (): ResearchEnvelope<ObligationsPayload> =
     return buildEnvelope(
         artifact,
         payload,
-        ["data.obligations[].status", "data.obligations[].witnesses", "data.obligations[].notes"],
+        [
+            "data.obligations[].status",
+            "data.obligations[].witnesses",
+            "data.obligations[].notes",
+            "data.obligations[].blocked_by",
+            "data.obligations[].depends_on",
+        ],
     );
 };
 
@@ -311,7 +583,13 @@ export const getObligationEnvelope = (id: string): ResearchEnvelope<ProofObligat
     return buildEnvelope(
         artifact,
         obligation,
-        ["data.status", "data.witnesses", "data.notes"],
+        [
+            "data.status",
+            "data.witnesses",
+            "data.notes",
+            "data.blocked_by",
+            "data.depends_on",
+        ],
     );
 };
 
@@ -361,16 +639,18 @@ export const getSeriesEnvelope = (
     const verdict = getSummaryExperiment(artifact, expId);
     const variant = query.get("variant");
     const k = query.get("k");
+    const base = query.get("base");
     const fields = toStringArray(query.get("fields"));
     const downsample = Math.max(1, toInt(query.get("downsample"), 500));
 
-    const pointsRaw = buildSeriesPoints(artifact, expId, variant, k);
+    const pointsRaw = buildSeriesPoints(artifact, expId, variant, k, base);
     const pointsFiltered = applyFieldFilter(pointsRaw, fields);
     const sampled = downsamplePoints(pointsFiltered, downsample);
     const payload: SeriesPayload = {
         experiment_id: expId,
         variant: variant ?? undefined,
         k: k ?? undefined,
+        base: base ?? undefined,
         fields,
         downsample,
         total_points: pointsRaw.length,
@@ -472,7 +752,7 @@ export const compareVerdictsEnvelope = (query: URLSearchParams): ResearchEnvelop
 };
 
 export const startRunEnvelope = (mode: CanonicalRunMode): ResearchEnvelope<RunStartPayload> => {
-    const artifact = getArtifactOrThrow();
+    const artifact = getArtifactIfAvailable();
     const started = startCanonicalRun(mode, process.cwd());
     if ("status" in started) throw new ApiError(started.status, started.error);
     const run = started.run;
@@ -484,8 +764,22 @@ export const startRunEnvelope = (mode: CanonicalRunMode): ResearchEnvelope<RunSt
     });
 };
 
+export const startCustomRunEnvelope = (input: unknown): ResearchEnvelope<RunStartPayload> => {
+    const artifact = getArtifactIfAvailable();
+    const config = parseCustomRunConfig(input);
+    const started = startConfiguredRun(config, process.cwd());
+    if ("status" in started) throw new ApiError(started.status, started.error);
+    const run = started.run;
+    return buildEnvelope(artifact, {
+        run_id: run.run_id,
+        mode: run.mode ?? `custom:${config.run}`,
+        status: run.status,
+        started_at: run.started_at,
+    });
+};
+
 export const getRunStatusEnvelope = (runId: string | null): ResearchEnvelope<RunStatusPayload> => {
-    const artifact = getArtifactOrThrow();
+    const artifact = getArtifactIfAvailable();
     const run = getRunStatus(runId ?? undefined);
     if (!run) {
         return buildEnvelope(artifact, { status: "IDLE" });
@@ -494,12 +788,38 @@ export const getRunStatusEnvelope = (runId: string | null): ResearchEnvelope<Run
 };
 
 export const getRunLogsEnvelope = (runId: string | null, from: string | null): ResearchEnvelope<RunLogsPayload> => {
-    const artifact = getArtifactOrThrow();
+    const artifact = getArtifactIfAvailable();
     if (!runId) throw new ApiError(400, "Missing required query: run_id");
     const parsedFrom = toInt(from, 0);
     const logs = getRunLogs(runId, parsedFrom);
     if (!logs) throw new ApiError(404, "Run not found.");
     return buildEnvelope(artifact, logs);
+};
+
+export const getRunEventsEnvelope = (
+    runId: string | null,
+    from: string | null,
+): ResearchEnvelope<RunEventsPayload> => {
+    const artifact = getArtifactIfAvailable();
+    if (!runId) throw new ApiError(400, "Missing required query: run_id");
+    const parsedFrom = toInt(from, 0);
+    const events = getRunEvents(runId, parsedFrom);
+    if (!events) throw new ApiError(404, "Run not found.");
+    return buildEnvelope(artifact, events);
+};
+
+export const cancelRunEnvelope = (runId: string | null): ResearchEnvelope<RunCancelPayload> => {
+    const artifact = getArtifactIfAvailable();
+    const cancelled = cancelRun(runId ?? undefined);
+    if ("status" in cancelled) throw new ApiError(cancelled.status, cancelled.error);
+    return buildEnvelope(artifact, cancelled.run);
+};
+
+export const resumeRunEnvelope = (mode: CanonicalRunMode): ResearchEnvelope<RunResumePayload> => {
+    const artifact = getArtifactIfAvailable();
+    const resumed = resumeCanonicalRun(mode, process.cwd());
+    if ("status" in resumed) throw new ApiError(resumed.status, resumed.error);
+    return buildEnvelope(artifact, resumed.run);
 };
 
 export const parseCanonicalMode = (value: unknown): CanonicalRunMode => {
@@ -510,6 +830,7 @@ export const parseCanonicalMode = (value: unknown): CanonicalRunMode => {
         "standard",
         "authoritative",
         "overkill",
+        "overkill_full",
     ];
     if (!allowed.includes(mode as CanonicalRunMode)) {
         throw new ApiError(400, `Invalid mode: ${String(value)}`);

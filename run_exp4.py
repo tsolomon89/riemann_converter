@@ -1,10 +1,10 @@
 import mpmath
-from riemann_math import get_primes, get_zeros, TruePi, LogIntegral, J_Wave, MobiusPi, mean_spacing, find_nearest_zero, load_or_init_results, save_results, ZERO_COUNT, TAU
+from riemann_math import get_primes, get_zeros, TruePi, LogIntegral, J_Wave, MobiusPi, MobiusPi_equal_beta, mean_spacing, find_nearest_zero, load_or_init_results, save_results, ZERO_COUNT, TAU
 import math
 import time
 
 
-def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100):
+def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100, progress_callback=None, **kwargs):
     """
     Experiment 4: Log-Translation vs Log-Dilation Disambiguation.
     Distinguishes whether 'scaling works' because of coordinate invariance (translation)
@@ -35,13 +35,20 @@ def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100):
     def get_norm_residual(x, betas, gammas):
         # R(x) = (Pi_rec(x) - Li(x)) / (sqrt(x)/ln(x))
         # This isolates the oscillatory component O(1)
-        val_rec = MobiusPi(x, betas, gammas, use_dynamic=False)
+        if betas and all(b == betas[0] for b in betas):
+            val_rec = MobiusPi_equal_beta(x, betas[0], gammas, use_dynamic=False)
+        else:
+            val_rec = MobiusPi(x, betas, gammas, use_dynamic=False)
         val_li = LogIntegral(x)
         diff = val_rec - val_li
         
         # Normalization factor
         denom = mpmath.sqrt(x) / mpmath.log(x)
         return diff / denom
+
+    optimization_steps_per_k = 12 + 12 + 1 + 8 + 1
+    total_steps = len(k_values) * ((points + 1) + optimization_steps_per_k)
+    processed_steps = 0
 
     for k in k_values:
         print(f"  > Processing Scale K={k}...", end='\r')
@@ -65,6 +72,14 @@ def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100):
             points_x.append(x)
             res = get_norm_residual(x, betas_clean, gammas_scaled)
             target_residuals.append(res)
+            processed_steps += 1
+            if callable(progress_callback) and (processed_steps % 10 == 0 or processed_steps == total_steps):
+                progress_callback(
+                    processed_steps,
+                    total_steps,
+                    message="exp4 translation-vs-dilation points",
+                    payload={"k": k, "point": i},
+                )
             
         # Optimization: Use fewer points for the grid search to speed up 10x
         # We only need full resolution for the final RMSE check.
@@ -101,6 +116,14 @@ def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100):
             if rmse < best_rmse_trans:
                 best_rmse_trans = rmse
                 best_delta = d
+            processed_steps += 1
+            if callable(progress_callback):
+                progress_callback(
+                    processed_steps,
+                    total_steps,
+                    message="exp4 translation optimization sweep",
+                    payload={"k": k, "stage": "translation_coarse"},
+                )
                 
         # Refinement (Golden Section or simple local refine)
         # Just doing a finer grid local to best
@@ -117,6 +140,14 @@ def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100):
              if rmse < best_rmse_trans:
                  best_rmse_trans = rmse
                  best_delta = d
+             processed_steps += 1
+             if callable(progress_callback):
+                 progress_callback(
+                     processed_steps,
+                     total_steps,
+                     message="exp4 translation optimization refine",
+                     payload={"k": k, "stage": "translation_refine"},
+                 )
 
         # FINAL COMPLETE CHECK with all points
         # print("    > Final Translation RMSE Check...")
@@ -126,6 +157,14 @@ def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100):
              br = get_norm_residual(x_shifted, betas_clean, gammas_clean)
              final_rmse_trans += (tr - br)**2
         best_rmse_trans = mpmath.sqrt(final_rmse_trans / len(points_x))
+        processed_steps += 1
+        if callable(progress_callback):
+            progress_callback(
+                processed_steps,
+                total_steps,
+                message="exp4 translation full-resolution check",
+                payload={"k": k, "stage": "translation_final"},
+            )
 
         # 3. Dilation Model Optimization
         # Model: Base zeros, at Coordinate x' = x ^ alpha
@@ -161,6 +200,14 @@ def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100):
                 if rmse < best_rmse_dil:
                     best_rmse_dil = rmse
                     best_alpha = a
+            processed_steps += 1
+            if callable(progress_callback):
+                progress_callback(
+                    processed_steps,
+                    total_steps,
+                    message="exp4 dilation optimization sweep",
+                    payload={"k": k, "stage": "dilation_coarse"},
+                )
 
         # FINAL COMPLETE CHECK with all points for Dilation
         final_rmse_dil = 0
@@ -179,6 +226,14 @@ def run_experiment_4(zeros, resolution=80, x_start=10, x_end=100):
             best_rmse_dil = mpmath.sqrt(final_rmse_dil / final_count_ok)
         else:
             best_rmse_dil = mpmath.inf
+        processed_steps += 1
+        if callable(progress_callback):
+            progress_callback(
+                processed_steps,
+                total_steps,
+                message="exp4 dilation full-resolution check",
+                payload={"k": k, "stage": "dilation_final"},
+            )
 
         # 4. Compare
         if math.isinf(float(best_rmse_trans)): best_rmse_trans = None

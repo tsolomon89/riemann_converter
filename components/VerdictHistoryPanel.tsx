@@ -5,7 +5,15 @@ import { History, ArrowRight, AlertOctagon } from "lucide-react";
 import clsx from "clsx";
 import type { VerdictHistoryEntry, TheoryStage } from "../lib/types";
 
-const STAGE_ORDER: TheoryStage[] = ["gauge", "lattice", "brittleness", "control"];
+const STAGE_ORDER: TheoryStage[] = [
+    "gauge",
+    "core_visualization",
+    "lattice",
+    "brittleness",
+    "control",
+    "demonstration",
+    "transport",
+];
 
 const obligationStatusColor = (status: string) => {
     switch (status) {

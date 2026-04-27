@@ -6,10 +6,9 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend, 
-  ResponsiveContainer,
-  ReferenceLine
+  ResponsiveContainer
 } from "recharts";
-import { Experiment4, Exp4Row } from "../lib/types";
+import { Experiment4 } from "../lib/types";
 
 interface Props {
   data: Experiment4;

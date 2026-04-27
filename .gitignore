@@ -7,6 +7,10 @@ __pycache__/
 venv/
 env/
 
+# Analyzer per-run reports — keep only `reports/latest.md` in git.
+reports/run-*.md
+!reports/latest.md
+
 # Node
 node_modules/
 .next/
@@ -59,6 +63,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# local runtime artifacts (run logs/events/checkpoints/baselines)
+.runtime/
 
 # typescript
 *.tsbuildinfo

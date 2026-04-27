@@ -1,12 +1,18 @@
 {
-  "name": "dashboard",
+  "name": "riemann-converter",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 7000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "analyze": "python -m analyzer --out reports/latest.md",
+    "test:js": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:py": "python -m pytest tests",
+    "test": "npm run test:js && npm run test:py",
+    "typecheck": "tsc --noEmit",
+    "reset:artifacts": "python scripts/reset_artifacts.py"
   },
   "dependencies": {
     "clsx": "^2.1.1",

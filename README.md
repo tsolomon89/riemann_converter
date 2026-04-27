@@ -51,6 +51,22 @@ npm run dev
 
 Open [http://localhost:7000](http://localhost:7000). The app renders the Proof Program Map (theorem candidate → obligations → open gaps) at the top, inference rails beside every active experiment, and a sidebar grouped by experiment function (with stage available as a secondary navigation toggle).
 
+### 2b. Run the deterministic analyzer
+
+```bash
+npm run analyze     # equivalently: python -m analyzer
+```
+
+Reads `public/experiments.json` + `public/verdict_history.jsonl` and writes a Markdown interpretation to `reports/latest.md`. The analyzer applies a deterministic decision table (no LLM) that distinguishes coherence witnesses from controls from proof-obligation witnesses, firewalls Program 2 results from theorem state, and reads the obligation block as the authoritative source of truth for theorem-level progress. Use `python -m analyzer --check` for a CI-friendly exit code.
+
+### 2c. Run tests
+
+```bash
+pip install -r requirements-dev.txt && pytest tests/   # Python suite
+npx jest                                               # Jest suite
+NODE_OPTIONS=--experimental-vm-modules npx jest __tests__/mcp-bridge-fallback.test.ts  # ESM-only test
+```
+
 ### 3. Configure run-control auth (deployed environments)
 
 Copy `.env.example` to `.env.local` and set:
@@ -61,9 +77,9 @@ RESEARCH_RUN_TOKEN=<strong-random-token>
 
 Run-control surfaces are bearer-protected outside local dev:
 
-- HTTP: `POST /api/research/run`, `GET /api/research/run`, `GET /api/research/run/logs`
-- MCP tools: `start_run`, `get_run_status`, `get_run_logs`
-- Legacy UI routes: `/api/rerun`, `/api/run-experiment`
+- HTTP: `POST /api/research/run`, `GET /api/research/run`, `GET /api/research/run/logs`, `GET /api/research/run/events`, `POST /api/research/run/cancel`, `POST /api/research/run/resume`
+- MCP tools: `start_run`, `start_custom_run`, `get_run_status`, `get_run_logs`, `get_run_events`, `cancel_run`, `resume_run`
+- Custom sidebar runs also post to `POST /api/research/run` with `kind: "custom"`; the old `/api/run-experiment` route has been removed.
 
 If you want browser-triggered run controls against protected legacy routes, you can also set:
 
@@ -73,44 +89,76 @@ NEXT_PUBLIC_RESEARCH_RUN_TOKEN=<same-token-or-short-lived-token>
 
 This value is exposed to the browser bundle, so treat it as low-trust and rotate it.
 
+## Hosted vs Local Compute
+
+- Hosted Vercel deployments are **read-only by default**. Visitors can explore charts, history, and research API read endpoints, but cannot trigger compute runs.
+- Local clones/forks remain fully runnable by default (`verify`, `smoke`, `standard`, `authoritative`, `overkill`) with no extra policy setup.
+- If you intentionally want hosted compute on your own forked deployment, set:
+
+```bash
+RESEARCH_ENABLE_HOSTED_RUNS=true
+```
+
+- To force read-only in any environment (including local), set:
+
+```bash
+RESEARCH_READ_ONLY=true
+```
+
+- Data shown on hosted deployments comes from committed artifact files in the deployed Git revision (for example `public/experiments.json` and `public/verdict_history.jsonl`).
+
 ## 🧪 Experiments
 
 Organized by **function** — the job each experiment does in the proof program. Stage (`gauge` / `lattice` / `brittleness` / `control`) is preserved as a noncanonical grouping axis in the sidebar, but does **not** carry theorem semantics: there is no stage-level theorem-verdict rollup, and the stages are not ordered steps in a proof.
 
+### Core calculation
+The main theory-facing calculation is the video-style Riemann Converter, tested under the tau substitution.
+
+1. **CORE-1: Harmonic Converter** — builds `Li(x_eff) - sum WavePair(gamma_j, x_eff)` at `x_eff = X/tau^k`, stores curves in `X` units, and reports tau-substitution invariance. The Mobius/J-wave reconstruction and scaled-coordinate stress branch are supporting diagnostics, not replacement theories.
+
+### Zeta-direct views
+These operate directly on zeta and are descriptive/informational only.
+
+2. **ZETA-0: Critical Line Polar Trace** — visualizes zeta(1/2 + it) and marked zeros in the displayed t-window.
+3. **TRANS-1: Zeta Gauge Transport** — measures zeta residuals under candidate multiplicative transports. It quantifies deviation; it does not prove a gauge automorphism.
+
 ### Proof-obligation witnesses (theorem-directed evidence)
-Only this class — consistent outcome + AUTHORITATIVE fidelity — produces positive evidence toward the theorem candidate.
+Only this class — consistent outcome + AUTHORITATIVE fidelity — can produce positive evidence toward the theorem candidate.
 
-1. **EXP-06: Critical line β-stability** *(provisional)* — witnesses `OBL_BETA_INVARIANCE`. $\hat\beta(k)$ stays at ½ under scaling on tested ranges and fidelity. Witness-map authority is gated by Sprint 3b.0 review (see [WITNESS_MAP_REVIEW.md](WITNESS_MAP_REVIEW.md) and `GAP_WITNESS_MAP_REVIEW`); no experiment is treated as settled theorem-directed evidence until signoff.
-
-### Coherence witnesses ("showing the work")
-Demonstrate that the reconstruction machinery is internally consistent. Not themselves evidence for the theorem.
-
-2. **EXP-01: Equivariance (coordinate gauge)** — reconstruction is covariant under $X \to X/\tau^k$ on the tested k-range.
-3. **EXP-01C: Zero scaling** — scaling zeros by $\tau^k$ is isometric to scaling the lattice by $\tau^k$ within documented drift/ratio tolerances.
+4. **VAL-1: Critical line beta-stability** *(provisional)* — witnesses `OBL_BETA_INVARIANCE`. beta-hat stays at 1/2 under scaling on tested ranges and fidelity. Witness-map authority remains gated by review; no experiment is treated as settled theorem-directed evidence until signoff.
 
 ### Controls (instrument health, fidelity-independent)
 Must fail on known-bad input. A passing control arms a falsifier; it is not evidence for the theory.
 
-4. **EXP-01B: Operator gauge (naive scaling)** — naive operator scaling (ρ, γ alone) must break the reconstruction. Arms the coordinate-gauge claim.
-5. **EXP-03: β=π counterfactual** — β=π reconstruction must diverge. Arms β-stability.
+5. **CTRL-1: Operator scaling control** — naive operator scaling (rho/gamma alone) must break the reconstruction.
+6. **CTRL-2: Beta counterfactual** — beta=pi reconstruction must diverge. Arms beta-stability.
 
-### Pathfinders (direction selectors)
-Pick a branch of the research tree. Outcome is directional, not supporting/refuting.
+### Research notes and pathfinders
+These validate, explain, or choose branches. They do not settle theorem state.
 
-6. **EXP-04: Translation vs dilation** — returns `TRANSLATION` or `DILATION`.
-7. **EXP-05: Zero correspondence** — returns `lattice-hit`, `lattice-weak`, or `lattice-path-negative`.
+7. **NOTE-1: Zero reuse note** — documents the relationship between zero reuse and coordinate scaling.
+8. **PATH-1: Translation vs dilation** — returns `TRANSLATION` or `DILATION`.
+9. **PATH-2: Zero correspondence** — returns `lattice-hit`, `lattice-weak`, or `lattice-path-negative`.
 
-### Regression checks (engine plumbing)
-A failure means a bug, not a theory update.
+### Regression checks and demonstrations
+A failure means a bug or missing data, not a theory update.
 
-8. **EXP-08: Scaled-ζ zero equivalence** — the zero-generator respects the $\zeta(s\cdot\tau^k)$ identity numerically. Plumbing, not evidence — see [THEORY.md](THEORY.md).
+10. **REG-1: Scaled-zeta regression** — checks the scaled-zeta zero-generator identity numerically. Plumbing, not evidence.
+11. **DEMO-1: Bounded-view demonstration** — illustrates bounded-window mechanics conditional on exact transport.
 
-### Exploratory · Program 2 (contradiction-by-detectability, retained not retired)
-Brittleness experiments. **Not on the present proof-critical path** under the canonical Program 1 posture; retained as diagnostic tooling and a possible future route.
+### Contradiction Track · Program 2
+Brittleness experiments formalize the alternate contradiction-by-detectability route. They are not casual side work, but they remain non-theorem-directed until rogue detectability, no-hiding under compression, and contradiction closure are formalized.
 
-9. **EXP-02: Centrifuge (planted rogue zero)** — deep-zoom amplification under a planted $\beta = 0.5001$.
-10. **EXP-02B: Rogue isolation** — residual error scales as $x^{\Delta\beta}$.
-11. **EXP-07: Calibrated sensitivity** — $A(\varepsilon)$ monotonicity across an $\varepsilon$ sweep.
+12. **P2-1: Rogue centrifuge** — deep-zoom amplification under a planted beta offset.
+13. **P2-2: Rogue isolation** — residual error scales as x^(Delta beta).
+14. **P2-3: Calibrated sensitivity** — A(epsilon) monotonicity across an epsilon sweep.
+
+### What would close the proof?
+
+- `GAP_RH_PREDICATE_TRANSPORT`: exact transport of the RH predicate under the working gauge.
+- `GAP_PROGRAM2_FORMALIZATION`: formal rogue/off-line zero amplification and detectability.
+- `GAP_NO_HIDING_UNDER_COMPRESSION`: proof that compression cannot hide a rogue zero outside all bounded/verified views.
+- `GAP_CONTRADICTION_CLOSURE`: proof that detectability plus no-hiding plus a verified bounded view forces the contradiction.
 
 Every experiment record ships with mandatory `inference_scope`, `allowed_conclusion`, and `disallowed_conclusion` rails; the UI renders at least one next to every verdict. Those rails are the drift guardrail.
 

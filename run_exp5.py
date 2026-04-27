@@ -3,7 +3,7 @@ from riemann_math import get_primes, get_zeros, TruePi, LogIntegral, J_Wave, Mob
 import time
 import numpy as np # For stats if available, else manual
 
-def run_experiment_5(zeros):
+def run_experiment_5(zeros, progress_callback=None, **kwargs):
     """
     Experiment 5: Zero Correspondence / Nearest-Neighbor Mapping.
     Tests if scaling gamma_n by tau^k lands on another zero gamma_m.
@@ -18,6 +18,9 @@ def run_experiment_5(zeros):
     
     k_values = [1, 2] # Test scales
     
+    estimated_steps = max(1, len(zeros) * len(k_values))
+    processed_steps = 0
+
     for k in k_values:
         print(f"  > Processing Scale K={k}...", end='\r')
         
@@ -54,6 +57,14 @@ def run_experiment_5(zeros):
             errors.append(float(dist))
             normalized_errors.append(float(z_score))
             count_tested += 1
+            processed_steps += 1
+            if callable(progress_callback) and (processed_steps % 1000 == 0):
+                progress_callback(
+                    processed_steps,
+                    estimated_steps,
+                    message="exp5 nearest-neighbor mapping",
+                    payload={"k": k, "tested": count_tested},
+                )
             
             if count_tested % 1000 == 0:
                 print(f"    > K={k}: Processed {count_tested} zeros...", end='\r')
@@ -90,5 +101,13 @@ def run_experiment_5(zeros):
             "frac_below_0_5": float(c_50),
             "interpretation": "PASS" if median_z < 0.1 else "FAIL"
         }
+
+    if callable(progress_callback):
+        progress_callback(
+            estimated_steps,
+            estimated_steps,
+            message="exp5 complete",
+            payload={"k_values": k_values},
+        )
         
     return results

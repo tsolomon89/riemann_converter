@@ -9,8 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  ReferenceLine
+  ResponsiveContainer
 } from 'recharts';
 
 type DataPoint = {
@@ -30,7 +29,19 @@ type PrimeStepperChartProps = {
   visibleK: number[]; // Array of k values to show
 };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+type TooltipEntry = {
+  name?: string;
+  value?: number | string;
+  color?: string;
+};
+
+type ChartTooltipProps = {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: number | string;
+};
+
+const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-[#0a0f18]/95 backdrop-blur-xl border border-blue-500/20 p-4 rounded-none shadow-2xl text-xs text-white ring-1 ring-blue-500/10 min-w-[200px]">
@@ -39,8 +50,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             <span className="font-mono text-emerald-400 text-sm tracking-tight">{Number(label).toFixed(8)}...</span>
         </div>
         <div className="space-y-2">
-          {payload.map((entry: any) => (
-            <div key={entry.name} className="flex justify-between items-center gap-4">
+          {payload.map((entry) => (
+            <div key={String(entry.name)} className="flex justify-between items-center gap-4">
               <span className="font-gauss text-gray-300 italic" style={{ color: entry.color }}>{entry.name}:</span>
               <span className="font-mono font-bold text-white">{entry.value}</span>
             </div>
@@ -53,50 +64,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function PrimeStepperChart({ data, visibleK }: PrimeStepperChartProps) {
-  // Transform data for Recharts: we need a unified X axis or scatter plot
-  // Since it's a step function, we can use a LineChart with type="step"
-  // But multiple series have different X values. 
-  // A ScatterChart with lines is better for unaligned X values, or we unify the domain.
-  // Actually, for multiple step functions with different step points, the standard way is:
-  // Create a sorted list of all unique X points.
-  // For each X, fill in the Y value for each series (holding the previous value).
-  
   const chartData = useMemo(() => {
-    // 1. Collect all unique X values
-    const allX = new Set<number>();
-    data.forEach(series => {
-        if (!visibleK.includes(series.k)) return;
-        series.data.forEach(d => allX.add(parseFloat(d.x)));
-    });
-    
-    const sortedX = Array.from(allX).sort((a, b) => a - b);
-    
-    // 2. Build the data rows
-    // We need to track the "current count" for each series
-    const currentCounts: Record<number, number> = {};
-    data.forEach(s => currentCounts[s.k] = 0);
-    
-    const result = [];
-    
-    // Pointer optimization could be used, but simple map is fine for N<2000
-    for (const x of sortedX) {
-        const row: any = { x };
-        
-        // Update counts if this x matches a series point
-        data.forEach(series => {
-            if (!visibleK.includes(series.k)) return;
-            
-            // Find if there's a point approximately equal to x (float safety)
-            // Or just rely on exact match if we used the string x as key?
-            // Since we built allX from these, exact match of string->float should be okay?
-            // Let's iterate the series data to find matches.
-             
-            // Better: Pre-index series data by x-value
-        });
-        
-    }
-    
-    // Faster approach: Mergesort-like iteration
     // Convert all series to events: { x, k, newY }
     const events: { x: number, k: number, y: number }[] = [];
     data.forEach(series => {
@@ -108,7 +76,7 @@ export default function PrimeStepperChart({ data, visibleK }: PrimeStepperChartP
     
     events.sort((a, b) => a.x - b.x);
     
-    const finalPoints: any[] = [];
+    const finalPoints: Array<Record<string, number>> = [];
     const runningY: Record<number, number> = {};
     data.forEach(s => runningY[s.k] = 0);
     

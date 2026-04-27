@@ -15,7 +15,12 @@ interface Props {
 }
 
 export default function Exp7Chart({ data }: Props) {
-  const chartData = data.calibrated.map((pt) => ({
+  const calibrated = Array.isArray(data?.calibrated) ? data.calibrated : [];
+  if (calibrated.length === 0) {
+    return <div className="text-gray-500 p-8">No calibrated data for Exp 7</div>;
+  }
+
+  const chartData = calibrated.map((pt) => ({
       epsilon: pt.epsilon,
       max_amp: pt.max_amp,
       mean_amp: pt.mean_amp
@@ -39,7 +44,7 @@ export default function Exp7Chart({ data }: Props) {
         </LineChart>
       </ResponsiveContainer>
       <div className="mt-2 text-xs text-gray-400 text-center">
-         Program 2 exploratory. Monotonic growth of A(ε) across the swept perturbations is consistent with the centrifuge being sensitive on this run&apos;s settings. Does not formalize a non-hiding theorem; does not support the theorem candidate.
+         Program 2 exploratory. Monotonic growth of A(ε) across the swept perturbations is consistent with the centrifuge being sensitive on this run&apos;s settings.
       </div>
     </div>
   );

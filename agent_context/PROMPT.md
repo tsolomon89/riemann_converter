@@ -2,6 +2,8 @@ Below is a **revised prompt** that focuses on **what** we’re building, **why**
 
 ---
 
+> **2026-04 alignment note.** CORE-1 is the main video-style Riemann Converter calculation under `x_eff = X/tau^k`. Direct RH-predicate transport remains the load-bearing missing theorem. Program 2 is the explicit **Contradiction Track**: rogue detectability, no-hiding under compression, and contradiction closure must be formalized before any P2 result can count as theorem-directed evidence.
+
 ## Prompt: Tau-Lattice RH Visual + Verification Program
 
 You are building a research-grade program to **replicate and extend** the exact mathematical/visual framework used in the “What is the Riemann Hypothesis REALLY about?” (Hexagon) video, and then run a **τ-lattice scaling experiment** on that framework.

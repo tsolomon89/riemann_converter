@@ -1,113 +1,197 @@
+from concurrent.futures import ProcessPoolExecutor
+
 import mpmath
-from riemann_math import get_primes, get_zeros, TruePi, LogIntegral, J_Wave, MobiusPi, mean_spacing, find_nearest_zero, load_or_init_results, save_results, ZERO_COUNT, TAU
-import time
 
-def run_experiment_6(zeros, resolution=60, x_start=10, x_end=100):
+from riemann_math import MobiusPi_equal_beta, TAU, TruePi, get_primes
+
+_EXP6_WORKER_STATE = {}
+
+
+def _exp6_worker_init(gamma_tokens, dps):
+    mpmath.mp.dps = int(dps)
+    _EXP6_WORKER_STATE["gammas"] = [mpmath.mpf(tok) for tok in gamma_tokens]
+
+
+def _exp6_worker_point(task):
+    x, beta_token = task
+    state = _EXP6_WORKER_STATE
+    return MobiusPi_equal_beta(
+        mpmath.mpf(x),
+        mpmath.mpf(beta_token),
+        state["gammas"],
+        use_dynamic=False,
+    )
+
+
+def _compute_series_for_beta(x_points, gammas_k, beta_val, workers, dps, pool=None):
+    beta_mp = mpmath.mpf(beta_val)
+    if workers <= 1:
+        return [
+            MobiusPi_equal_beta(mpmath.mpf(x), beta_mp, gammas_k, use_dynamic=False)
+            for x in x_points
+        ]
+
+    beta_token = mpmath.nstr(beta_mp, n=20)
+    tasks = [(x, beta_token) for x in x_points]
+    chunk = max(1, len(x_points) // max(1, workers * 4))
+    if pool is not None:
+        return list(pool.map(_exp6_worker_point, tasks, chunksize=chunk))
+
+    gamma_tokens = [mpmath.nstr(g, n=20) for g in gammas_k]
+    with ProcessPoolExecutor(
+        max_workers=workers,
+        initializer=_exp6_worker_init,
+        initargs=(gamma_tokens, int(dps)),
+    ) as pool:
+        return list(pool.map(_exp6_worker_point, tasks, chunksize=chunk))
+
+
+def _rmse_from_indices(series, truth, indices):
+    if not indices:
+        return mpmath.mpf("inf")
+    total = mpmath.mpf(0)
+    for idx in indices:
+        err = series[idx] - truth[idx]
+        total += err * err
+    return mpmath.sqrt(total / len(indices))
+
+
+def _rmse_pairwise(series, truth):
+    if not series:
+        return mpmath.mpf("inf")
+    total = mpmath.mpf(0)
+    for actual, expected in zip(series, truth):
+        err = actual - expected
+        total += err * err
+    return mpmath.sqrt(total / len(series))
+
+
+def run_experiment_6(zeros, resolution=60, x_start=10, x_end=100, progress_callback=None, **kwargs):
     """
-    Experiment 6: Critical Line Drift Estimator.
-    Measures if the reconstruction implicitly prefers a different beta > 0.5
-    under scaling, which would indicate a broken symmetry.
+    Experiment 6: Beta-invariance under the gauge (transport-via-zeros).
+
+    OBL_BETA_INVARIANCE says beta_hat(k) = 1/2 at every k under the gauge.
+    The right test pairs x and the truth consistently:
+        For each k, walk x_eff over [x_start, x_end].
+        Compute x_phys = x_eff * tau^k.
+        truth = TruePi(x_phys)
+        For each candidate beta:
+            recon = MobiusPi_equal_beta(x_phys, beta, gammas_PRISTINE)
+        Pick the beta that minimizes RMSE(recon, truth) on the subset grid.
+
+    This directly tests "the same un-scaled zero set reconstructs the
+    staircase at scaled coordinates with beta=1/2." Both x and truth are
+    at the same scaled coordinate; the zeros are NOT scaled.
+
+    Earlier kernels held x and truth at un-scaled values while scaling the
+    zeros, which made beta absorb the resulting mismatch — the reported
+    beta_hat ~ 0.57 was an artifact of that mismatch, not a measurement of
+    beta-invariance. See PROOF_TARGET.md / agent_context/obligation_movement_analysis.md.
     """
-    print("Running Experiment 6: Critical Line Drift...")
-    
+    print("Running Experiment 6: Beta-invariance under the gauge...")
+
+    workers = max(1, int(kwargs.get("workers", 1)))
+    dps = int(kwargs.get("dps", mpmath.mp.dps))
+
     results = {}
-    
-    # 1. Setup
-    X_start, X_end = x_start, x_end
+    x_start_val, x_end_val = x_start, x_end
     points = max(20, int(resolution))
-    k_values = [0, 1, 2] # Include 0 check
-    
-    # Pre-load primes for TruePi
-    primes = get_primes(X_end + 50)
-    
-    gammas_fixed = zeros
-    
-    def get_rmse(beta_val, k, x_points, y_true):
-        # Construct beta list
-        betas = [mpmath.mpf(beta_val)] * len(gammas_fixed)
-        
-        # Scale gammas?
-        # Prompt: "For each k (and for each scaling model you care about)"
-        # "Hold gamma list fixed (or scaled...)"
-        # We want to see if SCALING THE COORDINATE implies beta drift?
-        # Or if SCALING THE ZEROS implies beta drift?
-        # "If some 'scaled system' implied beta drift..."
-        # Let's test the "Scaled Zeros" hypothesis (Operator) since that's the interesting one.
-        # k=0 is baseline.
-        
-        # Scaling gammas by tau^k
-        scale = mpmath.power(TAU, k)
-        gammas_k = [g * scale for g in gammas_fixed]
-        
-        rmse = 0
-        for i, x in enumerate(x_points):
-            y_rec = MobiusPi(x, betas, gammas_k, use_dynamic=False)
-            err = (y_rec - y_true[i])**2
-            rmse += err
-            
-        return mpmath.sqrt(rmse / len(x_points))
+    k_values = [0, 1, 2]
 
-    # Generate Ground Truth (TruePi) on grid
-    # We use ONE grid for all K?
-    # Prompt: "If K changes the x-domain, truth must be evaluated on that same domain".
-    # Here we are testing the "Operator Hypothesis":
-    # gammas -> gammas * tau^k.
-    # We reconstruct at PHYSICAL x.
-    # So ground truth is TruePi at PHYSICAL x.
-    # AND "baseline reconstruction as self-truth".
-    # Using TruePi is safer for "absolute" drift.
-    
-    x_grid = []
-    y_true_grid = []
-    step = (X_end - X_start) / points
-    for i in range(points + 1):
-        x = X_start + i * step
-        x_grid.append(x)
-        y_true_grid.append(TruePi(x, primes))
-        
+    # Primes must cover x_end * tau^max_k, since truth is taken at x_phys.
+    max_k = max(k_values)
+    max_scale = float(mpmath.power(TAU, max_k))
+    primes = get_primes(x_end_val * max_scale + 50)
+
+    gammas_pristine = [mpmath.mpf(g) for g in zeros]
+
+    # Per-k x_grid at scaled coordinates; truth taken at the SAME scaled coords.
+    x_grid_by_k = {}
+    y_true_by_k = {}
+    step = (x_end_val - x_start_val) / points
     for k in k_values:
-        print(f"  > Processing Scale K={k}...", end='\r')
-        
-        # Optimize Beta
-        # Grid Search [0.45, 0.55]
-        best_rmse = mpmath.inf
-        best_beta = 0.5
-        
-        # Optimization: Use fewer points for the grid search
-        subset_step = max(1, len(x_grid) // 20)
-        x_grid_opt = x_grid[::subset_step]
-        y_true_grid_opt = y_true_grid[::subset_step]
-        
-        # 1. Coarse Grid
-        print(f"    > Optimizing Beta (Coarse)...")
-        for b in mpmath.linspace(0.45, 0.55, 11): # 0.45, 0.46, ... 0.55
-            rmse = get_rmse(b, k, x_grid_opt, y_true_grid_opt)
-            if rmse < best_rmse:
-                best_rmse = rmse
-                best_beta = b
-                
-        # 2. Refine
-        # print(f"    > Optimizing Beta (Refine)...")
-        for b in mpmath.linspace(best_beta - 0.02, best_beta + 0.02, 11):
-            rmse = get_rmse(b, k, x_grid_opt, y_true_grid_opt)
-            if rmse < best_rmse:
-                best_rmse = rmse
-                best_beta = b
-        
-        # FINAL COMPLETE CHECK
-        # Recalculate best_rmse using ALL points
-        best_rmse = get_rmse(best_beta, k, x_grid, y_true_grid)
-        
-        # Check RMSE at beta=0.5 explicitly
-        rmse_05 = get_rmse(0.5, k, x_grid, y_true_grid)
-        
-        print(f"    K={k}: Beta_hat={float(best_beta):.4f}, RMSE={float(best_rmse):.4f} (vs 0.5: {float(rmse_05):.4f})")
-        
+        scale = mpmath.power(TAU, k)
+        x_eff_grid = [x_start_val + i * step for i in range(points + 1)]
+        x_phys_grid = [float(mpmath.mpf(x) * scale) for x in x_eff_grid]
+        x_grid_by_k[k] = x_phys_grid
+        y_true_by_k[k] = [TruePi(x, primes) for x in x_phys_grid]
+
+    full_indices = list(range(points + 1))
+    subset_step = max(1, (points + 1) // 20)
+    subset_indices = list(range(0, points + 1, subset_step))
+
+    total_steps = len(k_values)
+    for idx, k in enumerate(k_values, start=1):
+        print(f"  > Processing Scale K={k}...", end="\r")
+
+        x_grid = x_grid_by_k[k]
+        y_true_grid = y_true_by_k[k]
+        x_grid_subset = [x_grid[i] for i in subset_indices]
+        y_true_subset = [y_true_grid[i] for i in subset_indices]
+        series_cache = {}
+        pool = None
+        if workers > 1:
+            gamma_tokens = [mpmath.nstr(g, n=20) for g in gammas_pristine]
+            pool = ProcessPoolExecutor(
+                max_workers=workers,
+                initializer=_exp6_worker_init,
+                initargs=(gamma_tokens, int(dps)),
+            )
+
+        def series_for(beta_val, grid_name="full"):
+            x_values = x_grid_subset if grid_name == "subset" else x_grid
+            key = (k, grid_name, mpmath.nstr(beta_val, n=14))
+            if key not in series_cache:
+                series_cache[key] = _compute_series_for_beta(
+                    x_values,
+                    gammas_pristine,    # PRISTINE zeros, not scaled
+                    beta_val,
+                    workers=workers,
+                    dps=dps,
+                    pool=pool,
+                )
+            return series_cache[key]
+        try:
+            best_rmse = mpmath.inf
+            best_beta = mpmath.mpf("0.5")
+
+            print("    > Optimizing Beta (Coarse)...")
+            for b in mpmath.linspace(0.45, 0.55, 11):
+                rmse = _rmse_pairwise(series_for(b, "subset"), y_true_subset)
+                if rmse < best_rmse:
+                    best_rmse = rmse
+                    best_beta = b
+
+            for b in mpmath.linspace(best_beta - 0.02, best_beta + 0.02, 11):
+                rmse = _rmse_pairwise(series_for(b, "subset"), y_true_subset)
+                if rmse < best_rmse:
+                    best_rmse = rmse
+                    best_beta = b
+
+            best_rmse = _rmse_from_indices(series_for(best_beta), y_true_grid, full_indices)
+            rmse_05 = _rmse_from_indices(series_for(mpmath.mpf("0.5")), y_true_grid, full_indices)
+        finally:
+            if pool is not None:
+                pool.shutdown()
+
+        print(
+            f"    K={k}: Beta_hat={float(best_beta):.4f}, RMSE={float(best_rmse):.4f} "
+            f"(vs 0.5: {float(rmse_05):.4f})"
+        )
+
         results[str(k)] = {
             "beta_hat": float(best_beta),
             "rmse_opt": float(best_rmse),
             "rmse_05": float(rmse_05),
-            "delta_rmse": float(rmse_05 - best_rmse)
+            "delta_rmse": float(rmse_05 - best_rmse),
         }
-        
+
+        if callable(progress_callback):
+            progress_callback(
+                idx,
+                total_steps,
+                message="exp6 beta-invariance",
+                payload={"k": k, "beta_hat": float(best_beta), "workers": workers},
+            )
+
     return results

@@ -2,7 +2,17 @@
 
 **Canonical ontology and research semantics for the Riemann Converter.**
 
-_Workstream 1 of the "Reframe as a proof-program research instrument" epic. Planning / spec only — no schema, UI, or docs changes in this document. Sprints 2 and 3 consume this spec._
+_Workstream 1 of the "Reframe as a proof-program research instrument" epic. This document began as planning/spec text; the 2026-04 implementation now consumes it in code, API, MCP, and UI._
+
+**Current implementation note (2026-04-27).** Internal experiment keys remain stable (`EXP_1`, `EXP_1B`, etc.) for artifact and API compatibility. User-facing surfaces now use role-first display IDs: `CORE-1` for the harmonic converter (`EXP_1`), `CTRL-*` for controls, `VAL-1` for beta-stability validation, `PATH-*` for pathfinders, `REG-1` for regression plumbing, `DEMO-1` for bounded-view demonstration, `NOTE-1` for the zero-reuse research note, and `P2-*` for the Contradiction Track.
+
+---
+
+## Layer dominance
+
+- [PROOF_TARGET.md](PROOF_TARGET.md) is the canonical **theorem-facing** source.
+- This document is the canonical **ontology / rails / semantics** source.
+- Where they conflict on the theorem statement itself, `PROOF_TARGET.md` wins. Where they conflict on how evidence is classified or how inference rails work, **this spec wins**.
 
 ---
 
@@ -59,7 +69,7 @@ The app has drifted into treating experiments as if they directly support, refut
 - [components/StageBanner.tsx:129](components/StageBanner.tsx#L129) labels the main banner "Theory Fit · Gauge → Lattice → Brittleness" — implying cumulative proof progress.
 - [components/StageBanner.tsx:157](components/StageBanner.tsx#L157) remaps the `overall` field: `PASS → SUPPORTS`, `FAIL → REFUTES`. This is the most visible conflation in the app.
 - [app/page.tsx:220–233](app/page.tsx#L220-L233) — per-experiment badges render SUPPORTS / REFUTES / CANDIDATE / INFORMATIVE / CONTROL BROKEN directly on every experiment card.
-- [app/page.tsx:354](app/page.tsx#L354) — the EXP 1 overlay description conflates the coordinate gauge hypothesis with the zero-scaling hypothesis ("If the Explicit Zero Scaling is correct…" appears inside EXP 1's overlay caption, where it does not belong).
+- Historical, now fixed in the app: the CORE-1 overlay copy formerly conflated coordinate equivariance with the zero-scaling hypothesis. Zero-scaling language is now reserved for NOTE-1 / lattice-stage discussion.
 - [components/ExperimentSidebar.tsx:81–121](components/ExperimentSidebar.tsx#L81-L121) — the sidebar is organized as `Stage 1 · Gauge → Stage 2 · Lattice → Stage 3 · Brittleness → Control`, visually implying a staged proof sequence that does not exist.
 
 **Docs that overclaim or re-center the project on AI-added probes.**
@@ -76,13 +86,15 @@ Two parallel statements. Both are authoritative and carry equal weight; neither 
 
 ### Formal statement
 
-> There exists a nontrivial multiplicative gauge
-> \[ T_c : s \mapsto s \cdot c^k, \qquad c \in \mathbb{R}_{>1}, \ k \in \mathbb{Z}, \]
-> under which the RH-relevant analytic structure of ζ is preserved strongly enough that the compressed view under `T_c` and the uncompressed view are the **same mathematical case** for the purposes of the Riemann Hypothesis predicate.
+_The canonical formal statement is maintained in [PROOF_TARGET.md §1](PROOF_TARGET.md). This is a mirror; if they disagree, PROOF_TARGET.md wins._
+
+> Under the working gauge
+> \[ T_c : s \mapsto s \cdot c^k, \qquad c = \tau = 2\pi, \ k \in \mathbb{Z}, \]
+> the RH predicate is **transport-invariant**: `ζ` has a non-trivial zero `ρ` with `Re(ρ) ≠ ½` **iff** `T_c(ρ)` is likewise off the critical line. Equivalently, **no off-line zero can exist on one side of the gauge without existing on the other**.
 >
-> Equivalently: if ζ has a non-trivial zero `ρ` with `Re(ρ) ≠ ½`, its image under `T_c` is likewise off the critical line, and conversely — no off-line zero can exist on one side of the gauge without existing on the other.
+> **Operational corollary (bounded-view equivalence).** If exact transport holds, then for any off-line zero `ρ` at arbitrarily large height, some `T_c^k(ρ)` lands in a bounded window computable in advance. Checking RH on that window suffices; unbounded search is logically redundant rather than mathematically necessary. This is a *consequence* of the transport claim, not the headline.
 >
-> **Working choice of gauge.** The project takes `c = τ = 2π` as the current working gauge. **Uniqueness of τ is not a present proof obligation.** Whether another `c > 1` (e.g. `c = √2`, `c = e`, etc.) would also serve is an open research question parked outside the critical path (see `GAP_TAU_UNIQUENESS`).
+> **Working choice of gauge.** The project takes `c = τ = 2π` as the current working gauge. **Uniqueness of τ is not a present proof obligation.** Whether another `c > 1` would also serve is an open research question parked outside the critical path (see `GAP_TAU_UNIQUENESS`).
 
 ### Plain-language statement
 
@@ -96,7 +108,7 @@ Two parallel statements. Both are authoritative and carry equal weight; neither 
 | (b) Extension of verified ordinate coverage beyond Odlyzko's range. | Scaling already-verified zeros produces scaled copies of the verified zero set, not new zeros of the original ζ at higher ordinate. The verified range is whatever Odlyzko and Platt–Trudgian have verified. |
 | (c) That a numerical equivariance of reconstructions is itself a transport theorem for the RH predicate. | Plot overlays, residual stability, and β̂ fits are empirical witnesses. They do not constitute a proof that the RH predicate is preserved under `T_c`. |
 | (d) That τ is the unique multiplicative base for which the invariance can hold. | Uniqueness of τ is parked as a research question, not a proof obligation. |
-| (e) That detecting a rogue zero under deep scaling is equivalent to proving RH. | Brittleness experiments are Program 2 exploratory material; their passes do not constitute proof-directed evidence under Program 1. |
+| (e) That detecting a rogue zero under deep scaling is equivalent to proving RH before formal closure. | P2-* experiments live on the Contradiction Track; their passes do not constitute theorem-directed evidence until no-hiding and contradiction closure are formalized. |
 
 ---
 
@@ -341,7 +353,7 @@ export interface ProofProgram {
 
 Every experiment record ships with concrete `allowed_conclusion` / `disallowed_conclusion` text. The following are draft examples — Sprint 2a finalizes them.
 
-**EXP_1 (COHERENCE_WITNESS, stage=gauge):**
+**CORE-1 / EXP_1 (CORE_CALCULATION, stage=gauge):**
 - `allowed_conclusion`: `["The explicit-formula reconstruction is numerically covariant under X ↦ X/τ^k on the tested k-range at the stated fidelity."]`
 - `disallowed_conclusion`: `["The Riemann Hypothesis is true.", "The zero-scaling hypothesis is confirmed.", "The theorem candidate is proved.", "Coverage extends beyond Odlyzko's verified range."]`
 
@@ -418,8 +430,8 @@ Replace the `StageBanner` with a `ProofProgramMap` component structured as:
 ### Introduce an IntroPanel
 Onboarding copy above the Proof Program Map. Required sentence: *"Not every experiment is a verdict on the theory. Some validate implementation, some show the work, some witness proof obligations, and some guide future research."*
 
-### Fix the EXP_1 / EXP_1C copy conflation
-At [app/page.tsx:354](app/page.tsx#L354), the current overlay text for EXP_1 reads *"If the Explicit Zero Scaling is correct, all curves should collapse onto a single trajectory."* This is the wrong invariant for EXP_1 and must be moved. EXP_1 is the **coordinate gauge** witness; zero-scaling language belongs exclusively to EXP_1C. The spec fixes the semantics; Sprint 2b fixes the copy.
+### Keep CORE-1 / NOTE-1 copy separated
+CORE-1 is the direct harmonic converter calculation under the tau substitution. NOTE-1 is the zero-reuse / zero-scaling research note. User-facing copy must keep those claims separate: CORE-1 may discuss coordinate equivariance; NOTE-1 may discuss zero-scaling reuse.
 
 ### Render inference rails with every result
 Every experiment card must render at least one of `allowed_conclusion` / `disallowed_conclusion` next to its badge. This is non-optional — the rails are the primary drift guardrail, and they must be visible.
@@ -527,7 +539,7 @@ Dependency order. This workstream (Workstream 1) is complete once this document 
 - Add `components/IntroPanel.tsx` with the required onboarding sentence.
 - Add `components/OpenGapsPanel.tsx`.
 - Update per-experiment badges in [app/page.tsx:220–233](app/page.tsx#L220-L233) to render `function + outcome` and an inference-rails excerpt.
-- Fix the EXP_1 / EXP_1C copy conflation at [app/page.tsx:354](app/page.tsx#L354).
+- Keep CORE-1 coordinate-equivariance copy separated from NOTE-1 zero-scaling language.
 
 ### Sprint 2c — Sidebar reorganization
 - [components/ExperimentSidebar.tsx](components/ExperimentSidebar.tsx) gains a primary grouping by `function`. `stage` remains available as a secondary filter/toggle.
