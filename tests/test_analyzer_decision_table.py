@@ -95,15 +95,21 @@ def test_rule_3_decisive_negative():
 def test_rule_4_non_decisive_due_to_mapping_provisional_matches_current_run():
     # This is the scenario the user complained about: EXP_6 is INCONSISTENT
     # but the witness mapping is not signed off.
-    d = _decompose({
-        "EXP_6": _exp(
-            "PROOF_OBLIGATION_WITNESS",
-            outcome="INCONSISTENT",
-            status="FAIL",
-            obligation_id="OBL_BETA_INVARIANCE",
-            mapping_provisional=True,
-        ),
-    })
+    d = _decompose(
+        {
+            "EXP_6": _exp(
+                "PROOF_OBLIGATION_WITNESS",
+                outcome="INCONSISTENT",
+                status="FAIL",
+                obligation_id="OBL_BETA_INVARIANCE",
+                mapping_provisional=True,
+            ),
+        },
+        proof_program={
+            "obligations": [],
+            "witness_map_review": {"status": "PENDING_SIGNOFF"},
+        },
+    )
     h = evaluate_headline(d, _no_movement())
     assert h.rule_id == 4
     assert h.severity == Severity.NON_DECISIVE_NEGATIVE

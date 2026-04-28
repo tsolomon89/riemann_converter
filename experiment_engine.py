@@ -38,7 +38,7 @@ EXPERIMENT_REGISTRY = [
     {"keys": ["5", "exp5", "exp_5", "path-2", "zero-correspondence"], "module": "run_exp5", "func": "run_experiment_5", "name": "PATH-2: Zero Correspondence", "out_key": "experiment_5", "pass_kwargs": True},
     {"keys": ["6", "exp6", "exp_6", "val-1", "beta-stability", "beta-validation"], "module": "run_exp6", "func": "run_experiment_6", "name": "VAL-1: Beta Stability", "out_key": "experiment_6", "pass_kwargs": True},
     {"keys": ["7", "exp7", "exp_7", "p2-3", "calibrated-amplification"], "module": "run_exp7", "func": "run_experiment_7", "name": "P2-3: Calibrated Amplification", "out_key": "experiment_7", "pass_kwargs": True},
-    {"keys": ["8", "exp8", "exp_8", "reg-1", "scaled-zeta-regression"], "module": "run_exp8", "func": "run_experiment_8", "name": "REG-1: Scaled-Zeta Regression", "out_key": "experiment_8", "pass_kwargs": True},
+    {"keys": ["8", "exp8", "exp_8", "wit-1", "zero-scaling-witness", "reg-1", "scaled-zeta-regression"], "module": "run_exp8", "func": "run_experiment_8", "name": "WIT-1: Zero Scaling Witness", "out_key": "experiment_8", "pass_kwargs": True},
     {"keys": ["9", "exp9", "exp_9", "demo-1", "bounded-view"], "module": "run_exp9", "func": "run_experiment_9", "name": "DEMO-1: Bounded View", "out_key": "experiment_9", "pass_kwargs": True},
     {"keys": ["10", "exp10", "exp_10", "trans-1", "transport", "zeta-transport"], "module": "run_exp10", "func": "run_experiment_10", "name": "TRANS-1: Zeta Gauge Transport", "out_key": "experiment_10", "pass_kwargs": True},
 ]

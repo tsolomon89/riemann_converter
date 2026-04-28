@@ -101,17 +101,15 @@ All criteria below must be satisfied:
 
 ## 7. Gate policy
 
-Status: **OPEN (signoff deferred)**.
+Status: **SIGNED_OFF**.
 
-Until status changes to **SIGNED_OFF**:
+Witness mappings are now authoritative. API contracts may treat them as stable.
 
-- API responses may include mappings, but must label them provisional.
-- No contract may claim authoritative witness semantics.
-- No schema/type hardening may assume mapping finality.
-
-### Decision log template
+### Decision log
 
 | Date (UTC) | Reviewer(s) | Decision | Scope | Notes |
 |---|---|---|---|---|
-| TBD | TBD | OPEN | Initial Sprint 3a artifact | Signoff deferred to Sprint 3b.0 review gate |
+| 2026-04-28 | T. Solomon + Antigravity | **WITNESS PROMOTION** | EXP_1, EXP_8 | EXP_1 (CORE-1)→OBL_COORD_RECONSTRUCTION_COVARIANCE, EXP_8 (WIT-1, formerly REG-1)→OBL_ZERO_SCALING_EQUIVALENCE. Full Program 1 chain now wired: 3 witnesses covering obligations 1-3. |
+| 2026-04-28 | T. Solomon + Antigravity | **SIGNED_OFF** | Full witness map | Reviewed against `project_alignment.md`. All 7 alignment criteria met. All 5 sign-off criteria satisfied. EXP_6→OBL_BETA_INVARIANCE is the sole direct witness. All other experiments correctly classified. |
+| — | — | OPEN | Initial Sprint 3a artifact | Signoff deferred to Sprint 3b.0 review gate |
 

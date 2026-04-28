@@ -131,7 +131,7 @@ def test_rule4_render_contains_required_sections():
         "## Coherence Panel",
         "## Controls",
         "## Pathfinders",
-        "## Program 2 — Informational Only",
+        "## Contradiction Track - Formalization Incomplete",
         "## Stage Cross-Check",
         "## Obligation Movement",
         "## Caveats",

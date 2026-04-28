@@ -36,6 +36,7 @@ export interface Exp1SchoenfeldRow {
   SchoenfeldBound: number;
   SchoenfeldApplicable: boolean;
   bound_formula?: string;
+  [key: string]: unknown;
 }
 
 export interface Experiment1 {

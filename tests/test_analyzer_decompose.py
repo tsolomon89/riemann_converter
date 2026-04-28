@@ -76,7 +76,7 @@ def test_mapping_provisional_surfaces_on_witness():
 def test_iteration_order_is_canonical():
     run = _run({
         # Insertion order intentionally reversed.
-        "EXP_8": _exp("REGRESSION_CHECK", outcome="IMPLEMENTATION_OK"),
+        "EXP_8": _exp("PROOF_OBLIGATION_WITNESS", outcome="CONSISTENT"),
         "EXP_1": _exp("COHERENCE_WITNESS"),
         "EXP_6": _exp("PROOF_OBLIGATION_WITNESS"),
     })

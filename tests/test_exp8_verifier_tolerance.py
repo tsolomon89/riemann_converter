@@ -49,7 +49,7 @@ def test_exp8_passes_with_scale_normalized_source_limited_tolerance(monkeypatch,
     assert out is not None
     exp8 = out["summary"]["experiments"]["EXP_8"]
     assert exp8["status"] == "PASS"
-    assert exp8["outcome"] == "IMPLEMENTATION_OK"
+    assert exp8["outcome"] == "CONSISTENT"
     assert exp8["metrics"]["worst_p99_abs_dev_normalized"] <= exp8["metrics"]["tol_zero"]
     assert exp8["metrics"]["tol_residual"] >= exp8["metrics"]["tol_residual_source"]
 
@@ -62,5 +62,5 @@ def test_exp8_fails_when_normalized_deviation_exceeds_tol_zero(monkeypatch, tmp_
     assert out is not None
     exp8 = out["summary"]["experiments"]["EXP_8"]
     assert exp8["status"] == "FAIL"
-    assert exp8["outcome"] == "IMPLEMENTATION_BROKEN"
+    assert exp8["outcome"] == "INCONSISTENT"
     assert exp8["metrics"]["worst_p99_abs_dev_normalized"] > exp8["metrics"]["tol_zero"]

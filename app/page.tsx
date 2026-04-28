@@ -128,7 +128,7 @@ const EXPERIMENT_TABS: ExperimentTab[] = [
   { id: "EXP4", label: "PATH-1", sub: "Dilation", color: "orange", program: "PROGRAM_1" },
   { id: "EXP5", label: "PATH-2", sub: "Correspond", color: "cyan", program: "PROGRAM_1" },
   { id: "EXP6", label: "VAL-1", sub: "Beta Stable", color: "yellow", program: "PROGRAM_1" },
-  { id: "EXP8", label: "REG-1", sub: "Scaled-Zeta", color: "emerald", program: "PROGRAM_1" },
+  { id: "EXP8", label: "WIT-1", sub: "Zero Scale", color: "emerald", program: "PROGRAM_1" },
   { id: "EXP9", label: "DEMO-1", sub: "Bounded", color: "purple", program: "PROGRAM_1" },
   { id: "EXP2", label: "P2-1", sub: "Centrifuge", color: "red", program: "PROGRAM_2" },
   { id: "EXP2B", label: "P2-2", sub: "Isolation", color: "emerald", program: "PROGRAM_2" },
@@ -1142,7 +1142,7 @@ export default function Home() {
   };
 
   const renderExperiment8 = () => {
-    if (!data?.experiment_8) return <div className="text-gray-500 p-8">No data for REG-1</div>;
+    if (!data?.experiment_8) return <div className="text-gray-500 p-8">No data for WIT-1</div>;
     // Tolerances are recomputed by the verifier; surface them when present in the summary metrics.
     const exp8Summary = data.summary?.experiments?.["EXP_8"];
     const metrics = (exp8Summary?.metrics ?? {}) as Record<string, unknown>;
@@ -1517,7 +1517,7 @@ export default function Home() {
                                   {activeExp === "EXP5" && <><CheckCircle2 className="text-cyan-500" /> PATH-2 ZERO CORRESPONDENCE</>}
                                   {activeExp === "EXP6" && <><Activity className="text-yellow-500" /> VAL-1 BETA STABILITY</>}
                                   {activeExp === "EXP7" && <><Scale className="text-indigo-500" /> P2-3 CALIBRATED AMPLIFICATION</>}
-                                  {activeExp === "EXP8" && <><RotateCcw className="text-emerald-500" /> REG-1 SCALED-ZETA REGRESSION</>}
+                                  {activeExp === "EXP8" && <><RotateCcw className="text-emerald-500" /> WIT-1 ZERO SCALING WITNESS</>}
                                   {activeExp === "EXP9" && <><Lightbulb className="text-violet-500" /> DEMO-1 BOUNDED VIEW</>}
                                   {activeExp === "EXP10" && <><Activity className="text-amber-400" /> TRANS-1 ZETA GAUGE TRANSPORT</>}
                                 </h2>

@@ -174,7 +174,7 @@ const ALL_EXPERIMENTS: SidebarExperiment[] = [
     { id: "5",  label: "PATH-2: Zero Correspondence",         summaryKey: "EXP_5"  },
     { id: "6",  label: "VAL-1: Beta Stability",               summaryKey: "EXP_6"  },
     { id: "7",  label: "P2-3: Calibrated Amplification",      summaryKey: "EXP_7"  },
-    { id: "8",  label: "REG-1: Scaled-Zeta Regression",       summaryKey: "EXP_8"  },
+    { id: "8",  label: "WIT-1: Zero Scaling Witness",          summaryKey: "EXP_8"  },
     { id: "9",  label: "DEMO-1: Bounded View",                summaryKey: "EXP_9"  },
     { id: "10", label: "TRANS-1: Zeta Gauge Transport",       summaryKey: "EXP_10" },
 ];
@@ -203,7 +203,7 @@ function displayFor(
 // missing (old artifact). Keep in sync with verifier.FUNCTION_MAP / STAGE_MAP.
 const FUNCTION_FALLBACK: Record<string, ExperimentFunction> = {
     EXP_0:  "VISUALIZATION",
-    EXP_1:  "CORE_CALCULATION",
+    EXP_1:  "PROOF_OBLIGATION_WITNESS",
     EXP_1B: "CONTROL",
     EXP_1C: "RESEARCH_NOTE",
     EXP_2:  "EXPLORATORY",
@@ -213,7 +213,7 @@ const FUNCTION_FALLBACK: Record<string, ExperimentFunction> = {
     EXP_5:  "PATHFINDER",
     EXP_6:  "PROOF_OBLIGATION_WITNESS",
     EXP_7:  "EXPLORATORY",
-    EXP_8:  "REGRESSION_CHECK",
+    EXP_8:  "PROOF_OBLIGATION_WITNESS",
     EXP_9:  "DEMONSTRATION",
     EXP_10: "EXPLORATORY",
 };
@@ -359,22 +359,16 @@ function rollupFromOutcomes(
 
 // Per-experiment status badge style (checkbox-row trailing indicator). Keeps
 // the same color grammar as healthBadgeStyle for consistency.
-const expStatusBadgeStyle = (outcome: string | undefined, rawTheoryFit: string | undefined) => {
-    // Prefer canonical outcome vocabulary; fall back to deprecated theory_fit
-    // values so older artifacts still render.
-    const s = outcome ?? rawTheoryFit;
-    switch (s) {
-        // New canonical outcomes
+// Accepts canonical outcome values only (CONSISTENT, IMPLEMENTATION_OK, etc.).
+// Legacy theory_fit vocabulary (SUPPORTS/REFUTES) removed in Sprint 2b.
+const expStatusBadgeStyle = (outcome: string | undefined) => {
+    switch (outcome) {
         case "CONSISTENT":
         case "IMPLEMENTATION_OK":
-        // Legacy theory_fit shim
-        case "SUPPORTS":
         case "PASS":
             return { cls: "text-emerald-300 bg-emerald-900/30 border-emerald-500/40", icon: <CheckCircle2 size={10} /> };
         case "INCONSISTENT":
         case "IMPLEMENTATION_BROKEN":
-        case "REFUTES":
-        case "CONTROL_BROKEN":
         case "FAIL":
             return { cls: "text-red-300 bg-red-900/30 border-red-500/40", icon: <XCircle size={10} /> };
         case "DIRECTIONAL":
@@ -582,7 +576,7 @@ interface Props {
     stageVerdicts?: { [stage: string]: StageVerdict };
     /** Non-theoretic per-stage engine-health aggregate. Drives the stage-mode rollup badge. */
     implementationHealth?: { [stage: string]: ImplementationHealth };
-    /** Map of summary key -> outcome/theory_fit for the trailing per-row badge. */
+    /** Map of summary key -> canonical outcome for the trailing per-row badge. */
     experimentStatuses?: { [summaryKey: string]: string | undefined };
     fidelityTier?: FidelityTier;
     provisionalExperiments?: Set<string>;
@@ -862,12 +856,11 @@ export default function ExperimentSidebar({
                                                 {group.experiments.map((exp) => {
                                                     const isSelected = config.selectedExperiments.includes(exp.id);
                                                     const rawStatus = experimentStatuses?.[exp.summaryKey];
-                                                    const expStyle = expStatusBadgeStyle(rawStatus, undefined);
+                                                    const expStyle = expStatusBadgeStyle(rawStatus);
                                                     const role = roleFor(exp.summaryKey, experimentClassification);
                                                     const roleInfo = roleGlyph(role);
                                                     const fn = functionFor(exp.summaryKey, experimentClassification);
                                                     const fidelitySensitive =
-                                                        fn === "CORE_CALCULATION" ||
                                                         fn === "PROOF_OBLIGATION_WITNESS" ||
                                                         fn === "COHERENCE_WITNESS" ||
                                                         fn === "EXPLORATORY";

@@ -37,11 +37,10 @@ Pathfinder experiments produce *direction*, not *verdict*. A `DIRECTIONAL` outco
 
 _No PATHFINDER experiments._
 
-## Program 2 — Informational Only
+## Contradiction Track - Formalization Incomplete
+Per PROOF_PROGRAM_SPEC.md Decision Log #2, EXP_2 / EXP_2B / EXP_7 are the Contradiction Track. They formalize rogue detectability, no-hiding under compression, and contradiction closure. Until those obligations are closed by formal artifacts, their outcomes are informational only and MUST NOT contribute to the theorem-candidate verdict.
 
-Per PROOF_PROGRAM_SPEC.md Decision Log #2, EXP_2 / EXP_2B / EXP_7 are Program 2 (rogue-detectability research). Their outcomes are informational only and MUST NOT contribute to the theorem-candidate verdict.
-
-_No Program 2 experiments in this run._
+_No Contradiction Track experiments in this run._
 
 ## Stage Cross-Check
 

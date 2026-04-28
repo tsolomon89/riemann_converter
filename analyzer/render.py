@@ -28,13 +28,13 @@ CONTROL_BANNER = (
 
 # Function priority for "dominant member" in a stage cross-check.
 _FUNCTION_PRIORITY = {
-    "CORE_CALCULATION": 0,
+    "CORE_CALCULATION": 0,  # backward-compat only; now PROOF_OBLIGATION_WITNESS in verifier
     "PROOF_OBLIGATION_WITNESS": 1,
     "COHERENCE_WITNESS": 2,
     "PATHFINDER": 3,
     "EXPLORATORY": 4,
     "CONTROL": 5,
-    "REGRESSION_CHECK": 6,
+    "REGRESSION_CHECK": 6,  # backward-compat only; EXP_8 is now PROOF_OBLIGATION_WITNESS
     "RESEARCH_NOTE": 7,
     "DEMONSTRATION": 8,
 }
@@ -326,9 +326,7 @@ def render_report(report: Report) -> str:
         lines.append("")
 
     # 6. Contradiction Track
-    lines.append("## Program 2 — Informational Only")
-    lines.append("")
-    lines[-2] = "## Contradiction Track - Formalization Incomplete"
+    lines.append("## Contradiction Track - Formalization Incomplete")
     lines.append(PROGRAM2_BANNER)
     lines.append("")
     p2 = _program2(run)

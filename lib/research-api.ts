@@ -91,6 +91,8 @@ const EXP_ALIAS_TO_ID: Record<string, string> = {
     "BETA-VALIDATION": "EXP_6",
     "P2-3": "EXP_7",
     "CALIBRATED-AMPLIFICATION": "EXP_7",
+    "WIT-1": "EXP_8",
+    "ZERO-SCALING-WITNESS": "EXP_8",
     "REG-1": "EXP_8",
     "SCALED-ZETA-REGRESSION": "EXP_8",
     "DEMO-1": "EXP_9",

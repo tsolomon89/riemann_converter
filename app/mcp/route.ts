@@ -376,12 +376,17 @@ export async function POST(request: Request) {
     }
 
     try {
-        const result = callTool(name, params.arguments ?? {});
+        const rawResult = callTool(name, params.arguments ?? {});
+        const result = {
+            content: [{ type: "text", text: JSON.stringify(rawResult, null, 2) }],
+        };
         return jsonRpcResult(id, result);
     } catch (error) {
-        if (error instanceof ApiError) {
-            return jsonRpcError(id, -32000, error.message, { status: error.status });
-        }
-        return jsonRpcError(id, -32603, String(error));
+        const errorMessage = error instanceof ApiError ? error.message : String(error);
+        const result = {
+            content: [{ type: "text", text: `Error: ${errorMessage}` }],
+            isError: true,
+        };
+        return jsonRpcResult(id, result);
     }
 }
