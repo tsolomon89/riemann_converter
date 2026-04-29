@@ -1,0 +1,202 @@
+{
+  "certificate_id": "SOC_TAU_AUTHORITATIVE",
+  "status": "SAME_OBJECT_CANDIDATE",
+  "timestamp": "2026-04-28T21:48:25.237501Z",
+  "fidelity": {
+    "dps": 80,
+    "zeros": 20000,
+    "tier": "AUTHORITATIVE"
+  },
+  "object_under_test": {
+    "primary": "explicit_formula_reconstruction",
+    "secondary": [
+      "zero_ensemble",
+      "prime_lattice_relation",
+      "rh_predicate",
+      "transformed_zeta_model"
+    ],
+    "why_selected": "explicit_formula_reconstruction is the primary object because it is the object directly tested by the core experiments (EXP_1 for reconstruction, EXP_6 for predicate, EXP_8 for zeros).",
+    "scope_note": "SAME_OBJECT_CANDIDATE for explicit_formula_reconstruction does not automatically imply SAME_OBJECT_CANDIDATE for \u03b6 itself."
+  },
+  "gauge": {
+    "base_name": "tau",
+    "base_value": 6.283185307179586,
+    "k_values_tested": [
+      0,
+      1,
+      2
+    ],
+    "map": "T_c,k: s \u21a6 s \u00b7 \u03c4^k"
+  },
+  "window": {
+    "original_range": [
+      2,
+      50
+    ],
+    "compressed_range_by_k": {
+      "1": [
+        0.3183098861837907,
+        7.957747154594767
+      ],
+      "2": [
+        0.05066059182116889,
+        1.2665147955292222
+      ],
+      "3": [
+        0.008062883608299874,
+        0.20157209020749683
+      ],
+      "5": [
+        0.00020423522769083663,
+        0.005105880692270915
+      ],
+      "10": [
+        2.0856014114963943e-08,
+        5.214003528740985e-07
+      ],
+      "20": [
+        2.1748666238178756e-16,
+        5.437166559544689e-15
+      ],
+      "50": [
+        2.4662470442006836e-40,
+        6.165617610501709e-39
+      ]
+    },
+    "bounded_window_demonstrated": true,
+    "source": "EXP_9 + gauge geometry"
+  },
+  "zero_handling": {
+    "source": "EXP_8",
+    "display_id": "WIT-1",
+    "same_unscaled_zeros_used": true,
+    "scaled_zeros_tested": true,
+    "metrics": {
+      "p99_abs_dev": 1.9262925711937202e-08,
+      "p95_residual": 2.1335420197704586e-09,
+      "max_abs_dev": 1.9733255795036385e-08,
+      "count_success": 1500,
+      "count_fail": 0,
+      "per_k": {
+        "0": {
+          "max_abs_dev": 4.998492085675269e-10,
+          "p95_abs_dev": 4.809782624621349e-10,
+          "p99_abs_dev": 4.949182314661851e-10,
+          "max_residual": 4.472127184010663e-09,
+          "p95_residual": 2.1335420197704586e-09,
+          "count_success": 500,
+          "count_fail": 0,
+          "count_total": 500
+        },
+        "1": {
+          "max_abs_dev": 3.1406452030768294e-09,
+          "p95_abs_dev": 3.0220755517748527e-09,
+          "p99_abs_dev": 3.10966296020364e-09,
+          "max_residual": 4.472127184010663e-09,
+          "p95_residual": 2.1335420197704586e-09,
+          "count_success": 500,
+          "count_fail": 0,
+          "count_total": 500
+        },
+        "2": {
+          "max_abs_dev": 1.9733255795036385e-08,
+          "p95_abs_dev": 1.8988260704098395e-08,
+          "p99_abs_dev": 1.953858862183209e-08,
+          "max_residual": 4.472127184010663e-09,
+          "p95_residual": 2.1335420197704586e-09,
+          "count_success": 500,
+          "count_fail": 0,
+          "count_total": 500
+        }
+      }
+    },
+    "result": "PASS",
+    "note": "Tests scaled-zeta zero equivalence: predicted mapped zeros t_pred(n,k) = \u03c4^k \u00b7 \u03b3_n are refined against the zeros of F_k(s) = \u03b6(0.5 + (s-0.5)/\u03c4^k)."
+  },
+  "reconstruction_agreement": {
+    "source": "EXP_1",
+    "display_id": "CORE-1",
+    "metrics": {
+      "max_harmonic_drift_vs_k0": 0.0,
+      "max_mobius_drift_vs_k0": 0.0,
+      "max_y_true_drift_vs_k0": 0.0,
+      "stress_max_abs_truth_error": 0.5104566911440855
+    },
+    "result": "PASS",
+    "note": "Tests coordinate-gauge covariance: same unscaled zeros reconstruct the prime staircase identically at scaled X coordinates."
+  },
+  "predicate_preservation": {
+    "source": "EXP_6",
+    "display_id": "VAL-1",
+    "metrics": {
+      "beta_hat_by_k": {
+        "0": 0.5,
+        "1": 0.5,
+        "2": 0.5
+      },
+      "max_beta_drift": 0.0
+    },
+    "critical_line_preserved": "YES",
+    "result": "PASS",
+    "note": "Tests beta-invariance: the optimal \u03b2 minimizing RMSE of the reconstruction at scaled coordinates should be 0.5 for all k. Uses pristine (unscaled) zeros."
+  },
+  "counterexample_visibility": {
+    "sources": [
+      "EXP_2",
+      "EXP_2B",
+      "EXP_7"
+    ],
+    "per_experiment": {
+      "EXP_2": {
+        "outcome": "INCONSISTENT",
+        "status": "FAIL"
+      },
+      "EXP_2B": {
+        "outcome": "INCONSISTENT",
+        "status": "FAIL"
+      },
+      "EXP_7": {
+        "outcome": "CONSISTENT",
+        "status": "PASS"
+      }
+    },
+    "rogue_zero_detected": true,
+    "result": "PASS",
+    "note": "Program 2 exploratory \u2014 does not contribute to certificate status. Included for informational completeness.",
+    "contributes_to_status": false
+  },
+  "controls": {
+    "wrong_operator_scaling_fails": {
+      "source": "EXP_1B",
+      "display_id": "CTRL-1",
+      "outcome": "IMPLEMENTATION_OK",
+      "result": "PASS"
+    },
+    "wrong_beta_fails": {
+      "source": "EXP_3",
+      "display_id": "CTRL-2",
+      "outcome": "IMPLEMENTATION_OK",
+      "result": "PASS"
+    }
+  },
+  "allowed_conclusion": [
+    "Within the tested finite regime, the compressed and uncompressed constructions behave as the same analytic case under the declared gauge."
+  ],
+  "disallowed_conclusion": [
+    "This alone proves RH.",
+    "This alone proves exact predicate transport for all zeros.",
+    "This extends verified ordinate coverage unless the formal transport theorem is supplied.",
+    "\u03b6(t) = \u03b6(\u03c4^k\u00b7t) \u2014 zeta has no known non-trivial multiplicative automorphism (see EXP_10)."
+  ],
+  "remaining_formal_step": {
+    "lemma_needed": "NC4: Prove RH_offline(\u03c1) iff RH_offline(T_c(\u03c1))",
+    "gap_id": "GAP_RH_PREDICATE_TRANSPORT",
+    "condition_id": "NC4",
+    "description": "The certificate shows the objects behave as the same case computationally. What remains is a proof that this holds necessarily, not merely on sampled cases."
+  },
+  "wrong_test_guardrail": {
+    "wrong_test": "Does \u03b6(t) literally equal \u03b6(c^k\u00b7t)?",
+    "right_test": "Does the RH-relevant object/relation/predicate transport under the declared gauge?",
+    "exp10_confirms": "EXP_10 shows \u03b6(t) \u2260 \u03b6(\u03c4^k\u00b7t). This is expected and does NOT falsify the base claim."
+  }
+}

@@ -63,6 +63,8 @@ class RunDecomposition:
     consistency_warnings: list[str] = field(default_factory=list)
     by_function: dict[str, list[ExperimentRecord]] = field(default_factory=dict)
     by_program: dict[str, list[ExperimentRecord]] = field(default_factory=dict)
+    certificate_status: str | None = None
+    proof_assembly: dict[str, Any] | None = None
 
 
 def _derive_timestamp(run: dict[str, Any]) -> str | None:
@@ -194,6 +196,26 @@ def consistency_check(
     return warnings
 
 
+def _extract_certificate_status(summary: dict[str, Any]) -> str | None:
+    """Extract certificate status from proof_assembly or standalone certificate."""
+    pa = summary.get("proof_assembly") or {}
+    cert = pa.get("certificate_status")
+    if cert:
+        return cert
+    # Fallback: try reading from the certificate JSON on disk
+    import json
+    import os
+    cert_path = os.path.join("public", "same_object_certificate.json")
+    if os.path.exists(cert_path):
+        try:
+            with open(cert_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("status")
+        except Exception:
+            pass
+    return None
+
+
 def decompose_run(
     run: dict[str, Any],
     history: list[dict[str, Any]] | None = None,
@@ -254,6 +276,8 @@ def decompose_run(
         experiments=records,
         by_function=by_function,
         by_program=by_program,
+        certificate_status=_extract_certificate_status(summary),
+        proof_assembly=summary.get("proof_assembly"),
     )
 
 

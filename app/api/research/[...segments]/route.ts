@@ -116,6 +116,19 @@ const dispatchGet = async (request: Request, segments: string[]) => {
         );
     }
 
+    if (segments.length === 1 && head === "same-object-certificate") {
+        try {
+            const certPath = require("path").join(process.cwd(), "public", "same_object_certificate.json");
+            const certData = require("fs").readFileSync(certPath, "utf-8");
+            return NextResponse.json(JSON.parse(certData));
+        } catch {
+            return NextResponse.json(
+                { error: "Same-Object Certificate not yet generated. Run: python -m proof_kernel.same_object_certificate" },
+                { status: 404 },
+            );
+        }
+    }
+
     return NextResponse.json({ error: "Not found." }, { status: 404 });
 };
 

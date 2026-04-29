@@ -191,6 +191,90 @@ def render_report(report: Report) -> str:
             lines.append(f"- {w}")
         lines.append("")
 
+    # Same-Object Certificate summary (if available)
+    cert_status = getattr(run, "certificate_status", None)
+    if cert_status:
+        lines.append("## Same-Object Certificate")
+        lines.append("")
+        status_emoji = {
+            "SAME_OBJECT_CANDIDATE": "🟢",
+            "SAME_OBJECT_FAILED": "🔴",
+            "INCONCLUSIVE": "🟡",
+            "NOT_READY": "⚪",
+            "FORMAL_PROOF_REQUIRED": "🔵",
+        }
+        emoji = status_emoji.get(cert_status, "⚪")
+        lines.append(f"**Status:** {emoji} `{cert_status}`")
+        lines.append("")
+        lines.append(
+            "The Same-Object Certificate is the computational smoking gun: a structured "
+            "report that answers whether the compressed and uncompressed constructions "
+            "behave as the same analytic case under the declared gauge."
+        )
+        lines.append("")
+        if cert_status == "SAME_OBJECT_CANDIDATE":
+            lines.append(
+                "All certificate sections **pass**: reconstruction agreement, zero "
+                "correspondence, predicate preservation, and both controls. The remaining "
+                "step is formal: prove NC4 (predicate transport) exactly."
+            )
+        elif cert_status == "SAME_OBJECT_FAILED":
+            lines.append(
+                "**One or more certificate sections failed.** Check the certificate "
+                "detail at `/api/research/same-object-certificate` for specifics."
+            )
+        lines.append("")
+
+    # Proof Assembly (claim-down)
+    proof_assembly = getattr(run, "proof_assembly", None)
+    if proof_assembly and isinstance(proof_assembly, dict):
+        lines.append("## Proof Assembly (Claim-Down)")
+        lines.append("")
+        pa_status = proof_assembly.get("overall_status", "UNKNOWN")
+        lines.append(f"**Overall:** `{pa_status}`")
+        lines.append(
+            f"  Theory alive: {'✅' if proof_assembly.get('theory_alive') else '❌'}"
+            f"  | Formalization alive: {'✅' if proof_assembly.get('formalization_alive') else '❌'}"
+            f"  | Direct route: {'✅' if proof_assembly.get('direct_route_alive') else '❌'}"
+            f"  | Contradiction route: {'✅' if proof_assembly.get('contradiction_route_alive') else '❌'}"
+        )
+        lines.append("")
+
+        conditions = proof_assembly.get("conditions", {})
+        if conditions:
+            lines.append("| NC | Condition | Status | Kill Scope |")
+            lines.append("|---|---|---|---|")
+            for nc_id in sorted(conditions.keys()):
+                cond = conditions[nc_id]
+                lines.append(
+                    f"| {nc_id} | {cond.get('name', '?')} "
+                    f"| {cond.get('status', '?')} "
+                    f"| {cond.get('failure_scope', '?')} |"
+                )
+            lines.append("")
+
+        remaining = proof_assembly.get("remaining_steps", [])
+        if remaining:
+            lines.append("**Remaining formal steps:**")
+            lines.append("")
+            for step in remaining:
+                lines.append(
+                    f"- **{step['nc_id']}** ({step['name']}): "
+                    f"{step.get('what_is_needed', 'needs work')} "
+                    f"[scope: {step.get('scope', '?')}]"
+                )
+            lines.append("")
+
+        failures = proof_assembly.get("failure_events", [])
+        if failures:
+            lines.append("**⚠️ Failure events:**")
+            lines.append("")
+            for fe in failures:
+                lines.append(
+                    f"- **{fe['nc_id']}** ({fe['name']}): scope `{fe['scope']}`"
+                )
+            lines.append("")
+
     core = _core_calculations(run)
     if core:
         lines.append("## Core Calculation")

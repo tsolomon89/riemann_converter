@@ -34,9 +34,11 @@ import Exp8Chart from "../components/Exp8Chart";
 import ProofProgramMap from "../components/ProofProgramMap";
 import IntroPanel from "../components/IntroPanel";
 import OpenGapsPanel from "../components/OpenGapsPanel";
+import SameObjectCertificatePanel from "../components/SameObjectCertificatePanel";
 import { FunctionOutcomeBadge, InferenceRailsCallout } from "../components/VerdictBadges";
 import VerdictHistoryPanel from "../components/VerdictHistoryPanel";
 import { ExperimentsData, ExperimentVerdict } from "../lib/types";
+import type { SameObjectCertificate } from "../lib/same-object-certificate";
 import type { RunEvent, RunLogsPayload, RunStatusPayload } from "../lib/research-types";
 import {
   appendUniqueRunEvents,
@@ -176,6 +178,7 @@ export default function Home() {
   const seenTelemetryEventIdsRef = useRef<Set<string>>(new Set());
   const runLogSourceRef = useRef<RunLogSource>(null);
   const lastTerminalFetchRunIdRef = useRef<string | null>(null);
+  const [certificate, setCertificate] = useState<SameObjectCertificate | null>(null);
 
   // Auto-scroll logs
   useEffect(() => {
@@ -220,6 +223,11 @@ export default function Home() {
   useEffect(() => {
     void fetchData();
     void fetchDeploymentCapabilities();
+    // Fetch Same-Object Certificate
+    fetch("/same_object_certificate.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setCertificate(d as SameObjectCertificate); })
+      .catch(() => { /* certificate not generated yet */ });
   }, [fetchData, fetchDeploymentCapabilities]);
 
   const stopTelemetryPolling = useCallback(() => {
@@ -1478,6 +1486,14 @@ export default function Home() {
                       {/* Ontology / role glossary layer. Subordinate to the theorem target above. */}
                       <section id="intro-panel-section" className="ui-section ui-intro-section">
                           <IntroPanel />
+                      </section>
+
+                      {/* Same-Object Certificate — the smoking gun. */}
+                      <section id="certificate-section" className="ui-section ui-certificate-section">
+                          <SameObjectCertificatePanel
+                              id="same-object-certificate-panel"
+                              certificate={certificate}
+                          />
                       </section>
 
                       {/* Named open-gaps surface (PROOF_PROGRAM_SPEC.md §11). */}

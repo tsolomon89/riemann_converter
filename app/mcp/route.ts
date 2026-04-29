@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 import {
     ApiError,
     cancelRunEnvelope,
@@ -247,6 +249,26 @@ const TOOLS: McpToolDef[] = [
             },
         },
     },
+    {
+        name: "get_same_object_certificate",
+        description: "Get the Same-Object Certificate: a structured report showing whether the compressed and uncompressed constructions behave as the same analytic case under the declared gauge. This is the computational smoking gun.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_base_claim",
+        description: "Get the base compression claim document from the proof kernel.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_necessary_conditions",
+        description: "Get the necessary conditions derived from the base compression claim.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_experiment_relevance",
+        description: "Get the from-scratch experiment relevance audit against the base claim.",
+        inputSchema: { type: "object", properties: {} },
+    },
 ];
 
 const paramsToSearch = (params: Record<string, unknown>) => {
@@ -316,6 +338,38 @@ const callTool = (name: string, args: Record<string, unknown>) => {
             return cancelRunEnvelope(args.run_id ? String(args.run_id) : null);
         case "resume_run":
             return resumeRunEnvelope(parseCanonicalMode(args.mode));
+        case "get_same_object_certificate": {
+            const certPath = path.join(process.cwd(), "public", "same_object_certificate.json");
+            try {
+                return JSON.parse(fs.readFileSync(certPath, "utf-8"));
+            } catch {
+                return { status: "NOT_READY", error: "Certificate not yet generated. Run: python -m proof_kernel.same_object_certificate" };
+            }
+        }
+        case "get_base_claim": {
+            const claimPath = path.join(process.cwd(), "proof_kernel", "base_claim.md");
+            try {
+                return { content: fs.readFileSync(claimPath, "utf-8") };
+            } catch {
+                return { error: "base_claim.md not found" };
+            }
+        }
+        case "get_necessary_conditions": {
+            const ncPath = path.join(process.cwd(), "proof_kernel", "necessary_conditions.md");
+            try {
+                return { content: fs.readFileSync(ncPath, "utf-8") };
+            } catch {
+                return { error: "necessary_conditions.md not found" };
+            }
+        }
+        case "get_experiment_relevance": {
+            const relPath = path.join(process.cwd(), "proof_kernel", "experiment_relevance.md");
+            try {
+                return { content: fs.readFileSync(relPath, "utf-8") };
+            } catch {
+                return { error: "experiment_relevance.md not found" };
+            }
+        }
         default:
             throw new ApiError(404, `Unknown tool: ${name}`);
     }

@@ -7,6 +7,14 @@
 
 Reported `summary.overall = FAIL` at fidelity tier **AUTHORITATIVE** (zeros=20000, dps=80). Witness map review: **PENDING_SIGNOFF**.
 
+## Same-Object Certificate
+
+**Status:** 🟢 `SAME_OBJECT_CANDIDATE`
+
+The Same-Object Certificate is the computational smoking gun: a structured report that answers whether the compressed and uncompressed constructions behave as the same analytic case under the declared gauge.
+
+All certificate sections **pass**: reconstruction agreement, zero correspondence, predicate preservation, and both controls. The remaining step is formal: prove NC4 (predicate transport) exactly.
+
 ## Theorem-Relevant Findings
 
 | Exp | Obligation | Outcome | Tier | Flags | Metrics | Interpretation |

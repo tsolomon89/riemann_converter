@@ -6,6 +6,14 @@ import math
 import datetime
 import time
 
+# Proof-kernel integration
+from proof_kernel.scoped_failure import (
+    build_proof_assembly,
+    load_certificate,
+    classify_experiment_failure,
+    FailureScope,
+)
+
 # Output paths. The Next.js app serves files under repo-root `public/`.
 OUTPUT_FILE = "public/experiments.json"
 HISTORY_FILE = "public/verdict_history.jsonl"
@@ -2340,6 +2348,16 @@ def run_verification(data=None, progress_callback=None, emit_run_events=False):
     # =========================================================================
     summary["proof_program"] = _build_proof_program(
         summary["experiments"], fidelity_tier
+    )
+
+    # =========================================================================
+    # PROOF ASSEMBLY (claim-down; proof_kernel/scoped_failure.py)
+    # Evaluates each necessary condition against available evidence.
+    # Only NC4 (predicate transport) can kill the theory.
+    # =========================================================================
+    _certificate = load_certificate()
+    summary["proof_assembly"] = build_proof_assembly(
+        summary["experiments"], fidelity_tier, _certificate
     )
 
     # Single source of truth for the role/function/stage/obligation map. UI
