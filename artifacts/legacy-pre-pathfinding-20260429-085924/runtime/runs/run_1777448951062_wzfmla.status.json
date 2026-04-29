@@ -1,0 +1,37 @@
+{
+  "run_id": "run_1777448951062_wzfmla",
+  "mode": "verify",
+  "status": "SUCCEEDED",
+  "started_at": "2026-04-29T07:49:11.062Z",
+  "finished_at": "2026-04-29T07:49:11.213Z",
+  "exit_code": 0,
+  "checkpoint_path": "C:\\Development\\Projects\\riemann_converter\\.runtime\\checkpoints\\canonical-verify.checkpoint.json",
+  "checkpoint_compatible": false,
+  "checkpoint_reason": "checkpoint will be created on run",
+  "expectation": "Re-grade existing artifact only (seconds).",
+  "run_config": {
+    "workers": 7,
+    "prime_min_count": 1000000,
+    "prime_target_count": 7000000
+  },
+  "prime_source_info": {
+    "source_kind": "prime_file",
+    "loaded_count": 1000000,
+    "max_prime": 15485863,
+    "bad_rows": 2
+  },
+  "progress": {
+    "phase": "DONE",
+    "completed_units": 100,
+    "total_units": 100,
+    "percent": 100,
+    "eta_seconds": 0,
+    "elapsed_seconds": 0.151,
+    "heartbeat_at": "2026-04-29T07:49:11.214Z"
+  },
+  "last_event_index": 5,
+  "performance": {
+    "phase_durations_seconds": {},
+    "mode_baseline_seconds": 0.06220000000000001
+  }
+}

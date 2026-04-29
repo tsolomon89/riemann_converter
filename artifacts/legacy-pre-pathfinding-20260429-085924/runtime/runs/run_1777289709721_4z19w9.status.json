@@ -1,0 +1,50 @@
+{
+  "run_id": "run_1777289709721_4z19w9",
+  "mode": "custom:0,1,1b,1c,2,2b,3,4,5,6,7,8,9,10",
+  "status": "SUCCEEDED",
+  "started_at": "2026-04-27T11:35:09.721Z",
+  "finished_at": "2026-04-27T18:49:24.671Z",
+  "exit_code": 0,
+  "expectation": "Custom sidebar run using selected experiments and parameter overrides.",
+  "run_config": {
+    "run": "0,1,1b,1c,2,2b,3,4,5,6,7,8,9,10",
+    "zero_source": "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+    "zero_count": 20000,
+    "dps": 80,
+    "resolution": 500,
+    "x_start": 2,
+    "x_end": 50,
+    "beta_offset": 0.0001,
+    "k_power": -20,
+    "workers": 7,
+    "prime_min_count": 6000000,
+    "prime_target_count": 7000000
+  },
+  "prime_source_info": {
+    "source_path": "agent_context/primes.csv",
+    "source_kind": "memory_cache",
+    "target_max_val": 2024,
+    "target_count": 7000000,
+    "min_required_count": 6000000,
+    "loaded_count": 7000000,
+    "max_prime": 122949823,
+    "line_count": 0,
+    "bad_rows": 0,
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "progress": {
+    "phase": "DONE",
+    "current_experiment": "experiment_10",
+    "completed_units": 12,
+    "total_units": 12,
+    "percent": 100,
+    "elapsed_seconds": 26054.951,
+    "heartbeat_at": "2026-04-27T18:49:24.672Z"
+  },
+  "last_event_index": 6254,
+  "performance": {
+    "phase_durations_seconds": {}
+  }
+}

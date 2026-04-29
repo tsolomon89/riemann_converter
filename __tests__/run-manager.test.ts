@@ -150,7 +150,7 @@ describe("run manager", () => {
                         schema_version: "2026.05.0",
                         run: "all",
                         quick: false,
-                        zero_source: "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+                        zero_source: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz",
                         zero_count: 20000,
                         dps: 80,
                     },

@@ -1,0 +1,17 @@
+{
+  "asset_id": "tau_dps_100",
+  "count": null,
+  "created_at": "2026-04-29T07:38:00Z",
+  "errors": [],
+  "generator": "mpmath.pi",
+  "guard_dps": null,
+  "hash": "0f7e584e4de030f91ea31e28ddd08110c38429fb3d4c7773f89ae609b533b6bd",
+  "kind": "tau",
+  "max_value": null,
+  "source_path": "data/constants/tau/tau.dps_100.txt",
+  "stored_dps": 100,
+  "strictly_increasing": null,
+  "usable_dps": 100,
+  "valid": true,
+  "warnings": []
+}

@@ -35,6 +35,7 @@ import ProofProgramMap from "../components/ProofProgramMap";
 import IntroPanel from "../components/IntroPanel";
 import OpenGapsPanel from "../components/OpenGapsPanel";
 import SameObjectCertificatePanel from "../components/SameObjectCertificatePanel";
+import ResearchPathPanel from "../components/ResearchPathPanel";
 import { FunctionOutcomeBadge, InferenceRailsCallout } from "../components/VerdictBadges";
 import VerdictHistoryPanel from "../components/VerdictHistoryPanel";
 import { ExperimentsData, ExperimentVerdict } from "../lib/types";
@@ -1497,6 +1498,10 @@ export default function Home() {
                       </section>
 
                       {/* Named open-gaps surface (PROOF_PROGRAM_SPEC.md §11). */}
+                      <section id="research-path-section" className="ui-section ui-research-path-section">
+                          <ResearchPathPanel id="research-path-panel" />
+                      </section>
+
                       <section id="open-gaps-section" className="ui-section ui-open-gaps-section">
                           <OpenGapsPanel
                               id="open-gaps-panel"

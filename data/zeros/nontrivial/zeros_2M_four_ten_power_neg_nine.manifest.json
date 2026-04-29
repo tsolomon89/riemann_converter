@@ -1,0 +1,19 @@
+{
+  "asset_id": "nontrivial_zeros_count_2001052_dps_9",
+  "count": 2001052,
+  "created_at": "2026-04-29T07:36:25Z",
+  "errors": [],
+  "generator": "existing_file_migration",
+  "guard_dps": null,
+  "hash": "6acacb4707c429bf368f32823a8eef0e0737b6318d3e144c78975a4986d155da",
+  "kind": "nontrivial_zeta_zeros",
+  "max_value": "1132490.658714411",
+  "migrated_at": "2026-04-29T07:36:25Z",
+  "source_original_path": "agent_context/zeros_2M_four_ten_power_neg_nine.gz",
+  "source_path": "data/zeros/nontrivial/zeros_2M_four_ten_power_neg_nine.gz",
+  "stored_dps": 9,
+  "strictly_increasing": true,
+  "usable_dps": 9,
+  "valid": true,
+  "warnings": []
+}

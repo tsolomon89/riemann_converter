@@ -1,0 +1,26 @@
+{
+  "run_id": "run_1777448950989_3ksp0n",
+  "mode": "verify",
+  "status": "SUCCEEDED",
+  "started_at": "2026-04-29T07:49:10.989Z",
+  "finished_at": "2026-04-29T07:49:11.005Z",
+  "exit_code": 0,
+  "checkpoint_path": "C:\\Development\\Projects\\riemann_converter\\.runtime\\checkpoints\\canonical-verify.checkpoint.json",
+  "checkpoint_compatible": false,
+  "checkpoint_reason": "checkpoint will be created on run",
+  "expectation": "Re-grade existing artifact only (seconds).",
+  "progress": {
+    "phase": "DONE",
+    "completed_units": 100,
+    "total_units": 100,
+    "percent": 100,
+    "eta_seconds": 0.05775000000000001,
+    "elapsed_seconds": 0.016,
+    "heartbeat_at": "2026-04-29T07:49:11.005Z"
+  },
+  "last_event_index": 2,
+  "performance": {
+    "phase_durations_seconds": {},
+    "mode_baseline_seconds": 0.07375000000000001
+  }
+}

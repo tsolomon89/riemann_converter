@@ -1,0 +1,22 @@
+{
+  "asset_id": "primes_count_7000000",
+  "count": 7000000,
+  "created_at": "2026-04-29T07:36:25Z",
+  "errors": [],
+  "generation_required_for_current_suite": false,
+  "generator": "existing_file_migration",
+  "guard_dps": null,
+  "hash": "d62b8d4a02e96fcb95fa6247bf129d38b9dcf4d5b2bd5babb7c3c68ce247c389",
+  "kind": "primes",
+  "max_prime": 122949823,
+  "max_value": 122949823,
+  "migrated_at": "2026-04-29T07:36:25Z",
+  "role": "canonical_static_asset",
+  "source_original_path": "agent_context/primes.csv",
+  "source_path": "data/primes/primes.count_7000000.jsonl",
+  "stored_dps": null,
+  "strictly_increasing": true,
+  "usable_dps": null,
+  "valid": true,
+  "warnings": []
+}

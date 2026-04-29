@@ -1,0 +1,4 @@
+{"ts":"2026-04-29T07:47:14.516Z","line":"[run] started args=-u verifier.py --emit-run-events cwd=C:\\Development\\Projects\\riemann_converter\n"}
+{"ts":"2026-04-29T07:47:14.522Z","line":"line-1\n"}
+{"ts":"2026-04-29T07:47:14.550Z","line":"[STDERR] warn-1\n"}
+{"ts":"2026-04-29T07:47:14.556Z","line":"[run] exited code=0\n"}

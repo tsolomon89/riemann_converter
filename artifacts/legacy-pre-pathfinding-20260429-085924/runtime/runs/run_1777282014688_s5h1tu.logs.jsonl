@@ -1,0 +1,11 @@
+{"ts":"2026-04-27T09:26:54.700Z","line":"[run] started args=-u experiment_engine.py --run 0,1,1b,1c,2,2b,3,4,5,6,7,8,9,10 --zero-source generated --emit-run-events --zero-count 20000 --dps 80 --resolution 500 --x-start 0 --x-end 5000 --beta-offset 0.0001 --k-power -20 --prime-min-count 7000000 --prime-target-count 7000000 cwd=C:\\Development\\Projects\\riemann_converter\n"}
+{"ts":"2026-04-27T09:26:54.937Z","line":"  [Math Config] Precision: 80 DPS, Zeros: 20000\n"}
+{"ts":"2026-04-27T09:26:54.938Z","line":"Initialize Experiment Engine...\n"}
+{"ts":"2026-04-27T09:26:54.954Z","line":"Loading cached zeros from agent_context/zeros.dat...\n"}
+{"ts":"2026-04-27T09:26:55.200Z","line":"  > Loaded 19650 zeros.\n"}
+{"ts":"2026-04-27T09:26:55.239Z","line":"  > ERROR: zeros.dat failed strict monotonicity check.\n"}
+{"ts":"2026-04-27T09:26:55.239Z","line":"  > Refusing generated source. Use --allow-corrupt-zero-cache to bypass (not recommended).\n"}
+{"ts":"2026-04-27T09:26:55.241Z","line":"[STDERR] Traceback (most recent call last):\r\n  File \"C:\\Development\\Projects\\riemann_converter\\experiment_engine.py\", line 601, in <module>\r\n"}
+{"ts":"2026-04-27T09:26:55.241Z","line":"[STDERR]     main()\r\n  File \"C:\\Development\\Projects\\riemann_converter\\experiment_engine.py\", line 250, in main\r\n"}
+{"ts":"2026-04-27T09:26:55.242Z","line":"[STDERR]     raise ValueError(\r\nValueError: No zeros were loaded. Check --zero-source path/format and try again. (source='generated')\r\n"}
+{"ts":"2026-04-27T09:26:55.254Z","line":"[run] exited code=1\n"}

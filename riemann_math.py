@@ -11,12 +11,12 @@ from decimal import Decimal, InvalidOperation
 mpmath.mp.dps = 50   # Default
 ZERO_COUNT = 20000  # Default number of zeros to compute
 PRECISION = 50    # Default Decimal places of precision
-PRIMES_FILE = "agent_context/primes.csv"
+PRIMES_FILE = os.getenv("RIEMANN_PRIMES_FILE", "data/primes/primes.count_7000000.jsonl")
 PRIME_MIN_COUNT = 0
 PRIME_TARGET_COUNT = 0
 # Canonical artifact path (Next.js serves repo-root `public/`).
 OUTPUT_FILE = "public/experiments.json"
-ZEROS_FILE = "agent_context/zeros.dat"
+ZEROS_FILE = os.getenv("RIEMANN_ZEROS_FILE", "data/zeros/nontrivial/zeros.generated.jsonl")
 TAU = 2 * mpmath.pi
 _PRIMES_CACHE = None
 _PRIMES_CACHE_INFO = {"bad_rows": 0}
@@ -59,7 +59,7 @@ def _extract_numeric_token(line):
     parts = line.strip().split()
     if not parts:
         return None
-    token = parts[-1]
+    token = parts[-1].strip().strip('"').strip("'")
     if not NUMERIC_TOKEN_RE.match(token):
         return None
     return token
@@ -215,7 +215,7 @@ def get_primes(max_val):
     """
     Returns a list of pure primes up to max_val.
     Used for the TruePi step function.
-    Reads from agent_context/primes.csv.
+    Reads from canonical data/primes storage when available.
     """
     global _PRIMES_CACHE, _PRIMES_CACHE_INFO, LAST_PRIME_SOURCE_INFO
     print(f"Loading primes (target max_val={max_val})...")

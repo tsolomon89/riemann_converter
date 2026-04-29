@@ -1,0 +1,22 @@
+{
+  "run_id": "run_1777448834494_uifojo",
+  "mode": "smoke",
+  "status": "RUNNING",
+  "started_at": "2026-04-29T07:47:14.504Z",
+  "checkpoint_path": "C:\\Development\\Projects\\riemann_converter\\.runtime\\checkpoints\\canonical-smoke.checkpoint.json",
+  "checkpoint_compatible": false,
+  "checkpoint_reason": "checkpoint will be created on run",
+  "expectation": "Quick plumbing check (~1 min).",
+  "progress": {
+    "phase": "PRECHECK",
+    "completed_units": 0,
+    "total_units": 100,
+    "percent": 0,
+    "elapsed_seconds": 0.007,
+    "heartbeat_at": "2026-04-29T07:47:14.511Z"
+  },
+  "last_event_index": 1,
+  "performance": {
+    "phase_durations_seconds": {}
+  }
+}

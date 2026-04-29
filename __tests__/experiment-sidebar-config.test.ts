@@ -92,7 +92,7 @@ describe("experiment sidebar config semantics", () => {
             ...baseConfig,
             runPreset: "overkill_full",
             selectedExperiments: ["2b", "7"],
-            zeroSource: "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+            zeroSource: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz",
             dps: 80,
             zeroCount: 20000,
             workers: 6,

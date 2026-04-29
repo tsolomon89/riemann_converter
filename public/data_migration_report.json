@@ -1,0 +1,117 @@
+{
+  "deprecated_sources": [
+    {
+      "canonical_replacement": "data/primes/primes.count_7000000.jsonl",
+      "deprecated": true,
+      "errors": [],
+      "source_path": "agent_context/primes.csv",
+      "valid": true,
+      "warnings": []
+    },
+    {
+      "canonical_replacement": null,
+      "deprecated": true,
+      "errors": [
+        "Zero ordinates are not strictly increasing."
+      ],
+      "source_path": "agent_context/zeros.dat",
+      "valid": false,
+      "warnings": []
+    },
+    {
+      "canonical_replacement": null,
+      "deprecated": true,
+      "errors": [
+        "Zero ordinates are not strictly increasing."
+      ],
+      "source_path": "agent_context/zeros.dat.bak",
+      "valid": false,
+      "warnings": []
+    },
+    {
+      "canonical_replacement": "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz",
+      "deprecated": true,
+      "errors": [],
+      "source_path": "agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+      "valid": true,
+      "warnings": []
+    },
+    {
+      "canonical_replacement": "data/zeros/nontrivial/zeros_2M_four_ten_power_neg_nine.gz",
+      "deprecated": true,
+      "errors": [],
+      "source_path": "agent_context/zeros_2M_four_ten_power_neg_nine.gz",
+      "valid": true,
+      "warnings": []
+    }
+  ],
+  "errors": [],
+  "migrated_assets": [
+    {
+      "asset_id": "primes_count_7000000",
+      "count": 7000000,
+      "created_at": "2026-04-29T07:36:25Z",
+      "errors": [],
+      "generation_required_for_current_suite": false,
+      "generator": "existing_file_migration",
+      "guard_dps": null,
+      "hash": "d62b8d4a02e96fcb95fa6247bf129d38b9dcf4d5b2bd5babb7c3c68ce247c389",
+      "kind": "primes",
+      "max_prime": 122949823,
+      "max_value": 122949823,
+      "migrated_at": "2026-04-29T07:36:25Z",
+      "role": "canonical_static_asset",
+      "source_original_path": "agent_context/primes.csv",
+      "source_path": "data/primes/primes.count_7000000.jsonl",
+      "stored_dps": null,
+      "strictly_increasing": true,
+      "usable_dps": null,
+      "valid": true,
+      "warnings": []
+    },
+    {
+      "asset_id": "nontrivial_zeros_count_100000_dps_9",
+      "count": 100000,
+      "created_at": "2026-04-29T07:36:25Z",
+      "errors": [],
+      "generator": "existing_file_migration",
+      "guard_dps": null,
+      "hash": "0d17d50f8b2a8bd128219ea03c8bce55d7d947ec8f27d7f56f30973c2e91bad0",
+      "kind": "nontrivial_zeta_zeros",
+      "max_value": "74920.827498994",
+      "migrated_at": "2026-04-29T07:36:25Z",
+      "source_original_path": "agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+      "source_path": "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz",
+      "stored_dps": 9,
+      "strictly_increasing": true,
+      "usable_dps": 9,
+      "valid": true,
+      "warnings": []
+    },
+    {
+      "asset_id": "nontrivial_zeros_count_2001052_dps_9",
+      "count": 2001052,
+      "created_at": "2026-04-29T07:36:25Z",
+      "errors": [],
+      "generator": "existing_file_migration",
+      "guard_dps": null,
+      "hash": "6acacb4707c429bf368f32823a8eef0e0737b6318d3e144c78975a4986d155da",
+      "kind": "nontrivial_zeta_zeros",
+      "max_value": "1132490.658714411",
+      "migrated_at": "2026-04-29T07:36:25Z",
+      "source_original_path": "agent_context/zeros_2M_four_ten_power_neg_nine.gz",
+      "source_path": "data/zeros/nontrivial/zeros_2M_four_ten_power_neg_nine.gz",
+      "stored_dps": 9,
+      "strictly_increasing": true,
+      "usable_dps": 9,
+      "valid": true,
+      "warnings": []
+    }
+  ],
+  "next_action": null,
+  "status": "COMPLETE",
+  "warnings": [
+    "agent_context/zeros.dat was inspected but is not a valid canonical asset.",
+    "agent_context/zeros.dat.bak was inspected but is not a valid canonical asset."
+  ]
+}

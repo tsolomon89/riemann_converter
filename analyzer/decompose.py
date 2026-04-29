@@ -197,22 +197,14 @@ def consistency_check(
 
 
 def _extract_certificate_status(summary: dict[str, Any]) -> str | None:
-    """Extract certificate status from proof_assembly or standalone certificate."""
+    """Extract certificate status from run-local proof assembly metadata."""
+    summary_cert = summary.get("certificate_status")
+    if summary_cert:
+        return summary_cert
     pa = summary.get("proof_assembly") or {}
     cert = pa.get("certificate_status")
     if cert:
         return cert
-    # Fallback: try reading from the certificate JSON on disk
-    import json
-    import os
-    cert_path = os.path.join("public", "same_object_certificate.json")
-    if os.path.exists(cert_path):
-        try:
-            with open(cert_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return data.get("status")
-        except Exception:
-            pass
     return None
 
 

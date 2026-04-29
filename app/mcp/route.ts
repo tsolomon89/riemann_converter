@@ -7,13 +7,21 @@ import {
     compareRunsEnvelope,
     compareScalesEnvelope,
     compareVerdictsEnvelope,
+    explainWhyStopExperimentingEnvelope,
+    explainWhyThisExperimentNextEnvelope,
+    getDataAssetsEnvelope,
+    getDataMigrationReportEnvelope,
+    getDataSufficiencyEnvelope,
     getExperimentEnvelope,
     getHistoryEnvelope,
     getImplementationHealthEnvelope,
     getManifestEnvelope,
+    getNextActionEnvelope,
     getObligationEnvelope,
     getObligationsEnvelope,
     getOpenGapsEnvelope,
+    getPrecisionPolicyEnvelope,
+    getResearchPlanEnvelope,
     getRunEventsEnvelope,
     getRunLogsEnvelope,
     getRunStatusEnvelope,
@@ -61,6 +69,73 @@ const TOOLS: McpToolDef[] = [
     {
         name: "get_theorem_candidate",
         description: "Get theorem candidate statement and non-claims.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_data_assets",
+        description: "Get canonical mathematical data assets and registry summary.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "check_data_sufficiency",
+        description: "Check data sufficiency for a requested research run.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                mode: { type: "string" },
+                experiments: { type: "string" },
+                dps: { type: "integer" },
+                zeros: { type: "integer" },
+                guard_dps: { type: "integer" },
+            },
+        },
+    },
+    {
+        name: "get_precision_policy",
+        description: "Get precision policy for data assets and certificates.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_research_plan",
+        description: "Get the current research pathfinding DAG state and recommended next node.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                mode: { type: "string" },
+                experiments: { type: "string" },
+                dps: { type: "integer" },
+                zeros: { type: "integer" },
+                guard_dps: { type: "integer" },
+            },
+        },
+    },
+    {
+        name: "get_next_action",
+        description: "Get the combined next action from data sufficiency, experiment results, and certificate state.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                mode: { type: "string" },
+                experiments: { type: "string" },
+                dps: { type: "integer" },
+                zeros: { type: "integer" },
+                guard_dps: { type: "integer" },
+            },
+        },
+    },
+    {
+        name: "explain_why_this_experiment_next",
+        description: "Explain why the current next experiment or action is recommended.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "explain_why_stop_experimenting",
+        description: "Explain whether and why empirical testing should stop in favor of proof work.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_data_migration_report",
+        description: "Get the legacy data migration report.",
         inputSchema: { type: "object", properties: {} },
     },
     {
@@ -298,6 +373,22 @@ const callTool = (name: string, args: Record<string, unknown>) => {
             return getManifestEnvelope();
         case "get_theorem_candidate":
             return getTheoremCandidateEnvelope();
+        case "get_data_assets":
+            return getDataAssetsEnvelope();
+        case "check_data_sufficiency":
+            return getDataSufficiencyEnvelope(paramsToSearch(args));
+        case "get_precision_policy":
+            return getPrecisionPolicyEnvelope();
+        case "get_research_plan":
+            return getResearchPlanEnvelope(paramsToSearch(args));
+        case "get_next_action":
+            return getNextActionEnvelope(paramsToSearch(args));
+        case "explain_why_this_experiment_next":
+            return explainWhyThisExperimentNextEnvelope(paramsToSearch(args));
+        case "explain_why_stop_experimenting":
+            return explainWhyStopExperimentingEnvelope(paramsToSearch(args));
+        case "get_data_migration_report":
+            return getDataMigrationReportEnvelope();
         case "get_obligations":
             return getObligationsEnvelope();
         case "get_obligation":
@@ -430,10 +521,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const rawResult = callTool(name, params.arguments ?? {});
-        const result = {
-            content: [{ type: "text", text: JSON.stringify(rawResult, null, 2) }],
-        };
+        const result = callTool(name, params.arguments ?? {});
         return jsonRpcResult(id, result);
     } catch (error) {
         const errorMessage = error instanceof ApiError ? error.message : String(error);

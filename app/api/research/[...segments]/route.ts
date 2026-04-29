@@ -5,6 +5,11 @@ import {
     compareRunsEnvelope,
     compareScalesEnvelope,
     compareVerdictsEnvelope,
+    explainWhyStopExperimentingEnvelope,
+    explainWhyThisExperimentNextEnvelope,
+    getDataAssetsEnvelope,
+    getDataMigrationReportEnvelope,
+    getDataSufficiencyEnvelope,
     getExperimentEnvelope,
     getHistoryEnvelope,
     getImplementationHealthEnvelope,
@@ -13,6 +18,9 @@ import {
     getObligationEnvelope,
     getObligationsEnvelope,
     getOpenGapsEnvelope,
+    getNextActionEnvelope,
+    getPrecisionPolicyEnvelope,
+    getResearchPlanEnvelope,
     getRunEventsEnvelope,
     getRunLogsEnvelope,
     getRunStatusEnvelope,
@@ -56,6 +64,30 @@ const dispatchGet = async (request: Request, segments: string[]) => {
     }
     if (segments.length === 1 && head === "program-docs") {
         return NextResponse.json(getProgramDocsEnvelope());
+    }
+    if (segments.length === 1 && head === "data-assets") {
+        return NextResponse.json(getDataAssetsEnvelope());
+    }
+    if (segments.length === 1 && head === "data-sufficiency") {
+        return NextResponse.json(getDataSufficiencyEnvelope(url.searchParams));
+    }
+    if (segments.length === 1 && head === "research-plan") {
+        return NextResponse.json(getResearchPlanEnvelope(url.searchParams));
+    }
+    if (segments.length === 1 && head === "next-action") {
+        return NextResponse.json(getNextActionEnvelope(url.searchParams));
+    }
+    if (segments.length === 1 && head === "precision-policy") {
+        return NextResponse.json(getPrecisionPolicyEnvelope());
+    }
+    if (segments.length === 1 && head === "data-migration-report") {
+        return NextResponse.json(getDataMigrationReportEnvelope());
+    }
+    if (segments.length === 1 && head === "why-this-experiment-next") {
+        return NextResponse.json(explainWhyThisExperimentNextEnvelope(url.searchParams));
+    }
+    if (segments.length === 1 && head === "why-stop-experimenting") {
+        return NextResponse.json(explainWhyStopExperimentingEnvelope(url.searchParams));
     }
     if (segments.length === 1 && head === "obligations") {
         return NextResponse.json(getObligationsEnvelope());

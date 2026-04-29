@@ -1,0 +1,36 @@
+{
+  "run_id": "run_1777282014688_s5h1tu",
+  "mode": "custom:0,1,1b,1c,2,2b,3,4,5,6,7,8,9,10",
+  "status": "FAILED",
+  "started_at": "2026-04-27T09:26:54.688Z",
+  "finished_at": "2026-04-27T09:26:55.254Z",
+  "exit_code": 1,
+  "expectation": "Custom sidebar run using selected experiments and parameter overrides.",
+  "run_config": {
+    "run": "0,1,1b,1c,2,2b,3,4,5,6,7,8,9,10",
+    "zero_source": "generated",
+    "zero_count": 20000,
+    "dps": 80,
+    "resolution": 500,
+    "x_start": 0,
+    "x_end": 5000,
+    "beta_offset": 0.0001,
+    "k_power": -20,
+    "workers": 7,
+    "prime_min_count": 7000000,
+    "prime_target_count": 7000000
+  },
+  "progress": {
+    "phase": "ZERO_LOAD",
+    "completed_units": 0,
+    "total_units": 100,
+    "percent": 2,
+    "eta_seconds": 27.782999999999998,
+    "elapsed_seconds": 0.567,
+    "heartbeat_at": "2026-04-27T09:26:55.255Z"
+  },
+  "last_event_index": 6,
+  "performance": {
+    "phase_durations_seconds": {}
+  }
+}

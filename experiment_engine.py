@@ -19,6 +19,7 @@ from riemann_math import (
     save_results,
 )
 from verifier import run_verification
+from proof_kernel.run_artifacts import write_run_artifacts
 
 # Schema version of public/experiments.json.
 # Bump when adding/removing/renaming top-level fields or the summary structure.
@@ -582,6 +583,11 @@ def main():
     phase_start("ARTIFACT_WRITE", "Writing artifacts", percent=95)
     set_partial_run_meta(False)
     save_results(data)
+    try:
+        artifact_dir = write_run_artifacts(data, run_id=os.getenv("RIEMANN_RUN_ID"), root=".")
+        print(f"  [Artifacts] Raw run artifacts: {artifact_dir}")
+    except Exception as exc:
+        print(f"  [WARN] Failed to write raw run artifacts: {exc}")
     phase_done("ARTIFACT_WRITE", "Artifact write complete", percent=99)
 
     elapsed = time.time() - t0

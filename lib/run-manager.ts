@@ -148,6 +148,8 @@ const HANDOFF_X_RANGE = {
     x_end: 50,
 };
 
+const CANONICAL_ZERO_100K_SOURCE = "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz";
+
 const withDefaultRunKnobs = (payload: Record<string, unknown>, overrides: Partial<typeof DEFAULT_RUN_KNOBS> = {}) => ({
     ...payload,
     ...DEFAULT_RUN_KNOBS,
@@ -199,7 +201,7 @@ const expectedCompatibilityPayload = (mode: CanonicalRunMode): Record<string, un
             schema_version: SCHEMA_VERSION,
             run: "all",
             quick: false,
-            zero_source: "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+            zero_source: CANONICAL_ZERO_100K_SOURCE,
             zero_count: 20000,
             dps: 80,
             workers: defaultWorkerCount(),
@@ -212,7 +214,7 @@ const expectedCompatibilityPayload = (mode: CanonicalRunMode): Record<string, un
             schema_version: SCHEMA_VERSION,
             run: "all",
             quick: false,
-            zero_source: "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+            zero_source: CANONICAL_ZERO_100K_SOURCE,
             zero_count: 20000,
             dps: 80,
             workers: defaultWorkerCount(),
@@ -370,7 +372,7 @@ const canonicalArgsForMode = (
             return [
                 ...common,
                 "--zero-source",
-                "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+                CANONICAL_ZERO_100K_SOURCE,
                 "--dps",
                 "80",
                 "--prime-min-count",
@@ -382,7 +384,7 @@ const canonicalArgsForMode = (
             return [
                 ...common,
                 "--zero-source",
-                "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+                CANONICAL_ZERO_100K_SOURCE,
                 "--zero-count",
                 "20000",
                 "--dps",

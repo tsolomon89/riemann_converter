@@ -1,0 +1,26 @@
+{
+  "run_id": "run_1777448834838_qh5rxg",
+  "mode": "overkill",
+  "status": "SUCCEEDED",
+  "started_at": "2026-04-29T07:47:14.838Z",
+  "finished_at": "2026-04-29T07:47:14.845Z",
+  "exit_code": 0,
+  "checkpoint_path": "C:\\Development\\Projects\\riemann_converter\\.runtime\\checkpoints\\canonical-overkill.checkpoint.json",
+  "checkpoint_compatible": false,
+  "checkpoint_reason": "checkpoint will be created on run",
+  "expectation": "High-precision stress run (1h+).",
+  "progress": {
+    "phase": "DONE",
+    "completed_units": 100,
+    "total_units": 100,
+    "percent": 100,
+    "eta_seconds": 0.013000000000000001,
+    "elapsed_seconds": 0.007,
+    "heartbeat_at": "2026-04-29T07:47:14.845Z"
+  },
+  "last_event_index": 2,
+  "performance": {
+    "phase_durations_seconds": {},
+    "mode_baseline_seconds": 0.02
+  }
+}

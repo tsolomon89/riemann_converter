@@ -395,7 +395,7 @@ const expStatusBadgeStyle = (outcome: string | undefined) => {
 
 const ZERO_SOURCES = [
     { id: "generated", label: "Generated ( Riemann-Siegel )", path: "generated" },
-    { id: "odlyzko_100k", label: "Odlyzko (100k Zeros)", path: "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz" },
+    { id: "odlyzko_100k", label: "Odlyzko (100k Zeros)", path: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz" },
 ];
 
 const PRESET_DEFS: Array<{
@@ -433,7 +433,7 @@ const PRESET_DEFS: Array<{
         label: "Overkill",
         hint: "Stress profile with min/target 1,000,000 primes.",
         patch: {
-            zeroSource: "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+            zeroSource: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz",
             zeroCount: 20000,
             dps: 80,
             primeMinCount: 1_000_000,
@@ -445,7 +445,7 @@ const PRESET_DEFS: Array<{
         label: "Overkill Full",
         hint: "Stress profile with full prime target (7,000,000).",
         patch: {
-            zeroSource: "file:agent_context/zeros_100K_three_ten_power_neg_nine.gz",
+            zeroSource: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz",
             zeroCount: 20000,
             dps: 80,
             primeMinCount: 1_000_000,

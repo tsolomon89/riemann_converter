@@ -1,0 +1,24 @@
+{
+  "run_id": "run_1777448801101_wsimak",
+  "mode": "overkill_full",
+  "status": "SUCCEEDED",
+  "started_at": "2026-04-29T07:46:41.102Z",
+  "finished_at": "2026-04-29T07:46:41.113Z",
+  "exit_code": 0,
+  "checkpoint_path": "C:\\Development\\Projects\\riemann_converter\\.runtime\\checkpoints\\canonical-overkill_full.checkpoint.json",
+  "checkpoint_compatible": false,
+  "checkpoint_reason": "checkpoint will be created on run",
+  "expectation": "High-precision stress run with full prime file (1h+).",
+  "progress": {
+    "phase": "DONE",
+    "completed_units": 100,
+    "total_units": 100,
+    "percent": 100,
+    "elapsed_seconds": 0.011,
+    "heartbeat_at": "2026-04-29T07:46:41.113Z"
+  },
+  "last_event_index": 2,
+  "performance": {
+    "phase_durations_seconds": {}
+  }
+}

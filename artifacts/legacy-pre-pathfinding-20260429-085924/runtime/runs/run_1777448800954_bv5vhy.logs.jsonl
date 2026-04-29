@@ -1,0 +1,1 @@
+{"ts":"2026-04-29T07:46:40.956Z","line":"[run] started args=-u experiment_engine.py --run all --emit-run-events --skip-unchanged --checkpoint-out C:\\Development\\Projects\\riemann_converter\\.runtime\\checkpoints\\canonical-smoke.checkpoint.json --quick cwd=C:\\Development\\Projects\\riemann_converter\n"}

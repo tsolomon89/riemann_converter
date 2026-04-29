@@ -1,0 +1,26 @@
+{
+  "run_id": "run_1777448834745_e848ez",
+  "mode": "verify",
+  "status": "CANCELLED",
+  "started_at": "2026-04-29T07:47:14.778Z",
+  "finished_at": "2026-04-29T07:47:14.807Z",
+  "exit_code": 143,
+  "checkpoint_path": "C:\\Development\\Projects\\riemann_converter\\.runtime\\checkpoints\\canonical-verify.checkpoint.json",
+  "checkpoint_compatible": false,
+  "checkpoint_reason": "checkpoint will be created on run",
+  "expectation": "Re-grade existing artifact only (seconds).",
+  "progress": {
+    "phase": "PRECHECK",
+    "completed_units": 0,
+    "total_units": 100,
+    "percent": 0,
+    "eta_seconds": 0.04475000000000001,
+    "elapsed_seconds": 0.029,
+    "heartbeat_at": "2026-04-29T07:47:14.807Z"
+  },
+  "last_event_index": 3,
+  "performance": {
+    "phase_durations_seconds": {},
+    "mode_baseline_seconds": 0.07375000000000001
+  }
+}

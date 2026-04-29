@@ -89,6 +89,7 @@ def _build_rule4_run():
                 "obligations": [{"id": "OBL_BETA_INVARIANCE", "status": "BLOCKED"}],
                 "witness_map_review": {"status": "PENDING_SIGNOFF"},
             },
+            "certificate_status": "SAME_OBJECT_CANDIDATE",
         },
     }
 

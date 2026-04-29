@@ -1,0 +1,2 @@
+{"ts":"2026-04-29T07:46:41.074Z","line":"[run] started args=-u experiment_engine.py --run all --emit-run-events --skip-unchanged --checkpoint-out C:\\Development\\Projects\\riemann_converter\\.runtime\\checkpoints\\canonical-overkill.checkpoint.json --zero-source file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz --dps 80 --prime-min-count 1000000 --prime-target-count 1000000 cwd=C:\\Development\\Projects\\riemann_converter\n"}
+{"ts":"2026-04-29T07:46:41.084Z","line":"[run] exited code=0\n"}

@@ -30,6 +30,15 @@ import type {
 } from "./research-types";
 import { getDeploymentCapabilities } from "./deployment-policy";
 import { readArtifact, readHistory, readProgramDocsSections, resolveWitnessMapStatus } from "./research-service";
+import { getDataAssets, readDataMigrationReport } from "./data-assets";
+import { checkDataSufficiency, type DataPlannerInput } from "./data-planner";
+import { getPrecisionPolicy } from "./precision-policy";
+import { buildResearchPlan } from "./research-plan";
+import {
+    buildNextAction,
+    explainWhyStopExperimenting,
+    explainWhyThisExperimentNext,
+} from "./next-action";
 import {
     cancelRun,
     getRunEvents,
@@ -237,6 +246,52 @@ const getArtifactIfAvailable = (): ExperimentsData | undefined => {
         return undefined;
     }
 };
+
+const readSameObjectCertificateSafe = () => {
+    try {
+        const certPath = require("path").join(process.cwd(), "public", "same_object_certificate.json");
+        const certData = require("fs").readFileSync(certPath, "utf-8");
+        return JSON.parse(certData);
+    } catch {
+        return null;
+    }
+};
+
+const parseResearchPlannerInput = (
+    query: URLSearchParams,
+    artifact?: ExperimentsData,
+): DataPlannerInput => {
+    const experiments = toStringArray(query.get("experiments"));
+    const noCurrentRun = artifact?.summary?.engine_status === "NO_CURRENT_RUN";
+    const artifactDps = noCurrentRun ? undefined : artifact?.meta?.dps;
+    const artifactZeros = noCurrentRun ? undefined : artifact?.meta?.zeros;
+    const defaultDps = artifactDps && artifactDps > 0 ? artifactDps : 80;
+    const defaultZeroCount = artifactZeros && artifactZeros > 0 ? artifactZeros : 100000;
+    return {
+        mode: query.get("mode") ?? "same_object_certificate",
+        experiments: experiments ?? ["EXP_1", "EXP_6", "EXP_8"],
+        requested_dps: toInt(query.get("dps"), defaultDps),
+        requested_zero_count: toInt(query.get("zeros"), defaultZeroCount),
+        guard_dps: toInt(query.get("guard_dps"), 20),
+        x_end: query.get("x_end") ? Number(query.get("x_end")) : undefined,
+        k_values: query.get("k_values") ?? undefined,
+        n_test: query.get("n_test") ? Number(query.get("n_test")) : undefined,
+        prime_min_count: query.get("prime_min_count") ? Number(query.get("prime_min_count")) : undefined,
+        prime_target_count: query.get("prime_target_count") ? Number(query.get("prime_target_count")) : undefined,
+    };
+};
+
+const withResearchSummary = <T extends Record<string, unknown>>(
+    payload: T,
+    summary: string,
+    warnings: string[] = [],
+    nextAction?: string | null,
+) => ({
+    ...payload,
+    plain_language_summary: summary,
+    warnings,
+    next_action: nextAction ?? null,
+});
 
 const numericSummary = (points: Record<string, unknown>[]): Record<string, { min: number; max: number; mean: number }> => {
     const buckets: Record<string, number[]> = {};
@@ -551,6 +606,137 @@ export const getProgramDocsEnvelope = (): ResearchEnvelope<ProgramDocsPayload> =
         refreshed_at: new Date().toISOString(),
         sections: readProgramDocsSections(),
     });
+};
+
+export const getDataAssetsEnvelope = () => {
+    const artifact = getArtifactIfAvailable();
+    const payload = getDataAssets();
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            payload,
+            "Canonical mathematical data assets are registered under data/. agent_context is deprecated for runtime data.",
+            payload.warnings,
+            payload.warnings.length > 0 ? "inspect_data_manifest" : null,
+        ),
+    );
+};
+
+export const getPrecisionPolicyEnvelope = () => {
+    const artifact = getArtifactIfAvailable();
+    const policy = getPrecisionPolicy();
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            { policy },
+            "Research assets must meet requested experiment dps plus guard dps; display floats are UI-only.",
+            [],
+            null,
+        ),
+    );
+};
+
+export const getDataMigrationReportEnvelope = () => {
+    const artifact = getArtifactIfAvailable();
+    const report = readDataMigrationReport();
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            { report },
+            report.status === "COMPLETE"
+                ? "Legacy mathematical assets were migrated into canonical data/ storage."
+                : "Data migration is not complete; inspect warnings and next_action.",
+            report.warnings ?? [],
+            report.next_action,
+        ),
+    );
+};
+
+export const getDataSufficiencyEnvelope = (query: URLSearchParams) => {
+    const artifact = getArtifactIfAvailable();
+    const input = parseResearchPlannerInput(query, artifact);
+    const sufficiency = checkDataSufficiency(input);
+    const summary =
+        sufficiency.status === "READY"
+            ? "Data assets satisfy the requested count, coverage, and guard precision."
+            : "Data assets are not sufficient for the requested research run.";
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            { input, sufficiency },
+            summary,
+            sufficiency.warnings,
+            sufficiency.next_action,
+        ),
+    );
+};
+
+export const getResearchPlanEnvelope = (query: URLSearchParams = new URLSearchParams()) => {
+    const artifact = getArtifactIfAvailable();
+    const input = parseResearchPlannerInput(query, artifact);
+    const sufficiency = checkDataSufficiency(input);
+    const certificate = readSameObjectCertificateSafe();
+    const plan = buildResearchPlan(sufficiency, artifact, certificate);
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            { input, data_sufficiency: sufficiency, research_plan: plan },
+            plan.why,
+            sufficiency.warnings,
+            plan.recommended_next_action,
+        ),
+    );
+};
+
+export const getNextActionEnvelope = (query: URLSearchParams = new URLSearchParams()) => {
+    const artifact = getArtifactIfAvailable();
+    const input = parseResearchPlannerInput(query, artifact);
+    const sufficiency = checkDataSufficiency(input);
+    const certificate = readSameObjectCertificateSafe();
+    const next = buildNextAction(sufficiency, artifact, certificate);
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            { input, next },
+            next.why ?? "Next action resolved.",
+            sufficiency.warnings,
+            next.next_action,
+        ),
+    );
+};
+
+export const explainWhyThisExperimentNextEnvelope = (query: URLSearchParams = new URLSearchParams()) => {
+    const artifact = getArtifactIfAvailable();
+    const input = parseResearchPlannerInput(query, artifact);
+    const sufficiency = checkDataSufficiency(input);
+    const certificate = readSameObjectCertificateSafe();
+    const explanation = explainWhyThisExperimentNext(buildNextAction(sufficiency, artifact, certificate));
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            explanation,
+            explanation.explanation ?? "Next experiment/action explanation resolved.",
+            [],
+            explanation.recommended_next_action,
+        ),
+    );
+};
+
+export const explainWhyStopExperimentingEnvelope = (query: URLSearchParams = new URLSearchParams()) => {
+    const artifact = getArtifactIfAvailable();
+    const input = parseResearchPlannerInput(query, artifact);
+    const sufficiency = checkDataSufficiency(input);
+    const certificate = readSameObjectCertificateSafe();
+    const explanation = explainWhyStopExperimenting(buildNextAction(sufficiency, artifact, certificate));
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            explanation,
+            explanation.explanation,
+            [],
+            explanation.recommended_next_action,
+        ),
+    );
 };
 
 export const getTheoremCandidateEnvelope = (): ResearchEnvelope<TheoremCandidatePayload> => {

@@ -372,6 +372,13 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
     with open(experiments_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    artifact_source = "raw_high_precision" if os.path.basename(experiments_path) == "raw.json" else "display_floats"
+    artifact_source_warnings = []
+    if artifact_source == "display_floats":
+        artifact_source_warnings.append(
+            "Certificate was built from public display artifacts; prefer raw high-precision artifacts when available."
+        )
+
     summary_block = data.get("summary", {})
     experiments = summary_block.get("experiments", {})
     meta = data.get("meta", {})
@@ -409,6 +416,10 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
         "status": status,
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
         "fidelity": fidelity,
+        "artifact_source_policy": {
+            "built_from": artifact_source,
+            "warnings": artifact_source_warnings,
+        },
 
         "object_under_test": {
             "primary": primary_object,

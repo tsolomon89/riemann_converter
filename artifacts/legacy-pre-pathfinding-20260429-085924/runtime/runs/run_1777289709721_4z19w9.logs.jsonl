@@ -1,0 +1,511 @@
+{"ts":"2026-04-27T11:35:09.731Z","line":"[run] started args=-u experiment_engine.py --run 0,1,1b,1c,2,2b,3,4,5,6,7,8,9,10 --zero-source file:agent_context/zeros_100K_three_ten_power_neg_nine.gz --emit-run-events --zero-count 20000 --dps 80 --resolution 500 --x-start 2 --x-end 50 --beta-offset 0.0001 --k-power -20 --prime-min-count 6000000 --prime-target-count 7000000 cwd=C:\\Development\\Projects\\riemann_converter\n"}
+{"ts":"2026-04-27T11:35:09.957Z","line":"  [Math Config] Precision: 80 DPS, Zeros: 20000\n"}
+{"ts":"2026-04-27T11:35:09.957Z","line":"Initialize Experiment Engine...\n"}
+{"ts":"2026-04-27T11:35:09.976Z","line":"Loading zeros from external file: agent_context/zeros_100K_three_ten_power_neg_nine.gz...\n"}
+{"ts":"2026-04-27T11:35:10.289Z","line":"  > Loaded 20000 zeros from agent_context/zeros_100K_three_ten_power_neg_nine.gz.\n"}
+{"ts":"2026-04-27T11:35:10.294Z","line":"Generating code fingerprints...\n"}
+{"ts":"2026-04-27T11:35:10.301Z","line":"\n"}
+{"ts":"2026-04-27T11:35:10.301Z","line":"--- ZETA-0: Critical Line Polar Trace ---\n"}
+{"ts":"2026-04-27T11:35:10.309Z","line":"Running Experiment 0: zeta polar trace on critical line...\n"}
+{"ts":"2026-04-27T11:35:12.509Z","line":"  > Polar trace: 500 samples on t in [2.0, 50.0]; 10 zero markers in range.\n"}
+{"ts":"2026-04-27T11:35:12.509Z","line":"  > Dual window: 200 samples on t in [14.0, 32.0] vs scaled by tau^1 to [87.96, 201.06].\n"}
+{"ts":"2026-04-27T11:35:12.511Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T11:35:12.530Z","line":"\n"}
+{"ts":"2026-04-27T11:35:12.530Z","line":"--- CORE-1: Harmonic Converter ---\n"}
+{"ts":"2026-04-27T11:35:12.558Z","line":"Running Experiment 1: Riemann Converter tau-substitution [Res=500, Range=2.0-50.0]...\n"}
+{"ts":"2026-04-27T11:35:12.558Z","line":"Loading primes (target max_val=2073.920880217872)...\n"}
+{"ts":"2026-04-27T11:35:28.846Z","line":"  > Loaded prime file (7000000 primes, Max: 122949823, bad rows: 0).\n"}
+{"ts":"2026-04-27T11:35:28.906Z","line":"  > Building main converter curves...\n"}
+{"ts":"2026-04-27T11:36:40.596Z","line":"  > Running EXP1 support: scaled-coordinate stress [Res=500, Range=2.0-50.0]...\n"}
+{"ts":"2026-04-27T11:36:40.597Z","line":"Loading primes (target max_val=2073.920880217872)...\n"}
+{"ts":"2026-04-27T11:36:40.597Z","line":"  > Using cached prime file (7000000 primes, Max: 122949823).\n"}
+{"ts":"2026-04-27T11:36:40.597Z","line":"  > Processing Scale K=-2...\n"}
+{"ts":"2026-04-27T11:36:42.312Z","line":"    > Point 0/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.314Z","line":"    > Point 50/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.325Z","line":"    > Point 100/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.336Z","line":"    > Point 150/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.353Z","line":"    > Point 200/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.369Z","line":"    > Point 250/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.393Z","line":"    > Point 300/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.429Z","line":"    > Point 350/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.434Z","line":"    > Point 400/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.456Z","line":"    > Point 450/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.480Z","line":"    > Point 500/500 (K=-2)\n"}
+{"ts":"2026-04-27T11:36:42.481Z","line":"  > Processing Scale K=-1...\n"}
+{"ts":"2026-04-27T11:38:26.301Z","line":"    > Point 0/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.303Z","line":"    > Point 50/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.312Z","line":"    > Point 100/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.327Z","line":"    > Point 150/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.329Z","line":"    > Point 200/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.345Z","line":"    > Point 250/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.359Z","line":"    > Point 300/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.367Z","line":"    > Point 350/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.368Z","line":"    > Point 400/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.384Z","line":"    > Point 450/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.399Z","line":"    > Point 500/500 (K=-1)\n"}
+{"ts":"2026-04-27T11:38:26.400Z","line":"  > Processing Scale K=0...\n"}
+{"ts":"2026-04-27T11:42:12.309Z","line":"    > Point 0/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.312Z","line":"    > Point 50/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.314Z","line":"    > Point 100/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.316Z","line":"    > Point 150/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.340Z","line":"    > Point 200/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.351Z","line":"    > Point 250/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.376Z","line":"    > Point 300/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.389Z","line":"    > Point 350/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.398Z","line":"    > Point 400/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.408Z","line":"    > Point 450/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.429Z","line":"    > Point 500/500 (K=0)\n"}
+{"ts":"2026-04-27T11:42:12.429Z","line":"  > Processing Scale K=1...\n"}
+{"ts":"2026-04-27T11:49:22.138Z","line":"    > Point 0/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.140Z","line":"    > Point 50/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.156Z","line":"    > Point 100/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.176Z","line":"    > Point 150/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.191Z","line":"    > Point 200/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.207Z","line":"    > Point 250/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.223Z","line":"    > Point 300/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.239Z","line":"    > Point 350/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.256Z","line":"    > Point 400/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.265Z","line":"    > Point 450/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.282Z","line":"    > Point 500/500 (K=1)\n"}
+{"ts":"2026-04-27T11:49:22.282Z","line":"  > Processing Scale K=2...\n"}
+{"ts":"2026-04-27T11:56:26.830Z","line":"    > Point 0/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.832Z","line":"    > Point 50/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.848Z","line":"    > Point 100/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.857Z","line":"    > Point 150/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.865Z","line":"    > Point 200/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.881Z","line":"    > Point 250/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.891Z","line":"    > Point 300/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.901Z","line":"    > Point 350/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.916Z","line":"    > Point 400/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.925Z","line":"    > Point 450/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.948Z","line":"    > Point 500/500 (K=2)\n"}
+{"ts":"2026-04-27T11:56:26.949Z","line":"  > EXP1 support stress done.       \n"}
+{"ts":"2026-04-27T11:56:27.541Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T11:56:27.847Z","line":"\n"}
+{"ts":"2026-04-27T11:56:27.847Z","line":"--- CTRL-1: Operator Scaling Control ---\n"}
+{"ts":"2026-04-27T11:56:27.855Z","line":"Running Experiment 1B: Operator Gauge Chains... [Res=500]\n"}
+{"ts":"2026-04-27T11:56:27.855Z","line":"Loading primes (target max_val=60.0)...\n"}
+{"ts":"2026-04-27T11:56:27.857Z","line":"  > Using cached prime file (7000000 primes, Max: 122949823).\n"}
+{"ts":"2026-04-27T11:56:27.857Z","line":"  > [Variant B1] Gamma Scaling...\n"}
+{"ts":"2026-04-27T12:00:23.438Z","line":"    > [Gamma] Point 0/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.441Z","line":"    > [Gamma] Point 50/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.451Z","line":"    > [Gamma] Point 100/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.470Z","line":"    > [Gamma] Point 150/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.489Z","line":"    > [Gamma] Point 200/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.507Z","line":"    > [Gamma] Point 250/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.525Z","line":"    > [Gamma] Point 300/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.535Z","line":"    > [Gamma] Point 350/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.544Z","line":"    > [Gamma] Point 400/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.552Z","line":"    > [Gamma] Point 450/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:00:23.569Z","line":"    > [Gamma] Point 500/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:04:34.943Z","line":"    > [Gamma] Point 0/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:34.946Z","line":"    > [Gamma] Point 50/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:34.960Z","line":"    > [Gamma] Point 100/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:34.964Z","line":"    > [Gamma] Point 150/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:34.985Z","line":"    > [Gamma] Point 200/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:35.008Z","line":"    > [Gamma] Point 250/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:35.024Z","line":"    > [Gamma] Point 300/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:35.047Z","line":"    > [Gamma] Point 350/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:35.073Z","line":"    > [Gamma] Point 400/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:35.092Z","line":"    > [Gamma] Point 450/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:04:35.124Z","line":"    > [Gamma] Point 500/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:08:40.484Z","line":"    > [Gamma] Point 0/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.486Z","line":"    > [Gamma] Point 50/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.502Z","line":"    > [Gamma] Point 100/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.512Z","line":"    > [Gamma] Point 150/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.527Z","line":"    > [Gamma] Point 200/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.543Z","line":"    > [Gamma] Point 250/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.559Z","line":"    > [Gamma] Point 300/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.576Z","line":"    > [Gamma] Point 350/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.592Z","line":"    > [Gamma] Point 400/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.607Z","line":"    > [Gamma] Point 450/500 (K=0)\n"}
+{"ts":"2026-04-27T12:08:40.633Z","line":"    > [Gamma] Point 500/500 (K=0)\n"}
+{"ts":"2026-04-27T12:12:38.488Z","line":"    > [Gamma] Point 0/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.490Z","line":"    > [Gamma] Point 50/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.506Z","line":"    > [Gamma] Point 100/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.515Z","line":"    > [Gamma] Point 150/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.531Z","line":"    > [Gamma] Point 200/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.546Z","line":"    > [Gamma] Point 250/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.562Z","line":"    > [Gamma] Point 300/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.579Z","line":"    > [Gamma] Point 350/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.595Z","line":"    > [Gamma] Point 400/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.611Z","line":"    > [Gamma] Point 450/500 (K=1)\n"}
+{"ts":"2026-04-27T12:12:38.620Z","line":"    > [Gamma] Point 500/500 (K=1)\n"}
+{"ts":"2026-04-27T12:16:39.240Z","line":"    > [Gamma] Point 0/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.244Z","line":"    > [Gamma] Point 50/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.259Z","line":"    > [Gamma] Point 100/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.268Z","line":"    > [Gamma] Point 150/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.276Z","line":"    > [Gamma] Point 200/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.292Z","line":"    > [Gamma] Point 250/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.308Z","line":"    > [Gamma] Point 300/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.326Z","line":"    > [Gamma] Point 350/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.341Z","line":"    > [Gamma] Point 400/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.358Z","line":"    > [Gamma] Point 450/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.373Z","line":"    > [Gamma] Point 500/500 (K=2)\n"}
+{"ts":"2026-04-27T12:16:39.374Z","line":"\n"}
+{"ts":"2026-04-27T12:16:39.374Z","line":"  > [Variant B2] Rho Scaling (Beta+Gamma)...\n"}
+{"ts":"2026-04-27T12:20:48.693Z","line":"    > [Rho] Point 0/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.696Z","line":"    > [Rho] Point 50/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.710Z","line":"    > [Rho] Point 100/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.731Z","line":"    > [Rho] Point 150/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.744Z","line":"    > [Rho] Point 200/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.764Z","line":"    > [Rho] Point 250/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.785Z","line":"    > [Rho] Point 300/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.794Z","line":"    > [Rho] Point 350/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.812Z","line":"    > [Rho] Point 400/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.831Z","line":"    > [Rho] Point 450/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:20:48.850Z","line":"    > [Rho] Point 500/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:25:07.843Z","line":"    > [Rho] Point 0/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.853Z","line":"    > [Rho] Point 50/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.863Z","line":"    > [Rho] Point 100/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.882Z","line":"    > [Rho] Point 150/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.892Z","line":"    > [Rho] Point 200/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.900Z","line":"    > [Rho] Point 250/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.918Z","line":"    > [Rho] Point 300/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.939Z","line":"    > [Rho] Point 350/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.956Z","line":"    > [Rho] Point 400/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.973Z","line":"    > [Rho] Point 450/500 (K=0)\n"}
+{"ts":"2026-04-27T12:25:07.991Z","line":"    > [Rho] Point 500/500 (K=0)\n"}
+{"ts":"2026-04-27T12:29:25.644Z","line":"    > [Rho] Point 0/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.646Z","line":"    > [Rho] Point 50/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.655Z","line":"    > [Rho] Point 100/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.671Z","line":"    > [Rho] Point 150/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.688Z","line":"    > [Rho] Point 200/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.704Z","line":"    > [Rho] Point 250/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.722Z","line":"    > [Rho] Point 300/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.738Z","line":"    > [Rho] Point 350/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.754Z","line":"    > [Rho] Point 400/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.770Z","line":"    > [Rho] Point 450/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.793Z","line":"    > [Rho] Point 500/500 (K=1)\n"}
+{"ts":"2026-04-27T12:29:25.794Z","line":"\n"}
+{"ts":"2026-04-27T12:29:25.794Z","line":"  > Experiment 1B Done.\n"}
+{"ts":"2026-04-27T12:29:25.794Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T12:29:26.058Z","line":"\n"}
+{"ts":"2026-04-27T12:29:26.059Z","line":"--- NOTE-1: Zero-Reuse Note ---\n"}
+{"ts":"2026-04-27T12:29:26.066Z","line":"Running Experiment 1C: Zero Scaling (tau-Lattice)... [Res=500]\n"}
+{"ts":"2026-04-27T12:29:26.067Z","line":"Loading primes (target max_val=2073.920880217872)...\n"}
+{"ts":"2026-04-27T12:29:26.067Z","line":"  > Using cached prime file (7000000 primes, Max: 122949823).\n"}
+{"ts":"2026-04-27T12:29:26.067Z","line":"  > Processing Scale K=-2...\n"}
+{"ts":"2026-04-27T12:29:26.633Z","line":"    > Point 0/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:30:05.285Z","line":"    > Point 50/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:31:08.528Z","line":"    > Point 100/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:32:11.007Z","line":"    > Point 150/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:33:15.785Z","line":"    > Point 200/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:34:20.886Z","line":"    > Point 250/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:35:28.088Z","line":"    > Point 300/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:36:52.496Z","line":"    > Point 350/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:38:29.259Z","line":"    > Point 400/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:39:54.375Z","line":"    > Point 450/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:41:18.356Z","line":"    > Point 500/500 (K=-2)\n"}
+{"ts":"2026-04-27T12:41:18.356Z","line":"    > Finished K=-2            \n"}
+{"ts":"2026-04-27T12:41:18.356Z","line":"  > Processing Scale K=-1...\n"}
+{"ts":"2026-04-27T12:41:18.811Z","line":"    > Point 0/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:41:52.911Z","line":"    > Point 50/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:42:51.361Z","line":"    > Point 100/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:44:11.432Z","line":"    > Point 150/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:45:35.623Z","line":"    > Point 200/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:47:04.302Z","line":"    > Point 250/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:48:49.819Z","line":"    > Point 300/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:50:51.833Z","line":"    > Point 350/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:52:59.862Z","line":"    > Point 400/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:55:06.783Z","line":"    > Point 450/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:57:13.900Z","line":"    > Point 500/500 (K=-1)\n"}
+{"ts":"2026-04-27T12:57:13.900Z","line":"    > Finished K=-1            \n"}
+{"ts":"2026-04-27T12:57:13.900Z","line":"  > Processing Scale K=0...\n"}
+{"ts":"2026-04-27T12:57:14.825Z","line":"    > Point 0/500 (K=0)\n"}
+{"ts":"2026-04-27T12:58:22.591Z","line":"    > Point 50/500 (K=0)\n"}
+{"ts":"2026-04-27T13:00:18.771Z","line":"    > Point 100/500 (K=0)\n"}
+{"ts":"2026-04-27T13:02:25.700Z","line":"    > Point 150/500 (K=0)\n"}
+{"ts":"2026-04-27T13:04:32.613Z","line":"    > Point 200/500 (K=0)\n"}
+{"ts":"2026-04-27T13:06:40.498Z","line":"    > Point 250/500 (K=0)\n"}
+{"ts":"2026-04-27T13:08:52.987Z","line":"    > Point 300/500 (K=0)\n"}
+{"ts":"2026-04-27T13:11:38.080Z","line":"    > Point 350/500 (K=0)\n"}
+{"ts":"2026-04-27T13:14:19.605Z","line":"    > Point 400/500 (K=0)\n"}
+{"ts":"2026-04-27T13:17:17.506Z","line":"    > Point 450/500 (K=0)\n"}
+{"ts":"2026-04-27T13:20:10.271Z","line":"    > Point 500/500 (K=0)\n"}
+{"ts":"2026-04-27T13:20:10.272Z","line":"    > Finished K=0            \n"}
+{"ts":"2026-04-27T13:20:10.272Z","line":"  > Processing Scale K=1...\n"}
+{"ts":"2026-04-27T13:20:11.997Z","line":"    > Point 0/500 (K=1)\n"}
+{"ts":"2026-04-27T13:21:56.604Z","line":"    > Point 50/500 (K=1)\n"}
+{"ts":"2026-04-27T13:24:26.405Z","line":"    > Point 100/500 (K=1)\n"}
+{"ts":"2026-04-27T13:27:17.225Z","line":"    > Point 150/500 (K=1)\n"}
+{"ts":"2026-04-27T13:30:15.779Z","line":"    > Point 200/500 (K=1)\n"}
+{"ts":"2026-04-27T13:33:19.473Z","line":"    > Point 250/500 (K=1)\n"}
+{"ts":"2026-04-27T13:36:20.558Z","line":"    > Point 300/500 (K=1)\n"}
+{"ts":"2026-04-27T13:39:36.827Z","line":"    > Point 350/500 (K=1)\n"}
+{"ts":"2026-04-27T13:42:58.828Z","line":"    > Point 400/500 (K=1)\n"}
+{"ts":"2026-04-27T13:46:19.970Z","line":"    > Point 450/500 (K=1)\n"}
+{"ts":"2026-04-27T13:49:40.716Z","line":"    > Point 500/500 (K=1)\n"}
+{"ts":"2026-04-27T13:49:40.716Z","line":"    > Finished K=1            \n"}
+{"ts":"2026-04-27T13:49:40.717Z","line":"  > Processing Scale K=2...\n"}
+{"ts":"2026-04-27T13:49:43.196Z","line":"    > Point 0/500 (K=2)\n"}
+{"ts":"2026-04-27T13:52:11.597Z","line":"    > Point 50/500 (K=2)\n"}
+{"ts":"2026-04-27T13:55:08.390Z","line":"    > Point 100/500 (K=2)\n"}
+{"ts":"2026-04-27T13:58:11.462Z","line":"    > Point 150/500 (K=2)\n"}
+{"ts":"2026-04-27T14:01:12.829Z","line":"    > Point 200/500 (K=2)\n"}
+{"ts":"2026-04-27T14:04:07.504Z","line":"    > Point 250/500 (K=2)\n"}
+{"ts":"2026-04-27T14:07:23.808Z","line":"    > Point 300/500 (K=2)\n"}
+{"ts":"2026-04-27T14:11:00.639Z","line":"    > Point 350/500 (K=2)\n"}
+{"ts":"2026-04-27T14:14:43.620Z","line":"    > Point 400/500 (K=2)\n"}
+{"ts":"2026-04-27T14:18:21.902Z","line":"    > Point 450/500 (K=2)\n"}
+{"ts":"2026-04-27T14:21:55.102Z","line":"    > Point 500/500 (K=2)\n"}
+{"ts":"2026-04-27T14:21:55.103Z","line":"    > Finished K=2            \n"}
+{"ts":"2026-04-27T14:21:55.103Z","line":"  > Experiment 1C Done.           \n"}
+{"ts":"2026-04-27T14:21:55.103Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T14:21:55.463Z","line":"\n"}
+{"ts":"2026-04-27T14:21:55.464Z","line":"--- P2-1: Rogue Centrifuge ---\n"}
+{"ts":"2026-04-27T14:21:55.464Z","line":"Running Experiment 2: Centrifuge... [Res=500, k=-20, beta_offset=0.0001]\n"}
+{"ts":"2026-04-27T14:58:21.659Z","line":"  > [Exp2] Centrifuge point 0/500 (x_vis=2.0)\n"}
+{"ts":"2026-04-27T14:58:21.660Z","line":"  > [Exp2] Centrifuge point 10/500 (x_vis=3.0)\n"}
+{"ts":"2026-04-27T14:58:21.661Z","line":"  > [Exp2] Centrifuge point 20/500 (x_vis=3.9)\n"}
+{"ts":"2026-04-27T14:58:21.662Z","line":"  > [Exp2] Centrifuge point 30/500 (x_vis=4.9)\n"}
+{"ts":"2026-04-27T14:58:21.663Z","line":"  > [Exp2] Centrifuge point 40/500 (x_vis=5.8)\n"}
+{"ts":"2026-04-27T14:58:21.671Z","line":"  > [Exp2] Centrifuge point 50/500 (x_vis=6.8)\n"}
+{"ts":"2026-04-27T14:58:21.672Z","line":"  > [Exp2] Centrifuge point 60/500 (x_vis=7.8)\n"}
+{"ts":"2026-04-27T14:58:21.679Z","line":"  > [Exp2] Centrifuge point 70/500 (x_vis=8.7)\n"}
+{"ts":"2026-04-27T14:58:21.689Z","line":"  > [Exp2] Centrifuge point 80/500 (x_vis=9.7)\n"}
+{"ts":"2026-04-27T14:58:21.697Z","line":"  > [Exp2] Centrifuge point 90/500 (x_vis=10.6)\n"}
+{"ts":"2026-04-27T14:58:21.704Z","line":"  > [Exp2] Centrifuge point 100/500 (x_vis=11.6)\n"}
+{"ts":"2026-04-27T14:58:21.713Z","line":"  > [Exp2] Centrifuge point 110/500 (x_vis=12.6)\n"}
+{"ts":"2026-04-27T14:58:21.719Z","line":"  > [Exp2] Centrifuge point 120/500 (x_vis=13.5)\n"}
+{"ts":"2026-04-27T14:58:21.727Z","line":"  > [Exp2] Centrifuge point 130/500 (x_vis=14.5)\n"}
+{"ts":"2026-04-27T14:58:21.735Z","line":"  > [Exp2] Centrifuge point 140/500 (x_vis=15.4)\n"}
+{"ts":"2026-04-27T14:58:21.742Z","line":"  > [Exp2] Centrifuge point 150/500 (x_vis=16.4)\n"}
+{"ts":"2026-04-27T14:58:21.750Z","line":"  > [Exp2] Centrifuge point 160/500 (x_vis=17.4)\n"}
+{"ts":"2026-04-27T14:58:21.757Z","line":"  > [Exp2] Centrifuge point 170/500 (x_vis=18.3)\n"}
+{"ts":"2026-04-27T14:58:21.765Z","line":"  > [Exp2] Centrifuge point 180/500 (x_vis=19.3)\n"}
+{"ts":"2026-04-27T14:58:21.773Z","line":"  > [Exp2] Centrifuge point 190/500 (x_vis=20.2)\n"}
+{"ts":"2026-04-27T14:58:21.782Z","line":"  > [Exp2] Centrifuge point 200/500 (x_vis=21.2)\n"}
+{"ts":"2026-04-27T14:58:21.790Z","line":"  > [Exp2] Centrifuge point 210/500 (x_vis=22.2)\n"}
+{"ts":"2026-04-27T14:58:21.798Z","line":"  > [Exp2] Centrifuge point 220/500 (x_vis=23.1)\n"}
+{"ts":"2026-04-27T14:58:21.805Z","line":"  > [Exp2] Centrifuge point 230/500 (x_vis=24.1)\n"}
+{"ts":"2026-04-27T14:58:21.813Z","line":"  > [Exp2] Centrifuge point 240/500 (x_vis=25.0)\n"}
+{"ts":"2026-04-27T14:58:21.821Z","line":"  > [Exp2] Centrifuge point 250/500 (x_vis=26.0)\n"}
+{"ts":"2026-04-27T14:58:21.830Z","line":"  > [Exp2] Centrifuge point 260/500 (x_vis=27.0)\n"}
+{"ts":"2026-04-27T14:58:21.837Z","line":"  > [Exp2] Centrifuge point 270/500 (x_vis=27.9)\n"}
+{"ts":"2026-04-27T14:58:21.845Z","line":"  > [Exp2] Centrifuge point 280/500 (x_vis=28.9)\n"}
+{"ts":"2026-04-27T14:58:21.852Z","line":"  > [Exp2] Centrifuge point 290/500 (x_vis=29.8)\n"}
+{"ts":"2026-04-27T14:58:21.861Z","line":"  > [Exp2] Centrifuge point 300/500 (x_vis=30.8)\n"}
+{"ts":"2026-04-27T14:58:21.869Z","line":"  > [Exp2] Centrifuge point 310/500 (x_vis=31.8)\n"}
+{"ts":"2026-04-27T14:58:21.877Z","line":"  > [Exp2] Centrifuge point 320/500 (x_vis=32.7)\n"}
+{"ts":"2026-04-27T14:58:21.885Z","line":"  > [Exp2] Centrifuge point 330/500 (x_vis=33.7)\n"}
+{"ts":"2026-04-27T14:58:21.893Z","line":"  > [Exp2] Centrifuge point 340/500 (x_vis=34.6)\n"}
+{"ts":"2026-04-27T14:58:21.901Z","line":"  > [Exp2] Centrifuge point 350/500 (x_vis=35.6)\n"}
+{"ts":"2026-04-27T14:58:21.909Z","line":"  > [Exp2] Centrifuge point 360/500 (x_vis=36.6)\n"}
+{"ts":"2026-04-27T14:58:21.917Z","line":"  > [Exp2] Centrifuge point 370/500 (x_vis=37.5)\n"}
+{"ts":"2026-04-27T14:58:21.926Z","line":"  > [Exp2] Centrifuge point 380/500 (x_vis=38.5)\n"}
+{"ts":"2026-04-27T14:58:21.934Z","line":"  > [Exp2] Centrifuge point 390/500 (x_vis=39.4)\n"}
+{"ts":"2026-04-27T14:58:21.943Z","line":"  > [Exp2] Centrifuge point 400/500 (x_vis=40.4)\n"}
+{"ts":"2026-04-27T14:58:21.950Z","line":"  > [Exp2] Centrifuge point 410/500 (x_vis=41.4)\n"}
+{"ts":"2026-04-27T14:58:21.957Z","line":"  > [Exp2] Centrifuge point 420/500 (x_vis=42.3)\n"}
+{"ts":"2026-04-27T14:58:21.965Z","line":"  > [Exp2] Centrifuge point 430/500 (x_vis=43.3)\n"}
+{"ts":"2026-04-27T14:58:21.973Z","line":"  > [Exp2] Centrifuge point 440/500 (x_vis=44.2)\n"}
+{"ts":"2026-04-27T14:58:21.982Z","line":"  > [Exp2] Centrifuge point 450/500 (x_vis=45.2)\n"}
+{"ts":"2026-04-27T14:58:21.989Z","line":"  > [Exp2] Centrifuge point 460/500 (x_vis=46.2)\n"}
+{"ts":"2026-04-27T14:58:21.997Z","line":"  > [Exp2] Centrifuge point 470/500 (x_vis=47.1)\n"}
+{"ts":"2026-04-27T14:58:22.005Z","line":"  > [Exp2] Centrifuge point 480/500 (x_vis=48.1)\n"}
+{"ts":"2026-04-27T14:58:22.013Z","line":"  > [Exp2] Centrifuge point 490/500 (x_vis=49.0)\n"}
+{"ts":"2026-04-27T14:58:22.028Z","line":"  > [Exp2] Centrifuge point 500/500 (x_vis=50.0)\n"}
+{"ts":"2026-04-27T14:58:22.029Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T14:58:22.171Z","line":"\n"}
+{"ts":"2026-04-27T14:58:22.171Z","line":"--- P2-2: Rogue Isolation ---\n"}
+{"ts":"2026-04-27T14:58:22.178Z","line":"Running Experiment 2B: Rogue Isolation... [Res=500, k=-20]\n"}
+{"ts":"2026-04-27T14:58:24.100Z","line":"  > Isolation point 0/500...\n"}
+{"ts":"2026-04-27T14:58:24.101Z","line":"  > Isolation point 20/500...\n"}
+{"ts":"2026-04-27T14:58:24.103Z","line":"  > Isolation point 40/500...\n"}
+{"ts":"2026-04-27T14:58:24.118Z","line":"  > Isolation point 60/500...\n"}
+{"ts":"2026-04-27T14:58:24.132Z","line":"  > Isolation point 80/500...\n"}
+{"ts":"2026-04-27T14:58:24.140Z","line":"  > Isolation point 100/500...\n"}
+{"ts":"2026-04-27T14:58:24.142Z","line":"  > Isolation point 120/500...\n"}
+{"ts":"2026-04-27T14:58:24.157Z","line":"  > Isolation point 140/500...\n"}
+{"ts":"2026-04-27T14:58:24.172Z","line":"  > Isolation point 160/500...\n"}
+{"ts":"2026-04-27T14:58:24.187Z","line":"  > Isolation point 180/500...\n"}
+{"ts":"2026-04-27T14:58:24.204Z","line":"  > Isolation point 200/500...\n"}
+{"ts":"2026-04-27T14:58:24.219Z","line":"  > Isolation point 220/500...\n"}
+{"ts":"2026-04-27T14:58:24.237Z","line":"  > Isolation point 240/500...\n"}
+{"ts":"2026-04-27T14:58:24.251Z","line":"  > Isolation point 260/500...\n"}
+{"ts":"2026-04-27T14:58:24.260Z","line":"  > Isolation point 280/500...\n"}
+{"ts":"2026-04-27T14:58:24.275Z","line":"  > Isolation point 300/500...\n"}
+{"ts":"2026-04-27T14:58:24.291Z","line":"  > Isolation point 320/500...\n"}
+{"ts":"2026-04-27T14:58:24.301Z","line":"  > Isolation point 340/500...\n"}
+{"ts":"2026-04-27T14:58:24.309Z","line":"  > Isolation point 360/500...\n"}
+{"ts":"2026-04-27T14:58:24.326Z","line":"  > Isolation point 380/500...\n"}
+{"ts":"2026-04-27T14:58:24.335Z","line":"  > Isolation point 400/500...\n"}
+{"ts":"2026-04-27T14:58:24.353Z","line":"  > Isolation point 420/500...\n"}
+{"ts":"2026-04-27T14:58:24.367Z","line":"  > Isolation point 440/500...\n"}
+{"ts":"2026-04-27T14:58:24.377Z","line":"  > Isolation point 460/500...\n"}
+{"ts":"2026-04-27T14:58:24.393Z","line":"  > Isolation point 480/500...\n"}
+{"ts":"2026-04-27T14:58:24.408Z","line":"  > Isolation point 500/500...\n"}
+{"ts":"2026-04-27T14:58:24.686Z","line":"\n"}
+{"ts":"2026-04-27T14:58:24.686Z","line":"  > Experiment 2B Done.\n"}
+{"ts":"2026-04-27T14:58:24.687Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T14:58:24.712Z","line":"\n"}
+{"ts":"2026-04-27T14:58:24.712Z","line":"--- CTRL-2: Beta Counterfactual Control ---\n"}
+{"ts":"2026-04-27T14:58:24.720Z","line":"\n"}
+{"ts":"2026-04-27T14:58:24.720Z","line":"Running Experiment 3: Beta=Pi Falsification (Honest Calculation)... [Res=500]\n"}
+{"ts":"2026-04-27T14:58:24.720Z","line":"Loading primes (target max_val=60.0)...\n"}
+{"ts":"2026-04-27T14:58:24.721Z","line":"  > Using cached prime file (7000000 primes, Max: 122949823).\n"}
+{"ts":"2026-04-27T15:04:47.149Z","line":"  > [Exp3] Point 0/500 (x_vis=12.6)\n"}
+{"ts":"2026-04-27T15:04:47.150Z","line":"  > [Exp3] Point 20/500 (x_vis=24.6)\n"}
+{"ts":"2026-04-27T15:04:47.159Z","line":"  > [Exp3] Point 40/500 (x_vis=36.7)\n"}
+{"ts":"2026-04-27T15:04:47.173Z","line":"  > [Exp3] Point 60/500 (x_vis=48.8)\n"}
+{"ts":"2026-04-27T15:04:47.181Z","line":"  > [Exp3] Point 80/500 (x_vis=60.8)\n"}
+{"ts":"2026-04-27T15:04:47.195Z","line":"  > [Exp3] Point 100/500 (x_vis=72.9)\n"}
+{"ts":"2026-04-27T15:04:47.210Z","line":"  > [Exp3] Point 120/500 (x_vis=84.9)\n"}
+{"ts":"2026-04-27T15:04:47.219Z","line":"  > [Exp3] Point 140/500 (x_vis=97.0)\n"}
+{"ts":"2026-04-27T15:04:47.227Z","line":"  > [Exp3] Point 160/500 (x_vis=109.1)\n"}
+{"ts":"2026-04-27T15:04:47.241Z","line":"  > [Exp3] Point 180/500 (x_vis=121.1)\n"}
+{"ts":"2026-04-27T15:04:47.243Z","line":"  > [Exp3] Point 200/500 (x_vis=133.2)\n"}
+{"ts":"2026-04-27T15:04:47.250Z","line":"  > [Exp3] Point 220/500 (x_vis=145.3)\n"}
+{"ts":"2026-04-27T15:04:47.258Z","line":"  > [Exp3] Point 240/500 (x_vis=157.3)\n"}
+{"ts":"2026-04-27T15:04:47.266Z","line":"  > [Exp3] Point 260/500 (x_vis=169.4)\n"}
+{"ts":"2026-04-27T15:04:47.274Z","line":"  > [Exp3] Point 280/500 (x_vis=181.5)\n"}
+{"ts":"2026-04-27T15:04:47.289Z","line":"  > [Exp3] Point 300/500 (x_vis=193.5)\n"}
+{"ts":"2026-04-27T15:04:47.299Z","line":"  > [Exp3] Point 320/500 (x_vis=205.6)\n"}
+{"ts":"2026-04-27T15:04:47.315Z","line":"  > [Exp3] Point 340/500 (x_vis=217.6)\n"}
+{"ts":"2026-04-27T15:04:47.330Z","line":"  > [Exp3] Point 360/500 (x_vis=229.7)\n"}
+{"ts":"2026-04-27T15:04:47.345Z","line":"  > [Exp3] Point 380/500 (x_vis=241.8)\n"}
+{"ts":"2026-04-27T15:04:47.359Z","line":"  > [Exp3] Point 400/500 (x_vis=253.8)\n"}
+{"ts":"2026-04-27T15:04:47.372Z","line":"  > [Exp3] Point 420/500 (x_vis=265.9)\n"}
+{"ts":"2026-04-27T15:04:47.374Z","line":"  > [Exp3] Point 440/500 (x_vis=278.0)\n"}
+{"ts":"2026-04-27T15:04:47.381Z","line":"  > [Exp3] Point 460/500 (x_vis=290.0)\n"}
+{"ts":"2026-04-27T15:04:47.395Z","line":"  > [Exp3] Point 480/500 (x_vis=302.1)\n"}
+{"ts":"2026-04-27T15:04:47.409Z","line":"  > [Exp3] Point 500/500 (x_vis=314.2)\n"}
+{"ts":"2026-04-27T15:04:47.409Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T15:04:47.643Z","line":"\n"}
+{"ts":"2026-04-27T15:04:47.643Z","line":"--- PATH-1: Translation vs Dilation ---\n"}
+{"ts":"2026-04-27T15:04:47.651Z","line":"Running Experiment 4: Translation vs Dilation...\n"}
+{"ts":"2026-04-27T15:04:47.651Z","line":"Loading primes (target max_val=1000)...\n"}
+{"ts":"2026-04-27T15:04:47.651Z","line":"  > Using cached prime file (7000000 primes, Max: 122949823).\n"}
+{"ts":"2026-04-27T15:04:47.652Z","line":"  > Processing Scale K=1...\n"}
+{"ts":"2026-04-27T15:15:15.722Z","line":"    > Optimizing Translation Model (12 steps)...\n"}
+{"ts":"2026-04-27T15:27:39.465Z","line":"    > Optimizing Dilation Model...\n"}
+{"ts":"2026-04-27T15:56:09.300Z","line":"    K=1: Trans RMSE=0.7497 (Delta=-1.3606), Dilation RMSE=0.7314\n"}
+{"ts":"2026-04-27T15:56:09.300Z","line":"  > Processing Scale K=2...\n"}
+{"ts":"2026-04-27T16:07:45.677Z","line":"    > Optimizing Translation Model (12 steps)...\n"}
+{"ts":"2026-04-27T16:08:20.350Z","line":"    > Optimizing Dilation Model...\n"}
+{"ts":"2026-04-27T16:09:07.835Z","line":"    K=2: Trans RMSE=1.6415 (Delta=-3.1258), Dilation RMSE=0.7121\n"}
+{"ts":"2026-04-27T16:09:07.837Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T16:09:08.699Z","line":"\n"}
+{"ts":"2026-04-27T16:09:08.699Z","line":"--- PATH-2: Zero Correspondence ---\n"}
+{"ts":"2026-04-27T16:09:09.051Z","line":"Running Experiment 5: Zero Correspondence...\n"}
+{"ts":"2026-04-27T16:09:09.051Z","line":"  > Processing Scale K=1...\n"}
+{"ts":"2026-04-27T16:09:09.190Z","line":"    > K=1: Processed 1000 zeros...\n"}
+{"ts":"2026-04-27T16:09:09.261Z","line":"    > K=1: Processed 2000 zeros...\n"}
+{"ts":"2026-04-27T16:09:09.283Z","line":"    K=1: Tested 2334 zeros. Median Z=0.2565, p95=0.6843\n"}
+{"ts":"2026-04-27T16:09:09.283Z","line":"  > Processing Scale K=2...\n"}
+{"ts":"2026-04-27T16:09:09.299Z","line":"    K=2: Tested 230 zeros. Median Z=0.2473, p95=0.6520\n"}
+{"ts":"2026-04-27T16:09:09.300Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T16:09:09.805Z","line":"\n"}
+{"ts":"2026-04-27T16:09:09.805Z","line":"--- VAL-1: Beta Stability ---\n"}
+{"ts":"2026-04-27T16:09:09.817Z","line":"Running Experiment 6: Beta-invariance under the gauge...\n"}
+{"ts":"2026-04-27T16:09:09.820Z","line":"Loading primes (target max_val=2023.9208802178716)...\n"}
+{"ts":"2026-04-27T16:09:09.820Z","line":"  > Using cached prime file (7000000 primes, Max: 122949823).\n"}
+{"ts":"2026-04-27T16:09:09.858Z","line":"  > Processing Scale K=0...\n"}
+{"ts":"2026-04-27T16:09:10.000Z","line":"    > Optimizing Beta (Coarse)...\n"}
+{"ts":"2026-04-27T16:16:18.545Z","line":"    K=0: Beta_hat=0.5000, RMSE=0.0230 (vs 0.5: 0.0230)\n"}
+{"ts":"2026-04-27T16:16:18.547Z","line":"  > Processing Scale K=1...\n"}
+{"ts":"2026-04-27T16:16:18.663Z","line":"    > Optimizing Beta (Coarse)...\n"}
+{"ts":"2026-04-27T16:27:42.969Z","line":"    K=1: Beta_hat=0.5000, RMSE=0.0174 (vs 0.5: 0.0174)\n"}
+{"ts":"2026-04-27T16:27:42.971Z","line":"  > Processing Scale K=2...\n"}
+{"ts":"2026-04-27T16:27:43.077Z","line":"    > Optimizing Beta (Coarse)...\n"}
+{"ts":"2026-04-27T16:40:33.924Z","line":"    K=2: Beta_hat=0.5000, RMSE=0.0821 (vs 0.5: 0.0821)\n"}
+{"ts":"2026-04-27T16:40:33.927Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T16:40:34.493Z","line":"\n"}
+{"ts":"2026-04-27T16:40:34.494Z","line":"--- P2-3: Calibrated Amplification ---\n"}
+{"ts":"2026-04-27T16:40:34.503Z","line":"Running Experiment 7: Centrifuge Fix... [Res=500, k=-20, beta_offset=0.0001]\n"}
+{"ts":"2026-04-27T18:35:55.734Z","line":"  > Experiment 7 Done.         \n"}
+{"ts":"2026-04-27T18:35:55.735Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T18:35:55.745Z","line":"\n"}
+{"ts":"2026-04-27T18:35:55.745Z","line":"--- REG-1: Scaled-Zeta Regression ---\n"}
+{"ts":"2026-04-27T18:35:55.754Z","line":"Running Experiment 8: Scaled-Zeta Zero Equivalence... [n_test=500, k=0,1,2]\n"}
+{"ts":"2026-04-27T18:36:28.979Z","line":"  > k=0.0: point 200/500\n"}
+{"ts":"2026-04-27T18:37:03.204Z","line":"  > k=0.0: point 400/500\n"}
+{"ts":"2026-04-27T18:37:05.601Z","line":"  > k=0.0: point 500/500\n"}
+{"ts":"2026-04-27T18:37:05.637Z","line":"\n"}
+{"ts":"2026-04-27T18:37:22.051Z","line":"  > k=1.0: point 200/500\n"}
+{"ts":"2026-04-27T18:37:59.897Z","line":"  > k=1.0: point 400/500\n"}
+{"ts":"2026-04-27T18:38:04.400Z","line":"  > k=1.0: point 500/500\n"}
+{"ts":"2026-04-27T18:38:04.432Z","line":"\n"}
+{"ts":"2026-04-27T18:38:19.668Z","line":"  > k=2.0: point 200/500\n"}
+{"ts":"2026-04-27T18:38:53.944Z","line":"  > k=2.0: point 400/500\n"}
+{"ts":"2026-04-27T18:38:56.222Z","line":"  > k=2.0: point 500/500\n"}
+{"ts":"2026-04-27T18:38:56.265Z","line":"\n"}
+{"ts":"2026-04-27T18:38:56.266Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T18:38:56.861Z","line":"\n"}
+{"ts":"2026-04-27T18:38:56.862Z","line":"--- DEMO-1: Bounded View ---\n"}
+{"ts":"2026-04-27T18:38:56.871Z","line":"Running Experiment 9: Bounded-view corollary demonstration...\n"}
+{"ts":"2026-04-27T18:38:56.871Z","line":"  > Sampled 5 zeros from indices [0, 200, 2000, 10000, 19999]: 5/5 land in [10.0, 1000.0] with their respective k_required.\n"}
+{"ts":"2026-04-27T18:38:56.880Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T18:38:57.380Z","line":"\n"}
+{"ts":"2026-04-27T18:38:57.381Z","line":"--- TRANS-1: Zeta Gauge Transport ---\n"}
+{"ts":"2026-04-27T18:38:57.388Z","line":"Running Experiment 10: zeta gauge-transport residual...\n"}
+{"ts":"2026-04-27T18:49:23.330Z","line":"  > Computed 12500 zeta residuals across 5 bases x 5 k-values x 500 t-samples.\n"}
+{"ts":"2026-04-27T18:49:23.331Z","line":"  > max(|res|) per base across all k: {'tau': 46.91373915396704, 'sqrt2': 10.192367914324107, 'e': 19.782104766735447, 'phi': 10.527696172890023, 'baseline_1p0001': 0.1661299328833836}\n"}
+{"ts":"2026-04-27T18:49:23.331Z","line":"  > Sanity baseline / tau ratio at k=1: 2.43e-03\n"}
+{"ts":"2026-04-27T18:49:23.332Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T18:49:23.820Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.820Z","line":"===========================================================================\n"}
+{"ts":"2026-04-27T18:49:23.821Z","line":" [VERIFIER] AUTOMATED HYPOTHESIS VERIFIER (schema 2026.05.0) \n"}
+{"ts":"2026-04-27T18:49:23.821Z","line":"===========================================================================\n"}
+{"ts":"2026-04-27T18:49:23.821Z","line":" [FIDELITY] tier=AUTHORITATIVE  zeros=20000  dps=80\n"}
+{"ts":"2026-04-27T18:49:23.822Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.823Z","line":"[EXP_0] (core_visualization/VISUALIZATION) DEMONSTRATION: PASS  [outcome=INFORMATIONAL, theory_fit=SUPPORTS]\n"}
+{"ts":"2026-04-27T18:49:23.825Z","line":"  > Metrics: {'polar_sample_count': 500, 'zero_markers_in_range': 10, 'dual_window_sample_count': 200, 'dual_window_config': {'T': 14.0, 'L': 18.0, 'k': 1, 'base_name': 'tau', 'base_value': 6.283185307179586, 'scale': 6.283185307179586, 'compressed_t_range': [87.96459430051421, 201.06192982974676]}, 'polar_config': {'t_start': 2.0, 't_end': 50.0, 'point_count': 500, 'dps': 80}}\n"}
+{"ts":"2026-04-27T18:49:23.826Z","line":"  > Interpretation: Polar trace rendered with 500 samples and 10 zero markers in range. Dual-window overlay rendered with 200 samples per window.\n"}
+{"ts":"2026-04-27T18:49:23.829Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.829Z","line":"[EXP_1] (gauge/CORE_CALCULATION) CORE_CALCULATION: PASS  [outcome=CONSISTENT, theory_fit=SUPPORTS]\n"}
+{"ts":"2026-04-27T18:49:23.830Z","line":"  > Metrics: {'max_harmonic_drift_vs_k0': 0.0, 'max_mobius_drift_vs_k0': 0.0, 'max_y_true_drift_vs_k0': 0.0, 'main_metrics': {'reference_k': '0', 'comparison_N': 200, 'harmonic_curve_key': 'harmonic_N_200', 'mobius_curve_key': 'mobius_N_200', 'max_harmonic_drift_vs_k0': 0.0, 'max_mobius_drift_vs_k0': 0.0, 'max_y_true_drift_vs_k0': 0.0, 'per_k': {'-2': {'max_harmonic_drift_vs_k0': 0.0, 'max_mobius_drift_vs_k0': 0.0, 'max_y_true_drift_vs_k0': 0.0, 'points': 501}, '-1': {'max_harmonic_drift_vs_k0': 0.0, 'max_mobius_drift_vs_k0': 0.0, 'max_y_true_drift_vs_k0': 0.0, 'points': 501}, '0': {'max_harmonic_drift_vs_k0': 0.0, 'max_mobius_drift_vs_k0': 0.0, 'max_y_true_drift_vs_k0': 0.0, 'points': 501}, '1': {'max_harmonic_drift_vs_k0': 0.0, 'max_mobius_drift_vs_k0': 0.0, 'max_y_true_drift_vs_k0': 0.0, 'points': 501}, '2': {'max_harmonic_drift_vs_k0': 0.0, 'max_mobius_drift_vs_k0': 0.0, 'max_y_true_drift_vs_k0': 0.0, 'points': 501}}}, 'support_scaled_coordinate_stress': {'max_abs_truth_error': 0.5104566911440855, 'per_k_max_abs_truth_error': {'-2': 0.0, '-1': 0.07166091183797718, '0': 0.42637515071653453, '1': 0.17434629953480396, '2': 0.5104566911440855}}, 'scales': ['-2', '-1', '0', '1', '2']}\n"}
+{"ts":"2026-04-27T18:49:23.830Z","line":"  > Interpretation: Main Riemann Converter curves are invariant under x_eff = X/tau^k on the tested grid. Reconstruction accuracy is reported separately as supporting validation, not as an RH or zero-scaling proof.\n"}
+{"ts":"2026-04-27T18:49:23.831Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.833Z","line":"[EXP_1B] (gauge/CONTROL) FALSIFICATION_CONTROL: PASS  [outcome=IMPLEMENTATION_OK, theory_fit=SUPPORTS]\n"}
+{"ts":"2026-04-27T18:49:23.833Z","line":"  > Metrics: {'max_drift': 68.63076860136259}\n"}
+{"ts":"2026-04-27T18:49:23.833Z","line":"  > Interpretation: System broke as expected under naive gamma scaling.\n"}
+{"ts":"2026-04-27T18:49:23.840Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.840Z","line":"[EXP_1C] (lattice/RESEARCH_NOTE) HYPOTHESIS_TEST: FAIL  [outcome=INFORMATIONAL, theory_fit=REFUTES]\n"}
+{"ts":"2026-04-27T18:49:23.841Z","line":"  > Metrics: {'max_drift': 284.99230619569215, 'max_ratio_op_over_coord': 668.396281914722, 'drift_threshold': 0.25, 'ratio_threshold': 1.1, 'scales': ['-2', '-1', '0', '1', '2']}\n"}
+{"ts":"2026-04-27T18:49:23.842Z","line":"  > Interpretation: Zero-scaling hypothesis fails documented tolerances (drift and/or error-ratio).\n"}
+{"ts":"2026-04-27T18:49:23.851Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.851Z","line":"[EXP_2] (brittleness/EXPLORATORY) VALIDATION: FAIL  [outcome=INCONSISTENT, theory_fit=REFUTES]\n"}
+{"ts":"2026-04-27T18:49:23.852Z","line":"  > Metrics: {'amp': 0.9997352740346337}\n"}
+{"ts":"2026-04-27T18:49:23.852Z","line":"  > Interpretation: No signal amplification.\n"}
+{"ts":"2026-04-27T18:49:23.853Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.853Z","line":"[EXP_2B] (brittleness/EXPLORATORY) VALIDATION: FAIL  [outcome=INCONSISTENT, theory_fit=REFUTES]\n"}
+{"ts":"2026-04-27T18:49:23.853Z","line":"  > Metrics: {'max_abs_residual_dev': 9.68867404274149, 'threshold': 0.5, 'count': 501}\n"}
+{"ts":"2026-04-27T18:49:23.854Z","line":"  > Interpretation: Residual deviation exceeds tolerance; rogue isolation not supported at this fidelity.\n"}
+{"ts":"2026-04-27T18:49:23.862Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.862Z","line":"[EXP_3] (control/CONTROL) FALSIFICATION_CONTROL: PASS  [outcome=IMPLEMENTATION_OK, theory_fit=SUPPORTS]\n"}
+{"ts":"2026-04-27T18:49:23.863Z","line":"  > Metrics: {'max_error': 17294.073448397852}\n"}
+{"ts":"2026-04-27T18:49:23.863Z","line":"  > Interpretation: Beta=Pi hypothesis exploded to infinity as expected.\n"}
+{"ts":"2026-04-27T18:49:23.872Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.872Z","line":"[EXP_4] (lattice/PATHFINDER) HYPOTHESIS_TEST: INSUFFICIENT_SEPARATION  [outcome=INCONCLUSIVE, theory_fit=INCONCLUSIVE]\n"}
+{"ts":"2026-04-27T18:49:23.872Z","line":"  > Metrics: {'winner': 'DILATION', 'delta_err': 0.4772727272727273, 'ratio': 0.9755675959602371, 'direction': None}\n"}
+{"ts":"2026-04-27T18:49:23.873Z","line":"  > Interpretation: Cannot resolve Translation vs Dilation at current fidelity (delta_error=0.4772727272727273). Re-run at higher precision or wider K.\n"}
+{"ts":"2026-04-27T18:49:23.887Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.888Z","line":"[EXP_5] (lattice/PATHFINDER) HYPOTHESIS_TEST: NOTEWORTHY  [outcome=DIRECTIONAL, theory_fit=INFORMATIVE]\n"}
+{"ts":"2026-04-27T18:49:23.888Z","line":"  > Metrics: {'median_z': 0.25649663672829054, 'direction': 'lattice-path-negative'}\n"}
+{"ts":"2026-04-27T18:49:23.889Z","line":"  > Interpretation: PATHFINDER verdict: lattice-path-negative. Scaled zeros do NOT align with existing zeros at this fidelity � rules out the naive lattice path and redirects toward the operator/coord-reparam investigation.\n"}
+{"ts":"2026-04-27T18:49:23.898Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.898Z","line":"[EXP_6] (gauge/PROOF_OBLIGATION_WITNESS) HYPOTHESIS_TEST: PASS  [outcome=CONSISTENT, theory_fit=SUPPORTS]\n"}
+{"ts":"2026-04-27T18:49:23.899Z","line":"  > Metrics: {'beta_hat': 0.5, 'drift': 0.0}\n"}
+{"ts":"2026-04-27T18:49:23.899Z","line":"  > Interpretation: Critical line is stable at Beta=0.5 under scaling.\n"}
+{"ts":"2026-04-27T18:49:23.900Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.900Z","line":"[EXP_7] (brittleness/EXPLORATORY) VALIDATION: PASS  [outcome=CONSISTENT, theory_fit=SUPPORTS]\n"}
+{"ts":"2026-04-27T18:49:23.901Z","line":"  > Metrics: {'monotone': True, 'amps': [0.010626280114383461, 0.025573767685128753, 0.029083077163801326]}\n"}
+{"ts":"2026-04-27T18:49:23.901Z","line":"  > Interpretation: Sensitivity confirmed. Rogue signal amplifies monotonically with perturbation.\n"}
+{"ts":"2026-04-27T18:49:23.915Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.915Z","line":"[EXP_8] (lattice/REGRESSION_CHECK) HYPOTHESIS_TEST: PASS  [outcome=IMPLEMENTATION_OK, theory_fit=SUPPORTS]\n"}
+{"ts":"2026-04-27T18:49:23.917Z","line":"  > Metrics: {'worst_p99_abs_dev': 1.953858862183209e-08, 'worst_p99_abs_dev_normalized': 4.949182314661851e-10, 'worst_p95_residual': 2.1335420197704586e-09, 'tol_zero': 5e-09, 'tol_residual': 5e-09, 'tol_residual_dps': 1e-30, 'tol_residual_source': 5e-09, 'k_values': ['0', '1', '2']}\n"}
+{"ts":"2026-04-27T18:49:23.917Z","line":"  > Interpretation: Scaled-zeta zeros align with tau-scaled baseline zeros within adaptive tolerance.\n"}
+{"ts":"2026-04-27T18:49:23.926Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.926Z","line":"[EXP_9] (demonstration/DEMONSTRATION) DEMONSTRATION: PASS  [outcome=INFORMATIONAL, theory_fit=SUPPORTS]\n"}
+{"ts":"2026-04-27T18:49:23.926Z","line":"  > Metrics: {'in_window_count': 5, 'total_count': 5, 'window_lo': 10.0, 'window_hi': 1000.0, 'k_required_per_sample': [1, -1, -2, -2, -3]}\n"}
+{"ts":"2026-04-27T18:49:23.927Z","line":"  > Interpretation: All 5 sampled zeros admit an integer k that brings the image into [10.0, 1000.0]. The bounded-view corollary's mechanics are demonstrable for the tested heights IF transport holds.\n"}
+{"ts":"2026-04-27T18:49:23.935Z","line":"\n"}
+{"ts":"2026-04-27T18:49:23.936Z","line":"[EXP_10] (transport/EXPLORATORY) VALIDATION: PASS  [outcome=CONSISTENT, theory_fit=INFORMATIVE]\n"}
+{"ts":"2026-04-27T18:49:23.936Z","line":"  > Metrics: {'max_residual_per_base': {'tau': 46.91373915396704, 'sqrt2': 10.192367914324107, 'e': 19.782104766735447, 'phi': 10.527696172890023, 'baseline_1p0001': 0.1661299328833836}, 'best_base_per_k': {'0': 'all-equivalent-at-k0', '1': 'baseline_1p0001', '2': 'baseline_1p0001', '5': 'baseline_1p0001', '10': 'baseline_1p0001'}, 'tau_max_k1': 6.830321442835776, 'sanity_baseline_max_k1': 0.016617527005689765, 'sanity_baseline_ratio': 0.002432905558657074, 'bases': ['tau', 'sqrt2', 'e', 'phi', 'baseline_1p0001'], 'k_values': [0, 1, 2, 5, 10], 'M': 500, 'T0': 2.0, 'L': 48.0}\n"}
+{"ts":"2026-04-27T18:49:23.937Z","line":"  > Interpretation: Sampled 500 t-points across 5 bases x 5 k-values. max|residual| at tau, k=1: 6.8303e+00; baseline (c=1.0001): 1.6618e-02; ratio: 2.43e-03. best base per k: {'0': 'all-equivalent-at-k0', '1': 'baseline_1p0001', '2': 'baseline_1p0001', '5': 'baseline_1p0001', '10': 'baseline_1p0001'}. INFORMATIONAL: zeta is not multiplicatively gauge-invariant in general; this run quantifies the deviation, not a proof of any kind.\n"}
+{"ts":"2026-04-27T18:49:23.967Z","line":"Saving to public/experiments.json...\n"}
+{"ts":"2026-04-27T18:49:24.406Z","line":"\n"}
+{"ts":"2026-04-27T18:49:24.407Z","line":"Engine Finished in 26054.46s.\n"}
+{"ts":"2026-04-27T18:49:24.671Z","line":"[run] exited code=0\n"}
