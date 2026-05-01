@@ -297,31 +297,32 @@ const callMcp = async (name: string, args: Record<string, unknown> = {}) => {
 };
 
 describe("MCP proof-discovery tool parity", () => {
-    it("list_experiment_reviews returns the 14 reviews", async () => {
+    it("list_experiment_reviews returns the 14 reviews (no envelope double-wrap)", async () => {
         const result = await callMcp("list_experiment_reviews");
         expect(result.ok).toBe(true);
-        const data = result.data as { data: { reviews: unknown[] } };
-        expect(data.data.reviews.length).toBe(14);
+        // No double-wrap: result.data IS the proof-discovery payload directly.
+        const data = result.data as { reviews: unknown[] };
+        expect(data.reviews.length).toBe(14);
     });
 
     it("get_experiment_review accepts P2-2 alias and returns FAILED baseline", async () => {
         const result = await callMcp("get_experiment_review", { id: "P2-2" });
         expect(result.ok).toBe(true);
-        const review = (result.data as { data: { experiment_id: string; model_comparison: { baseline_status: string } } }).data;
+        const review = result.data as { experiment_id: string; model_comparison: { baseline_status: string } };
         expect(review.experiment_id).toBe("EXP_2B");
         expect(review.model_comparison.baseline_status).toBe("FAILED");
     });
 
     it("get_experiment_raw_data exposes raw observations + verifier signal", async () => {
         const result = await callMcp("get_experiment_raw_data", { id: "P2-2" });
-        const data = (result.data as { data: { raw_observations: Record<string, unknown>; verifier_signal: { outcome: string } } }).data;
+        const data = result.data as { raw_observations: Record<string, unknown>; verifier_signal: { outcome: string } };
         expect(data.raw_observations).toBeTruthy();
         expect(data.verifier_signal.outcome).toBe("INCONSISTENT");
     });
 
     it("get_proof_discovery_index returns aggregated lemmas", async () => {
         const result = await callMcp("get_proof_discovery_index");
-        const data = (result.data as { data: { index: { totals: { experiments_reviewed: number } } } }).data;
+        const data = result.data as { index: { totals: { experiments_reviewed: number } } };
         expect(data.index.totals.experiments_reviewed).toBe(14);
     });
 
@@ -335,7 +336,7 @@ describe("MCP proof-discovery tool parity", () => {
             },
             reason: "data supports revision",
         });
-        const proposalId = (proposed.data as { data: { proposal_id: string } }).data.proposal_id;
+        const proposalId = (proposed.data as { proposal_id: string }).proposal_id;
         expect(proposalId).toMatch(/^prop_/);
 
         const accepted = await callMcp("accept_hypothesis_proposal", {
@@ -344,12 +345,12 @@ describe("MCP proof-discovery tool parity", () => {
             note: "approved via MCP test",
         });
         expect(accepted.ok).toBe(true);
-        const acceptedData = (accepted.data as { data: { status: string; accepted_by: string } }).data;
+        const acceptedData = accepted.data as { status: string; accepted_by: string };
         expect(acceptedData.status).toBe("ACCEPTED");
         expect(acceptedData.accepted_by).toBe("user:tsolomon89");
 
         const baseline = await callMcp("get_baseline_hypothesis", { id: "P2-2" });
-        const baselineData = (baseline.data as { data: { plain_statement: string; _overlay_provenance?: { accepted_by: string } } }).data;
+        const baselineData = baseline.data as { plain_statement: string; _overlay_provenance?: { accepted_by: string } };
         expect(baselineData.plain_statement).toMatch(/MCP-ACCEPTED/);
         expect(baselineData._overlay_provenance?.accepted_by).toBe("user:tsolomon89");
     });

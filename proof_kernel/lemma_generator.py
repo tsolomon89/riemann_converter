@@ -30,7 +30,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from .hypothesis_registry import load_registry
+from .hypothesis_registry import REQUIRED_EXPERIMENT_IDS, load_registry
 
 SCHEMA_VERSION = "2026.05.experiment-review.v1"
 
@@ -108,10 +108,11 @@ def _scoped_consequence(role: str, baseline_status: str, scoped_status: Optional
 def _extract_raw_observations(exp: Dict[str, Any]) -> Dict[str, Any]:
     """Pull the actual observed metrics out of the verifier output.
 
-    We keep this generic: include the verifier's `metrics` block plus the
-    `interpretation`, `theory_fit`, and any per-stage detail. We do NOT include
-    `inference.allowed_conclusion` here — that field mixes intended-if-passed
-    text with run state and is the source of the bug we are fixing.
+    Generic shape: include the verifier's `metrics` block plus `interpretation`,
+    `theory_fit`, and any per-stage detail. The verifier's `inference` block
+    (allowed/disallowed) is preserved under `verifier_static_inference` so
+    agents can see it but cannot mistake it for run-conclusion text. The
+    actual run inference is built separately by `_build_actual_run_inference`.
     """
     metrics = exp.get("metrics") or {}
     out: Dict[str, Any] = {
@@ -123,6 +124,15 @@ def _extract_raw_observations(exp: Dict[str, Any]) -> Dict[str, Any]:
         out["theory_fit"] = exp.get("theory_fit")
     if exp.get("stage_verdicts"):
         out["stage_verdicts"] = exp.get("stage_verdicts")
+    inference = exp.get("inference")
+    if isinstance(inference, dict):
+        # Preserve verbatim but tag the source so consumers cannot confuse it
+        # with actual_run_inference.
+        out["verifier_static_inference"] = {
+            **inference,
+            "_label": "static rails recorded by verifier; do not read as run conclusion",
+        }
+    out["series_refs"] = _extract_series_refs(exp)
     return out
 
 
@@ -582,8 +592,16 @@ def _formalization_target_text(review: Dict[str, Any]) -> str:
 def build_proof_discovery_index(
     run_id: str,
     reviews: List[Dict[str, Any]],
+    experiments_run: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Aggregate reviews into a proof-discovery index for the run."""
+    """Aggregate reviews into a proof-discovery index for the run.
+
+    `experiments_run` is the list of experiment ids that produced verifier
+    output for this run. If omitted, we infer it from the reviews. Coverage
+    metadata distinguishes "experiments registered", "experiments run",
+    "reviews generated" — the markdown only declares "all baselines confirmed"
+    when registered ⊆ reviews-generated AND every status is CONFIRMED.
+    """
 
     def by_program_role(program: Optional[str], role: Optional[str]) -> List[Dict[str, Any]]:
         return [
@@ -601,6 +619,8 @@ def build_proof_discovery_index(
                     "display_id": r["display_id"],
                     "lemma_name": lemma.get("name"),
                     "lemma_status": lemma.get("status"),
+                    "role": r["role"],
+                    "program": r["program"],
                     "baseline_status": r["model_comparison"]["baseline_status"],
                     "scoped_consequence": r["scoped_consequence"],
                     "statement": lemma.get("statement"),
@@ -608,8 +628,46 @@ def build_proof_discovery_index(
                 })
         return out
 
-    program_1 = by_program_role("PROGRAM_1", "witness")
-    program_2 = by_program_role("PROGRAM_2", "witness")
+    # Group by program first. Each program may contain witnesses, controls,
+    # pathfinders, demonstrations, exploratory, visualization. We do NOT filter
+    # P2 by role=witness — Program 2 may grow controls/pathfinders later, and
+    # the contradiction-track lemmas section must surface them all.
+    program_1_all = [r for r in reviews if r["program"] == "PROGRAM_1"]
+    program_2_all = [r for r in reviews if r["program"] == "PROGRAM_2"]
+    none_program_all = [r for r in reviews if r["program"] == "NONE"]
+
+    def split_by_role(items: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        out: Dict[str, List[Dict[str, Any]]] = {
+            "witnesses": [],
+            "controls": [],
+            "pathfinders": [],
+            "exploratory": [],
+            "demonstrations": [],
+            "visualizations": [],
+        }
+        for r in items:
+            role = r["role"]
+            if role == "witness":
+                out["witnesses"].append(r)
+            elif role == "control":
+                out["controls"].append(r)
+            elif role == "pathfinder":
+                out["pathfinders"].append(r)
+            elif role == "exploratory":
+                out["exploratory"].append(r)
+            elif role == "demonstration":
+                out["demonstrations"].append(r)
+            elif role == "visualization":
+                out["visualizations"].append(r)
+        return out
+
+    program_1_by_role = split_by_role(program_1_all)
+    program_2_by_role = split_by_role(program_2_all)
+
+    # Backward-compatible flat groupings (used by existing API/UI consumers).
+    program_1_witnesses = program_1_by_role["witnesses"]
+    program_2_witnesses = program_2_by_role["witnesses"]
+    program_2_lemmas_all = program_2_all
     controls = by_program_role(None, "control")
     pathfinders = (
         by_program_role(None, "pathfinder")
@@ -636,7 +694,7 @@ def build_proof_discovery_index(
             })
 
     formalization_targets: List[Dict[str, Any]] = []
-    for r in program_1:
+    for r in program_1_witnesses:
         if r["model_comparison"]["baseline_status"] == "CONFIRMED":
             formalization_targets.append({
                 "experiment_id": r["experiment_id"],
@@ -662,20 +720,81 @@ def build_proof_discovery_index(
                 "next_hypotheses": r["next_hypotheses"],
             })
 
+    # ---- Coverage metadata ----
+    # Registered = required experiments (canonical 14). Run = experiments that
+    # produced verifier output. Reviews = the ones we actually wrote.
+    registered = list(REQUIRED_EXPERIMENT_IDS)
+    if experiments_run is None:
+        experiments_run = [r["experiment_id"] for r in reviews]
+    else:
+        experiments_run = list(experiments_run)
+    reviews_generated_ids = sorted({r["experiment_id"] for r in reviews})
+    experiments_not_run = [e for e in registered if e not in experiments_run and e not in reviews_generated_ids]
+    coverage_complete = set(reviews_generated_ids).issuperset(set(registered))
+    all_confirmed = (
+        coverage_complete
+        and all(r["model_comparison"]["baseline_status"] == "CONFIRMED" for r in reviews)
+    )
+
+    def status_summary(items: List[Dict[str, Any]]) -> Dict[str, Any]:
+        return [
+            {
+                "experiment_id": r["experiment_id"],
+                "display_id": r["display_id"],
+                "role": r["role"],
+                "baseline_status": r["model_comparison"]["baseline_status"],
+                "scoped_consequence": r["scoped_consequence"],
+            }
+            for r in items
+        ]
+
+    by_program = {
+        "PROGRAM_1": {
+            "witnesses": status_summary(program_1_by_role["witnesses"]),
+            "controls": status_summary(program_1_by_role["controls"]),
+            "pathfinders": status_summary(program_1_by_role["pathfinders"]),
+            "exploratory": status_summary(program_1_by_role["exploratory"]),
+            "demonstrations": status_summary(program_1_by_role["demonstrations"]),
+            "visualizations": status_summary(program_1_by_role["visualizations"]),
+        },
+        "PROGRAM_2": {
+            "witnesses": status_summary(program_2_by_role["witnesses"]),
+            "controls": status_summary(program_2_by_role["controls"]),
+            "pathfinders": status_summary(program_2_by_role["pathfinders"]),
+            "exploratory": status_summary(program_2_by_role["exploratory"]),
+            "demonstrations": status_summary(program_2_by_role["demonstrations"]),
+            "visualizations": status_summary(program_2_by_role["visualizations"]),
+        },
+        "NONE": status_summary(none_program_all),
+    }
+
     return {
         "schema_version": SCHEMA_VERSION,
         "run_id": run_id,
+        "coverage": {
+            "registered_experiments": registered,
+            "experiments_run": sorted(set(experiments_run)),
+            "experiments_not_run": experiments_not_run,
+            "reviews_generated": reviews_generated_ids,
+            "model_comparisons_generated": reviews_generated_ids,  # 1-1 with reviews
+            "lemmas_generated": reviews_generated_ids,
+            "coverage_complete": coverage_complete,
+            "all_confirmed": all_confirmed,
+        },
         "totals": {
             "experiments_reviewed": len(reviews),
-            "program_1_witnesses": len(program_1),
-            "program_2_witnesses": len(program_2),
+            "program_1_witnesses": len(program_1_witnesses),
+            "program_2_witnesses": len(program_2_witnesses),
+            "program_1_total": len(program_1_all),
+            "program_2_total": len(program_2_all),
             "controls": len(controls),
             "pathfinders": len(pathfinders),
             "demonstrations": len(demos),
             "failed_or_incomplete": len(failed_or_incomplete),
         },
+        "by_program": by_program,
         "program_1_candidate_lemmas": lemma_entries([
-            r for r in program_1
+            r for r in program_1_witnesses
             if r["model_comparison"]["baseline_status"] == "CONFIRMED"
         ]),
         "program_1_witnesses": [
@@ -684,12 +803,14 @@ def build_proof_discovery_index(
                 "display_id": r["display_id"],
                 "baseline_status": r["model_comparison"]["baseline_status"],
             }
-            for r in program_1
+            for r in program_1_witnesses
         ],
         "controls_and_instrument_lemmas": lemma_entries(controls),
         "pathfinding_notes": lemma_entries(pathfinders),
         "demonstrations": lemma_entries(demos),
-        "program_2_contradiction_track_lemmas": lemma_entries(program_2),
+        # All Program 2 reviews — not just witnesses — so future P2 controls /
+        # pathfinders surface here too.
+        "program_2_contradiction_track_lemmas": lemma_entries(program_2_lemmas_all),
         "failed_or_incomplete_baselines": [
             {
                 "experiment_id": r["experiment_id"],
@@ -708,18 +829,34 @@ def build_proof_discovery_index(
 
 
 def render_proof_discovery_markdown(index: Dict[str, Any]) -> str:
+    coverage = index.get("coverage", {})
     lines: List[str] = [
         f"# Proof Discovery — {index['run_id']}",
         "",
         f"_schema {index['schema_version']}_",
         "",
+        "## Coverage",
+        "```json",
+        json.dumps(coverage, indent=2, sort_keys=True),
+        "```",
+        "",
+    ]
+    if not coverage.get("coverage_complete"):
+        missing = coverage.get("experiments_not_run", [])
+        lines.append(
+            f"> Partial coverage: {len(coverage.get('reviews_generated', []))} of "
+            f"{len(coverage.get('registered_experiments', []))} registered experiments reviewed. "
+            f"Not run / not reviewed: {missing}."
+        )
+        lines.append("")
+    lines.extend([
         "## Totals",
         "```json",
         json.dumps(index["totals"], indent=2, sort_keys=True),
         "```",
         "",
         "## Program 1 Candidate Lemmas",
-    ]
+    ])
     if not index["program_1_candidate_lemmas"]:
         lines.append("_No Program 1 candidate lemmas suggested in this run._")
     for entry in index["program_1_candidate_lemmas"]:
@@ -740,7 +877,15 @@ def render_proof_discovery_markdown(index: Dict[str, Any]) -> str:
         lines.append(f"- {entry['display_id']}: {entry['lemma_name']} ({entry['baseline_status']})")
     lines.extend(["", "## Failed or Incomplete Baselines"])
     if not index["failed_or_incomplete_baselines"]:
-        lines.append("_All baselines confirmed in this run._")
+        if coverage.get("all_confirmed"):
+            lines.append("_All baselines confirmed in this run._")
+        elif coverage.get("coverage_complete"):
+            lines.append("_No failed or incomplete baselines among reviewed experiments._")
+        else:
+            lines.append(
+                "_No failed or incomplete baselines among the experiments reviewed. "
+                "Coverage is partial — see the Coverage section above for unreviewed experiments._"
+            )
     for entry in index["failed_or_incomplete_baselines"]:
         lines.append(
             f"- **{entry['display_id']}** — {entry['baseline_status']} "
@@ -837,7 +982,11 @@ def write_run_reviews(
         (lemmas_dir / f"{exp_id}.md").write_text(lemma_md, encoding="utf-8")
         reviews.append(review)
 
-    index = build_proof_discovery_index(run_id, reviews)
+    index = build_proof_discovery_index(
+        run_id,
+        reviews,
+        experiments_run=list(experiments.keys()),
+    )
     (out_dir / "proof_discovery_index.json").write_text(
         json.dumps(index, indent=2, sort_keys=True, default=str),
         encoding="utf-8",

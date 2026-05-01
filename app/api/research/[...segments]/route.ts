@@ -325,18 +325,33 @@ const dispatchPost = async (request: Request, segments: string[]) => {
         return NextResponse.json(resumeRunEnvelope(mode), { status: 202 });
     }
 
-    // ----- hypothesis proposals (advisory; require explicit human acceptance) -----
+    // ----- hypothesis proposals (advisory; mutations require auth + write-enabled deployment) -----
     if (segments.length === 1 && head === "hypothesis-proposals") {
+        if (!getDeploymentCapabilities().run_controls_enabled) {
+            return getReadOnlyErrorResponse();
+        }
+        const auth = assertRunAuth(request);
+        if (auth) return auth;
         const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
         const env = proposeBaselineUpdateEnvelope(body);
         return NextResponse.json(env, { status: env.ok ? 201 : 400 });
     }
     if (segments.length === 3 && head === "hypothesis-proposals" && id && segments[2] === "accept") {
+        if (!getDeploymentCapabilities().run_controls_enabled) {
+            return getReadOnlyErrorResponse();
+        }
+        const auth = assertRunAuth(request);
+        if (auth) return auth;
         const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
         const env = acceptHypothesisProposalEnvelope(id, body);
         return NextResponse.json(env, { status: env.ok ? 200 : 400 });
     }
     if (segments.length === 3 && head === "hypothesis-proposals" && id && segments[2] === "reject") {
+        if (!getDeploymentCapabilities().run_controls_enabled) {
+            return getReadOnlyErrorResponse();
+        }
+        const auth = assertRunAuth(request);
+        if (auth) return auth;
         const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
         const env = rejectHypothesisProposalEnvelope(id, body);
         return NextResponse.json(env, { status: env.ok ? 200 : 400 });

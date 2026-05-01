@@ -109,9 +109,19 @@ function registryDir(repoRoot: string): string {
     return path.join(repoRoot, "proof_kernel", "hypotheses");
 }
 
-let cached: { repoRoot: string; registry: HypothesisRegistry } | null = null;
+let cached: { repoRoot: string; overlayFingerprint: string; registry: HypothesisRegistry } | null = null;
 
 const OVERLAY_FILENAME = "_accepted_overlays.json";
+
+function overlayFingerprint(repoRoot: string): string {
+    const fp = path.join(registryDir(repoRoot), OVERLAY_FILENAME);
+    try {
+        const stat = fs.statSync(fp);
+        return `${stat.mtimeMs}:${stat.size}`;
+    } catch {
+        return "absent";
+    }
+}
 
 interface OverlayEntry {
     proposal_id?: string;
@@ -177,7 +187,8 @@ function applyOverlays(
 }
 
 export function loadHypothesisRegistry(repoRoot: string = process.cwd()): HypothesisRegistry {
-    if (cached && cached.repoRoot === repoRoot) {
+    const fingerprint = overlayFingerprint(repoRoot);
+    if (cached && cached.repoRoot === repoRoot && cached.overlayFingerprint === fingerprint) {
         return cached.registry;
     }
     const dir = registryDir(repoRoot);
@@ -233,7 +244,7 @@ export function loadHypothesisRegistry(repoRoot: string = process.cwd()): Hypoth
         sources,
     };
     const registry = applyOverlays(baseRegistry, repoRoot);
-    cached = { repoRoot, registry };
+    cached = { repoRoot, overlayFingerprint: fingerprint, registry };
     return registry;
 }
 

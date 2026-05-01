@@ -351,9 +351,11 @@ export function rejectProposal(
         if (active && active.proposal_id === proposalId) {
             delete overlay.overlays[proposal.hypothesis_id];
             safeWriteJson(overlayPath(repoRoot), overlay);
-            clearHypothesisRegistryCache();
         }
     }
+    // Reject always invalidates: even if the rejected proposal was not active,
+    // the in-memory registry view may have been built from a stale fingerprint.
+    clearHypothesisRegistryCache();
     return proposal;
 }
 

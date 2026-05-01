@@ -100,13 +100,42 @@ export interface ModelComparison {
     agent_review_priority: "HIGH" | "MEDIUM" | "LOW";
 }
 
+export interface CoverageSummary {
+    registered_experiments: string[];
+    experiments_run: string[];
+    experiments_not_run: string[];
+    reviews_generated: string[];
+    model_comparisons_generated: string[];
+    lemmas_generated: string[];
+    coverage_complete: boolean;
+    all_confirmed: boolean;
+}
+
+export interface ByProgramRoleEntry {
+    experiment_id: string;
+    display_id: string;
+    role: string;
+    baseline_status: BaselineStatus;
+    scoped_consequence: ScopedConsequence;
+}
+
+export interface ByProgramSummary {
+    PROGRAM_1: Record<string, ByProgramRoleEntry[]>;
+    PROGRAM_2: Record<string, ByProgramRoleEntry[]>;
+    NONE: ByProgramRoleEntry[];
+}
+
 export interface ProofDiscoveryIndex {
     schema_version: string;
     run_id: string;
+    coverage: CoverageSummary;
+    by_program: ByProgramSummary;
     totals: {
         experiments_reviewed: number;
         program_1_witnesses: number;
         program_2_witnesses: number;
+        program_1_total: number;
+        program_2_total: number;
         controls: number;
         pathfinders: number;
         demonstrations: number;

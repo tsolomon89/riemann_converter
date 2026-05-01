@@ -280,7 +280,7 @@ describe("acceptance 9: Program 2 failures stay scoped + role-separated from Pro
 describe("acceptance 10: MCP get_experiment_review returns full structured review", () => {
     it("returns every required field for P2-2", async () => {
         const result = await callMcp("get_experiment_review", { id: "P2-2" });
-        const review = (result.data as { data: ExperimentReview }).data;
+        const review = result.data as ExperimentReview;
         expect(review.baseline_hypothesis).toBeTruthy();
         expect(review.raw_observations).toBeTruthy();
         expect(review.model_comparison).toBeTruthy();
@@ -298,10 +298,13 @@ describe("acceptance 10: MCP get_experiment_review returns full structured revie
 describe("acceptance 11: MCP get_experiment_raw_data returns observed/predicted/residual data", () => {
     it("returns raw_observations + verifier_signal + observations", async () => {
         const result = await callMcp("get_experiment_raw_data", { id: "P2-2" });
-        const data = (result.data as { data: { raw_observations: Record<string, unknown>; verifier_signal: { outcome: string }; observations: { summary_metrics: Record<string, unknown> } | null } }).data;
+        const data = result.data as {
+            raw_observations: Record<string, unknown>;
+            verifier_signal: { outcome: string };
+            observations: { summary_metrics: Record<string, unknown> } | null;
+        };
         expect(data.raw_observations).toBeTruthy();
         expect(data.verifier_signal.outcome).toBe("INCONSISTENT");
-        // observations summary metric is exposed.
         expect(data.observations).toBeTruthy();
     });
 });

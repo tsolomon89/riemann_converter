@@ -209,7 +209,12 @@ export function getBaselineHypothesisEnvelope(
     experimentIdInput: string,
     repoRoot: string = process.cwd(),
 ): ProofDiscoveryEnvelope<BaselineHypothesis | null> {
-    const expId = normalizeExperimentIdLoose(experimentIdInput);
+    let expId: string;
+    try {
+        expId = normalizeExperimentIdLoose(experimentIdInput);
+    } catch (err) {
+        return envelope(null, null, "Invalid experiment id.", [], [(err as Error).message], false);
+    }
     const baseline = getBaselineForExperiment(expId, repoRoot);
     if (!baseline) {
         return envelope(
@@ -270,7 +275,12 @@ export function getExperimentReviewEnvelope(
             false,
         );
     }
-    const expId = normalizeExperimentIdLoose(experimentIdInput);
+    let expId: string;
+    try {
+        expId = normalizeExperimentIdLoose(experimentIdInput);
+    } catch (err) {
+        return envelope(runId, null, "Invalid experiment id.", [], [(err as Error).message], false);
+    }
     const review = readExperimentReview(runId, expId, repoRoot);
     if (!review) {
         return envelope(
@@ -286,11 +296,72 @@ export function getExperimentReviewEnvelope(
     return envelope(runId, review, summary);
 }
 
+export interface NormalizedSeries {
+    observed: Record<string, unknown>;
+    predicted: Record<string, unknown>;
+    residual: Record<string, unknown>;
+    other_numeric: Record<string, unknown>;
+}
+
+/**
+ * Pull out any keys in the metrics tree whose name carries observed/predicted/
+ * residual semantics. Designed to be cheap and never throw — agents can use
+ * this to inspect data without relying on verdict labels, while still falling
+ * back to the full metrics tree when nothing matches.
+ */
+function normalizeObservationSeries(metrics: Record<string, unknown> | null | undefined): NormalizedSeries {
+    const out: NormalizedSeries = { observed: {}, predicted: {}, residual: {}, other_numeric: {} };
+    if (!metrics || typeof metrics !== "object") return out;
+    const visit = (prefix: string, node: unknown) => {
+        if (node === null || node === undefined) return;
+        if (typeof node !== "object") {
+            const lower = prefix.toLowerCase();
+            const isResidual = /residual|deviation|drift|max_abs/.test(lower);
+            const isObserved = /observed|actual|recovered|measured/.test(lower);
+            const isPredicted = /predicted|expected|baseline|theory|true/.test(lower);
+            // Order matters: residual takes priority over observed/predicted
+            // (e.g. "max_abs_residual_dev" should land under residual, not observed).
+            const bucket = isResidual ? "residual" : isObserved ? "observed" : isPredicted ? "predicted" : "other_numeric";
+            if (typeof node === "number" || typeof node === "string" || typeof node === "boolean") {
+                out[bucket][prefix] = node;
+            }
+            return;
+        }
+        if (Array.isArray(node)) {
+            // Keep the array verbatim under the most specific bucket we can infer.
+            const lower = prefix.toLowerCase();
+            const isResidual = /residual|deviation|drift/.test(lower);
+            const isObserved = /observed|actual|recovered|measured/.test(lower);
+            const isPredicted = /predicted|expected|baseline|theory|true/.test(lower);
+            const bucket = isResidual ? "residual" : isObserved ? "observed" : isPredicted ? "predicted" : "other_numeric";
+            out[bucket][prefix] = node;
+            return;
+        }
+        for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+            visit(prefix ? `${prefix}.${k}` : k, v);
+        }
+    };
+    visit("", metrics);
+    return out;
+}
+
+export interface ExperimentRawDataPayload {
+    baseline_hypothesis: BaselineHypothesis | null;
+    raw_observations: Record<string, unknown>;
+    verifier_signal: ExperimentReview["verifier_signal"];
+    observations: ModelComparison["observations"] | null;
+    series_refs: string[];
+    observation_series: NormalizedSeries;
+    /** Static inference rails recorded by the verifier. Exposed verbatim but
+     *  clearly labeled so agents can distinguish them from actual run inference. */
+    verifier_static_inference: unknown;
+}
+
 export function getExperimentRawDataEnvelope(
     experimentIdInput: string,
     runIdParam: string | null,
     repoRoot: string = process.cwd(),
-): ProofDiscoveryEnvelope<{ baseline_hypothesis: BaselineHypothesis | null; raw_observations: Record<string, unknown>; verifier_signal: ExperimentReview["verifier_signal"]; observations: ModelComparison["observations"] | null } | null> {
+): ProofDiscoveryEnvelope<ExperimentRawDataPayload | null> {
     const review = getExperimentReviewEnvelope(experimentIdInput, runIdParam, repoRoot);
     if (!review.ok || !review.data) {
         return envelope(review.run_id, null, review.plain_language_summary, review.warnings, review.errors, false);
@@ -300,6 +371,9 @@ export function getExperimentRawDataEnvelope(
         ? readModelComparison(review.run_id, r.experiment_id, repoRoot)
         : null;
     const baseline = getBaselineForExperiment(r.experiment_id, repoRoot);
+    const metrics = (r.raw_observations as { metrics?: Record<string, unknown> }).metrics ?? null;
+    const series = normalizeObservationSeries(metrics);
+    const rawWithStatic = r.raw_observations as { verifier_static_inference?: unknown };
     return envelope(
         review.run_id,
         {
@@ -307,8 +381,11 @@ export function getExperimentRawDataEnvelope(
             raw_observations: r.raw_observations,
             verifier_signal: r.verifier_signal,
             observations: mc?.observations ?? null,
+            series_refs: mc?.observations.series_refs ?? [],
+            observation_series: series,
+            verifier_static_inference: rawWithStatic.verifier_static_inference ?? null,
         },
-        `Raw observations for ${r.display_id} (${r.experiment_id}) in run ${review.run_id}.`,
+        `Raw observations for ${r.display_id} (${r.experiment_id}) in run ${review.run_id}. Inspect data without relying on verdict labels — see observation_series and series_refs.`,
     );
 }
 
@@ -347,7 +424,12 @@ export function getModelComparisonEnvelope(
     if (!runId) {
         return envelope(null, null, "No current run resolved.", ["no run id available"], [], false);
     }
-    const expId = normalizeExperimentIdLoose(experimentIdInput);
+    let expId: string;
+    try {
+        expId = normalizeExperimentIdLoose(experimentIdInput);
+    } catch (err) {
+        return envelope(runId, null, "Invalid experiment id.", [], [(err as Error).message], false);
+    }
     const mc = readModelComparison(runId, expId, repoRoot);
     if (!mc) {
         return envelope(runId, null, `No model comparison for ${expId} in run ${runId}.`, [], [`not found: ${expId}`], false);
@@ -420,7 +502,12 @@ export function getCandidateLemmaEnvelope(
     if (!runId) {
         return envelope(null, null, "No current run resolved.", ["no run id available"], [], false);
     }
-    const expId = normalizeExperimentIdLoose(experimentIdInput);
+    let expId: string;
+    try {
+        expId = normalizeExperimentIdLoose(experimentIdInput);
+    } catch (err) {
+        return envelope(runId, null, "Invalid experiment id.", [], [(err as Error).message], false);
+    }
     const review = readExperimentReview(runId, expId, repoRoot);
     if (!review) {
         return envelope(runId, null, `No candidate lemma for ${expId} in run ${runId}.`, [], [`not found: ${expId}`], false);
@@ -450,10 +537,14 @@ export function getProofDiscoveryEnvelope(
     if (!index) {
         return envelope(runId, { run_id: runId, index: null, markdown: md }, `No proof-discovery index for run ${runId}.`, [`index not found for run ${runId}`], [], false);
     }
+    const cov = index.coverage;
+    const coverageNote = cov?.coverage_complete
+        ? "coverage complete"
+        : `partial coverage (${cov?.reviews_generated?.length ?? 0}/${cov?.registered_experiments?.length ?? 0} reviewed)`;
     return envelope(
         runId,
         { run_id: runId, index, markdown: md },
-        `Proof-discovery for run ${runId}: ${index.totals.experiments_reviewed} reviews, ${index.formalization_targets.length} formalization targets, ${index.totals.failed_or_incomplete} failed/incomplete baselines.`,
+        `Proof-discovery for run ${runId}: ${index.totals.experiments_reviewed} reviews, ${index.formalization_targets.length} formalization targets, ${index.totals.failed_or_incomplete} failed/incomplete baselines — ${coverageNote}.`,
     );
 }
 

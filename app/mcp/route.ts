@@ -98,12 +98,35 @@ const collectWarnings = (payload: unknown): string[] => {
     return Array.from(new Set([...direct, ...toStringArray((data as Record<string, unknown>).warnings)]));
 };
 
-const toResearchToolResponse = (payload: unknown) => ({
-    ok: true,
-    data: payload,
-    warnings: collectWarnings(payload),
-    errors: [] as string[],
-});
+/**
+ * Build the JSON-RPC response body for a tool call.
+ *
+ * If the payload already has the proof-discovery envelope shape
+ * ({ok, data, warnings, errors, ...}) — e.g. anything from
+ * lib/proof-discovery-api.ts — pass it through unchanged. Otherwise wrap the
+ * raw payload in the legacy {ok, data, warnings, errors} shape used by the
+ * older research tools.
+ *
+ * This prevents `result.data.data` double-nesting on the MCP wire.
+ */
+const toResearchToolResponse = (payload: unknown) => {
+    if (
+        payload !== null &&
+        typeof payload === "object" &&
+        "ok" in (payload as object) &&
+        "data" in (payload as object) &&
+        "warnings" in (payload as object) &&
+        "errors" in (payload as object)
+    ) {
+        return payload;
+    }
+    return {
+        ok: true,
+        data: payload,
+        warnings: collectWarnings(payload),
+        errors: [] as string[],
+    };
+};
 
 const toMcpToolResult = (payload: unknown) => ({
     content: [
@@ -651,8 +674,18 @@ const runToolRequiresAuth = (name: string) =>
     name === "cancel_run" ||
     name === "resume_run";
 
-const runToolBlockedByReadOnly = (name: string) =>
-    runToolRequiresAuth(name) && !getDeploymentCapabilities().run_controls_enabled;
+// Proposal mutation tools share the same gate as run-control: they mutate
+// canonical state and are blocked in read-only deployments + require auth.
+const proposalMutationToolRequiresAuth = (name: string) =>
+    name === "propose_baseline_update" ||
+    name === "accept_hypothesis_proposal" ||
+    name === "reject_hypothesis_proposal";
+
+const mutationToolRequiresAuth = (name: string) =>
+    runToolRequiresAuth(name) || proposalMutationToolRequiresAuth(name);
+
+const mutationToolBlockedByReadOnly = (name: string) =>
+    mutationToolRequiresAuth(name) && !getDeploymentCapabilities().run_controls_enabled;
 
 const callTool = (name: string, args: Record<string, unknown>) => {
     switch (name) {
@@ -867,8 +900,8 @@ export async function POST(request: Request) {
         return jsonRpcError(id, -32602, "Invalid params: tool name is required.");
     }
 
-    if (runToolRequiresAuth(name)) {
-        if (runToolBlockedByReadOnly(name)) {
+    if (mutationToolRequiresAuth(name)) {
+        if (mutationToolBlockedByReadOnly(name)) {
             return jsonRpcError(id, -32003, READ_ONLY_DEPLOYMENT_MESSAGE, {
                 code: READ_ONLY_DEPLOYMENT_CODE,
                 reason: getDeploymentCapabilities().read_only_reason,
