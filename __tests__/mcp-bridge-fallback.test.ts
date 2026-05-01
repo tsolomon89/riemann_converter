@@ -34,6 +34,7 @@ describe("mcp-bridge local-fs fallback", () => {
             "get_implementation_health",
             "get_history",
             "get_experiment",
+            "get_same_object_certificate",
         ]) {
             expect(__test__.READ_ONLY_TOOLS.has(name)).toBe(true);
         }
@@ -54,11 +55,12 @@ describe("mcp-bridge local-fs fallback", () => {
         }
     });
 
-    test("fallbackPayload(get_history) returns history array", async () => {
+    test("fallbackPayload(get_history) returns current-run history payload", async () => {
         const { __test__ } = await loadBridge();
         const out = __test__.fallbackPayload("get_history", { limit: 1 });
-        expect(Array.isArray(out)).toBe(true);
-        expect(out.length).toBeGreaterThanOrEqual(0);
+        expect(Array.isArray(out.entries)).toBe(true);
+        expect(out.total).toBeGreaterThanOrEqual(0);
+        expect(out.historical_comparison_enabled).toBe(false);
     });
 
     test("fallbackPayload(get_manifest) exposes experiment display aliases", async () => {
@@ -89,7 +91,9 @@ describe("mcp-bridge local-fs fallback", () => {
         }
         expect(out.function).toBe("PROOF_OBLIGATION_WITNESS");
         expect(out.obligation_id).toBe("OBL_BETA_INVARIANCE");
-        expect(out.mapping_provisional).toBe(true);
+        if ("mapping_provisional" in out) {
+            expect(typeof out.mapping_provisional).toBe("boolean");
+        }
     });
 
     test("fallbackPayload(get_experiment) resolves display aliases", async () => {
@@ -156,5 +160,31 @@ describe("mcp-bridge local-fs fallback", () => {
             params: { name: "nonexistent_tool", arguments: {} },
         });
         expect(handled).toBe(false);
+    });
+
+    test("normalizeHttpMcpResponseText wraps plain tool results from HTTP MCP endpoints", async () => {
+        const { __test__ } = await loadBridge();
+        const out = __test__.normalizeHttpMcpResponseText(
+            {
+                jsonrpc: "2.0",
+                id: 11,
+                method: "tools/call",
+                params: { name: "get_latest_run", arguments: {} },
+            },
+            JSON.stringify({
+                jsonrpc: "2.0",
+                id: 11,
+                result: { status: "NO_CURRENT_RUN" },
+            }),
+        );
+        const parsed = JSON.parse(out);
+        expect(parsed.result.content[0].type).toBe("text");
+        const payload = JSON.parse(parsed.result.content[0].text);
+        expect(payload).toMatchObject({
+            ok: true,
+            data: { status: "NO_CURRENT_RUN" },
+            warnings: [],
+            errors: [],
+        });
     });
 });

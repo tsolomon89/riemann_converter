@@ -36,8 +36,9 @@ import IntroPanel from "../components/IntroPanel";
 import OpenGapsPanel from "../components/OpenGapsPanel";
 import SameObjectCertificatePanel from "../components/SameObjectCertificatePanel";
 import ResearchPathPanel from "../components/ResearchPathPanel";
-import { FunctionOutcomeBadge, InferenceRailsCallout } from "../components/VerdictBadges";
+import { FunctionOutcomeBadge } from "../components/VerdictBadges";
 import VerdictHistoryPanel from "../components/VerdictHistoryPanel";
+import ExperimentReviewPanel from "../components/ExperimentReviewPanel";
 import { ExperimentsData, ExperimentVerdict } from "../lib/types";
 import type { SameObjectCertificate } from "../lib/same-object-certificate";
 import type { RunEvent, RunLogsPayload, RunStatusPayload } from "../lib/research-types";
@@ -94,6 +95,13 @@ type DeploymentCapabilities = {
 };
 type ResearchManifestResponse = {
   capabilities?: Partial<DeploymentCapabilities>;
+};
+type LatestRunResponse = {
+  latest_real_run_id: string | null;
+  status: "NO_CURRENT_RUN" | "RUNNING" | "SUCCEEDED" | "FAILED";
+  certificate_status: "NOT_BUILT" | "CURRENT" | "STALE" | "MISSING_FOR_RUN";
+  historical_comparison_enabled: boolean;
+  next_action: string;
 };
 type Envelope<T> = {
   data: T;
@@ -180,6 +188,8 @@ export default function Home() {
   const runLogSourceRef = useRef<RunLogSource>(null);
   const lastTerminalFetchRunIdRef = useRef<string | null>(null);
   const [certificate, setCertificate] = useState<SameObjectCertificate | null>(null);
+  const [latestRun, setLatestRun] = useState<LatestRunResponse | null>(null);
+  const [certificateMessage, setCertificateMessage] = useState("Same-Object Certificate: not built for current run.");
 
   // Auto-scroll logs
   useEffect(() => {
@@ -188,14 +198,14 @@ export default function Home() {
 
   const fetchData = useCallback(async () => {
       try {
-        const res = await fetch(`/experiments.json?t=${Date.now()}`, { cache: "no-store" });
+        const res = await fetch(`/api/research/current-experiments?t=${Date.now()}`, { cache: "no-store" });
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
         const jsonData = await res.json();
         setData(jsonData);
       } catch (err) {
-        console.error("Failed to load experiments.json", err);
+        console.error("Failed to load current experiments artifact", err);
       } finally {
         setLoading(false);
       }
@@ -221,15 +231,39 @@ export default function Home() {
       }
   }, []);
 
+  const fetchLatestRun = useCallback(async () => {
+      try {
+        const res = await fetch("/api/research/latest-run", { cache: "no-store" });
+        if (!res.ok) return;
+        setLatestRun((await res.json()) as LatestRunResponse);
+      } catch (err) {
+        console.error("Failed to load latest run state", err);
+      }
+  }, []);
+
+  const fetchCertificate = useCallback(async () => {
+      try {
+        const res = await fetch("/api/research/same-object-certificate", { cache: "no-store" });
+        const body = await res.json().catch(() => null) as (SameObjectCertificate & { message?: string; status?: string }) | null;
+        if (res.ok && body) {
+          setCertificate(body as SameObjectCertificate);
+          setCertificateMessage("");
+          return;
+        }
+        setCertificate(null);
+        setCertificateMessage(body?.message ?? "Certificate not built for this run.");
+      } catch {
+        setCertificate(null);
+        setCertificateMessage("Certificate not built for this run.");
+      }
+  }, []);
+
   useEffect(() => {
     void fetchData();
     void fetchDeploymentCapabilities();
-    // Fetch Same-Object Certificate
-    fetch("/same_object_certificate.json", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d) setCertificate(d as SameObjectCertificate); })
-      .catch(() => { /* certificate not generated yet */ });
-  }, [fetchData, fetchDeploymentCapabilities]);
+    void fetchLatestRun();
+    void fetchCertificate();
+  }, [fetchData, fetchDeploymentCapabilities, fetchLatestRun, fetchCertificate]);
 
   const stopTelemetryPolling = useCallback(() => {
     if (telemetryPollTimerRef.current !== null) {
@@ -324,6 +358,8 @@ export default function Home() {
             ) {
               lastTerminalFetchRunIdRef.current = activeRunId;
               void fetchData();
+              void fetchLatestRun();
+              void fetchCertificate();
             }
           }
         }
@@ -380,7 +416,7 @@ export default function Home() {
       cancelled = true;
       stopTelemetryPolling();
     };
-  }, [activeRunId, fetchData, getAuthHeaders, isRunning, liveRunStatus?.status, stopTelemetryPolling]);
+  }, [activeRunId, fetchCertificate, fetchData, fetchLatestRun, getAuthHeaders, isRunning, liveRunStatus?.status, stopTelemetryPolling]);
 
   useEffect(() => {
     return () => {
@@ -430,6 +466,7 @@ export default function Home() {
           const customRunConfig: Record<string, string | number | undefined> = {
               run: runScope,
               zero_source: config.zeroSource,
+              preset: config.runPreset && config.runPreset !== "custom" ? config.runPreset : undefined,
           };
 
           const appendNumber = (key: string, value: number | undefined) => {
@@ -1292,6 +1329,10 @@ export default function Home() {
   const program2Tabs = EXPERIMENT_TABS.filter((tab) => tab.program === "PROGRAM_2");
   const isProgram1Overview = pageViewMode === "PROGRAM_1_OVERVIEW";
   const isExperimentView = pageViewMode === "EXPERIMENT";
+  const noCurrentRun =
+    latestRun?.status === "NO_CURRENT_RUN" ||
+    (data as (ExperimentsData & { engine_status?: string }) | null)?.engine_status === "NO_CURRENT_RUN" ||
+    data?.summary?.engine_status === "NO_CURRENT_RUN";
   const runControlsEnabled = deploymentCapabilities.run_controls_enabled;
   const isReadOnlyDeployment = deploymentCapabilities.read_only_deployment;
   const runActive = deriveRunActive({
@@ -1300,6 +1341,22 @@ export default function Home() {
   });
   const readOnlyMessage =
     "This hosted deployment is read-only. Fork/download from GitHub to run and verify experiments locally.";
+  const program1Outcomes = Object.values(data?.summary?.experiments ?? {}).filter(
+    (entry) => entry.program === "PROGRAM_1",
+  );
+  const program2Outcomes = Object.values(data?.summary?.experiments ?? {}).filter(
+    (entry) => entry.program === "PROGRAM_2",
+  );
+  const program1Passes =
+    program1Outcomes.length > 0 &&
+    program1Outcomes.every((entry) => entry.status === "PASS" || entry.outcome === "CONSISTENT" || entry.outcome === "IMPLEMENTATION_OK");
+  const program2Mixed =
+    program2Outcomes.length > 0 &&
+    new Set(program2Outcomes.map((entry) => entry.outcome ?? entry.status)).size > 1;
+  const dataFidelityWarning = (
+    data?.summary as (ExperimentsData["summary"] & { fidelity?: { warnings?: string[] }; data_fidelity?: string }) | undefined
+  )?.fidelity?.warnings?.some((warning) => warning.includes("zero source precision below certificate policy")) ||
+    (data?.summary as (ExperimentsData["summary"] & { data_fidelity?: string }) | undefined)?.data_fidelity === "INSUFFICIENT";
   const heartbeatAgeSec = liveRunStatus?.progress?.heartbeat_at
     ? Math.max(
         0,
@@ -1463,6 +1520,53 @@ export default function Home() {
                           </section>
                       )}
 
+                      <section
+                          id="current-run-note"
+                          className="ui-section rounded-lg border border-sky-500/20 bg-sky-950/20 px-4 py-3 text-sky-100"
+                      >
+                          <div className="text-[10px] font-mono uppercase tracking-widest text-sky-300">
+                              Current-run reporting
+                          </div>
+                          <p className="mt-1 text-sm leading-relaxed">
+                              Historical run comparison is disabled during active development. Current reports reflect only the latest clean run.
+                          </p>
+                      </section>
+
+                      {noCurrentRun && (
+                          <section
+                              id="no-current-run-state"
+                              className="ui-section rounded-lg border border-zinc-700/70 bg-zinc-950/70 px-5 py-5"
+                          >
+                              <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                                  No current run
+                              </div>
+                              <p className="mt-2 text-base text-zinc-100">
+                                  No current run. Historical development artifacts have been cleared.
+                              </p>
+                              <p className="mt-1 text-sm text-zinc-400">
+                                  Next action: {latestRun?.next_action ?? "run clean Program 1 critical suite"}
+                              </p>
+                          </section>
+                      )}
+
+                      {!noCurrentRun && program1Passes && (
+                          <section className="ui-section rounded-lg border border-emerald-500/25 bg-emerald-950/15 px-4 py-3 text-emerald-100">
+                              Program 1 proxy witnesses pass.
+                          </section>
+                      )}
+
+                      {!noCurrentRun && program2Mixed && (
+                          <section className="ui-section rounded-lg border border-purple-500/25 bg-purple-950/15 px-4 py-3 text-purple-100">
+                              Program 2 route mixed/unresolved.
+                          </section>
+                      )}
+
+                      {!noCurrentRun && dataFidelityWarning && (
+                          <section className="ui-section rounded-lg border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-amber-100">
+                              Data fidelity warning: zero source precision below certificate policy.
+                          </section>
+                      )}
+
                       {isProgram1Overview && (
                           <>
                       {/* Proof Program Map leads: theorem target + obligation ladder + open gaps.
@@ -1476,6 +1580,7 @@ export default function Home() {
                               fidelityTier={data?.summary?.fidelity_tier}
                               fidelityZeros={data?.summary?.fidelity_zeros}
                               fidelityDps={data?.summary?.fidelity_dps}
+                              noCurrentRun={noCurrentRun}
                               onJumpToGaps={() =>
                                   document
                                       .getElementById("open-gaps-panel")
@@ -1489,11 +1594,12 @@ export default function Home() {
                           <IntroPanel />
                       </section>
 
-                      {/* Same-Object Certificate — the smoking gun. */}
+                      {/* Same-Object Certificate for the current run. */}
                       <section id="certificate-section" className="ui-section ui-certificate-section">
                           <SameObjectCertificatePanel
                               id="same-object-certificate-panel"
                               certificate={certificate}
+                              emptyMessage={certificateMessage}
                           />
                       </section>
 
@@ -1512,12 +1618,28 @@ export default function Home() {
                           </>
                       )}
 
-                      {isExperimentView && (
+                      {isExperimentView && noCurrentRun && (
+                          <section className="ui-section rounded-lg border border-zinc-700/70 bg-zinc-950/70 px-5 py-5">
+                              <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                                  Experiment results unavailable
+                              </div>
+                              <p className="mt-2 text-base text-zinc-100">
+                                  No current experiment results are loaded. Run a clean Program 1 critical suite to populate this view.
+                              </p>
+                              <p className="mt-1 text-sm text-zinc-400">
+                                  Canonical data assets remain available; this page is not showing stale development-run evidence.
+                              </p>
+                          </section>
+                      )}
+
+                      {isExperimentView && !noCurrentRun && (
                           <>
                       {/* Canonical trail: obligation + implementation-health flips. */}
-                      <section id="history-section" className="ui-section ui-history-section">
-                          <VerdictHistoryPanel />
-                      </section>
+                      {!noCurrentRun && latestRun?.historical_comparison_enabled && (
+                          <section id="history-section" className="ui-section ui-history-section">
+                              <VerdictHistoryPanel />
+                          </section>
+                      )}
 
                       {/* Header for Active View */}
                       {(() => {
@@ -1571,10 +1693,9 @@ export default function Home() {
                               )}
                             </div>
 
-                            {/* Mandatory inference rails — surfaces what MAY and MUST NOT be
-                               inferred from this experiment's current outcome. Required
-                               under PROOF_PROGRAM_SPEC.md §5/§8. */}
-                            <InferenceRailsCallout rails={activeVerdict?.inference} />
+                            <ExperimentReviewPanel
+                              experimentId={activeExp.replace("EXP", "EXP_")}
+                            />
                           </section>
                         );
                       })()}
@@ -1632,8 +1753,7 @@ export default function Home() {
                         ? Object.fromEntries(
                               Object.entries(data.summary.experiments).map(([k, v]) => [
                                   k,
-                                  // Prefer canonical outcome over deprecated theory_fit
-                                  v.outcome ?? v.theory_fit ?? v.status,
+                                  v.outcome ?? v.status,
                               ])
                           )
                         : undefined

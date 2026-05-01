@@ -1,0 +1,175 @@
+{
+  "schema_version": "2026.05.hypothesis-registry.v1",
+  "program": "NONE",
+  "description": "Pathfinder, research-note, and exploratory baselines. These do not witness the base claim. Their outputs are direction notes, alternative-hypothesis suggestions, and guardrails — not theory verdicts.",
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_NOTE_1_ZERO_REUSE",
+      "experiment_ids": ["EXP_1C"],
+      "display_id": "NOTE-1",
+      "program": "PROGRAM_1",
+      "role": "pathfinder",
+      "plain_statement": "Zero-reuse / zero-handling optimization (scaled-zero reconstruction at physical coordinates) behaves consistently with the baseline reconstruction under the declared tolerance.",
+      "object_under_test": "explicit_formula_reconstruction_with_zero_reuse",
+      "expected_signature": {
+        "primary_metric": "scaled_zero_reconstruction_drift_vs_baseline",
+        "expected_value": "within declared engineering tolerance",
+        "tolerance": "experiment-declared engineering tolerance",
+        "pass_rule": "scaled-zero reconstruction agrees with baseline within tolerance"
+      },
+      "why_this_matters": "Zero-reuse is a research-engineering optimization. If it disagrees with the baseline reconstruction, then either the optimization is wrong or the baseline depends on a hidden detail of zero-handling.",
+      "failure_means": [
+        "the zero-reuse optimization may be invalid in this window",
+        "the engineering shortcut is not safe yet",
+        "the baseline reconstruction may rely on hidden zero-handling details"
+      ],
+      "failure_does_not_mean": [
+        "the base compression claim fails",
+        "Program 1 fails",
+        "RH is refuted"
+      ],
+      "possible_alternative_hypotheses": [
+        "zero-reuse is valid only at low |k|",
+        "zero-reuse requires a specific normalization to match the baseline",
+        "the baseline implicitly does something the optimization skips"
+      ],
+      "candidate_lemma_name": "Zero-Reuse Engineering Note",
+      "intended_inference_if_passed": [
+        "the zero-reuse engineering optimization is consistent with the baseline on this window",
+        "it is safe to reuse zeros under the tested settings",
+        "no theoretical claim is added"
+      ],
+      "disallowed_conclusions": [
+        "this supports the base claim",
+        "this supports Program 1 witnesses directly",
+        "this proves any necessary condition"
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_PATH_1_TRANSLATION_VS_DILATION",
+      "experiment_ids": ["EXP_4"],
+      "display_id": "PATH-1",
+      "program": "NONE",
+      "role": "pathfinder",
+      "plain_statement": "A translation-vs-dilation comparison should indicate which transform family is more coherent under the tested reconstruction conditions.",
+      "object_under_test": "preferred_gauge_direction",
+      "expected_signature": {
+        "primary_metric": "coherence_advantage_dilation_minus_translation",
+        "expected_value": "directional signal indicating one family preferred",
+        "tolerance": "experiment-declared decision margin",
+        "pass_rule": "the result decisively favors dilation over translation (or vice versa)"
+      },
+      "why_this_matters": "Pathfinders inform which gauge direction to prioritize when allocating proof effort. A decisive PATH-1 result narrows the formalization target.",
+      "failure_means": [
+        "the pathfinder is not decisive under the current metric or window",
+        "the decision margin may be too tight",
+        "the comparison metric may need revision"
+      ],
+      "failure_does_not_mean": [
+        "the base theory is refuted",
+        "neither gauge direction is viable",
+        "Program 1 is refuted"
+      ],
+      "possible_alternative_hypotheses": [
+        "the preferred direction depends on the test window",
+        "translations and dilations are both partially coherent on different sub-windows",
+        "the coherence metric is dominated by precision floor"
+      ],
+      "candidate_lemma_name": "Preferred Gauge-Direction Note",
+      "intended_inference_if_passed": [
+        "one transform family is more coherent on the tested window",
+        "this informs prioritization of formalization effort",
+        "this is a direction note, not a theorem"
+      ],
+      "disallowed_conclusions": [
+        "this rules out the non-preferred direction in general",
+        "this supports the base claim",
+        "this proves any necessary condition"
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_PATH_2_ZERO_CORRESPONDENCE",
+      "experiment_ids": ["EXP_5"],
+      "display_id": "PATH-2",
+      "program": "NONE",
+      "role": "pathfinder",
+      "plain_statement": "A scaled-zero correspondence should show meaningful nearest-neighbor behavior under the tested lattice / zero relation.",
+      "object_under_test": "scaled_zero_correspondence_metric",
+      "expected_signature": {
+        "primary_metric": "nearest_neighbor_correspondence_signal",
+        "expected_value": "structured signal, not noise",
+        "tolerance": "experiment-declared structural tolerance",
+        "pass_rule": "the correspondence metric exhibits structure beyond noise"
+      },
+      "why_this_matters": "PATH-2 explores whether a particular zero-correspondence formulation has any chance of supporting an exact predicate transport down the road.",
+      "failure_means": [
+        "the chosen correspondence metric is weak or wrong on this window",
+        "exact transport via this particular metric is unlikely without revision",
+        "the lattice formulation may need to be replaced"
+      ],
+      "failure_does_not_mean": [
+        "exact predicate transport is impossible",
+        "all zero-correspondence formulations fail",
+        "Program 1 is refuted"
+      ],
+      "possible_alternative_hypotheses": [
+        "a different distance metric reveals the correspondence",
+        "the correspondence holds only modulo a structured residue",
+        "the correspondence is direction-dependent"
+      ],
+      "candidate_lemma_name": "Zero-Correspondence Pathfinding Note",
+      "intended_inference_if_passed": [
+        "the chosen correspondence metric shows structure on the tested window",
+        "this metric remains a candidate for further formalization",
+        "this is a direction note, not a theorem"
+      ],
+      "disallowed_conclusions": [
+        "this proves predicate transport",
+        "this supports the base claim",
+        "this proves any necessary condition"
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_TRANS_1_DIRECT_ZETA_TRANSPORT_GUARDRAIL",
+      "experiment_ids": ["EXP_10"],
+      "display_id": "TRANS-1",
+      "program": "NONE",
+      "role": "exploratory",
+      "plain_statement": "Direct pointwise transport of zeta — i.e. ζ(t) = ζ(c^k t) — is not expected to be invariant under arbitrary multiplicative scaling. Residuals should quantify and bound this guardrail.",
+      "object_under_test": "transformed_zeta_model_pointwise_equality",
+      "expected_signature": {
+        "primary_metric": "pointwise_zeta_transport_residual",
+        "expected_value": "non-zero, structured, bounded residual",
+        "tolerance": "experiment-declared residual bound",
+        "pass_rule": "the residual is bounded and structured, consistent with non-trivial guardrail behavior"
+      },
+      "why_this_matters": "TRANS-1 protects against the misreading that the gauge claim requires literal pointwise zeta equality. The base claim is about same-object behavior under the gauge, not pointwise function equality.",
+      "failure_means": [
+        "the guardrail or its current interpretation needs review",
+        "the residual signal may need a different normalization or summary",
+        "the test window may need revision"
+      ],
+      "failure_does_not_mean": [
+        "the gauge-coordinate theory fails",
+        "Program 1 is refuted",
+        "RH is refuted"
+      ],
+      "possible_alternative_hypotheses": [
+        "residual structure is regime-dependent",
+        "the guardrail metric should be expressed as a relative residual",
+        "pointwise transport behaves differently inside and outside the critical strip"
+      ],
+      "candidate_lemma_name": "Direct-Zeta-Transport Guardrail Note",
+      "intended_inference_if_passed": [
+        "the guardrail is in place on the tested window",
+        "the gauge-coordinate theory is not being mistakenly tested as pointwise zeta equality",
+        "this is not theory support"
+      ],
+      "disallowed_conclusions": [
+        "the gauge-coordinate theory fails",
+        "Program 1 fails",
+        "RH is refuted"
+      ]
+    }
+  ]
+}

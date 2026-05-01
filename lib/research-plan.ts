@@ -65,7 +65,7 @@ export const buildResearchPlan = (
             recommended_next_action: "RUN_CORE_1",
             why: "Data is ready and CORE-1 has not passed yet.",
             commands: ["python experiment_engine.py --run exp1"],
-            expected_artifacts: ["public/experiments.json", "artifacts/runs/<run_id>/raw.json"],
+            expected_artifacts: ["artifacts/runs/<run_id>/experiments.json", "artifacts/runs/<run_id>/raw.json"],
             stop_condition: "CORE-1 passes or exposes a converter formalization defect.",
             proof_work_recommended: false,
         };
@@ -93,7 +93,7 @@ export const buildResearchPlan = (
             recommended_next_action: "RUN_EXP_8",
             why: "CORE-1 passes. Zero correspondence has not been tested at matching fidelity.",
             commands: ["python experiment_engine.py --run exp8"],
-            expected_artifacts: ["public/experiments.json", "artifacts/runs/<run_id>/raw.json"],
+            expected_artifacts: ["artifacts/runs/<run_id>/experiments.json", "artifacts/runs/<run_id>/raw.json"],
             stop_condition: "WIT-1 passes or identifies a zero-correspondence defect.",
             proof_work_recommended: false,
         };
@@ -121,14 +121,14 @@ export const buildResearchPlan = (
             recommended_next_action: "RUN_EXP_6",
             why: "CORE-1 and WIT-1 pass. Predicate preservation has not been tested at matching fidelity.",
             commands: ["python experiment_engine.py --run exp6"],
-            expected_artifacts: ["public/experiments.json", "artifacts/runs/<run_id>/raw.json"],
+            expected_artifacts: ["artifacts/runs/<run_id>/experiments.json", "artifacts/runs/<run_id>/raw.json"],
             stop_condition: "VAL-1 passes or identifies a predicate-transport defect.",
             proof_work_recommended: false,
         };
     }
     completed.push("RUN_EXP_6", "PREDICATE_PROXY_READY");
 
-    const certStatus = certificate?.status ?? "NOT_READY";
+    const certStatus = certificate?.status ?? "NOT_BUILT";
     if (certStatus === "SAME_OBJECT_FAILED") {
         return {
             current_node: "BUILD_SAME_OBJECT_CERTIFICATE",
@@ -137,12 +137,12 @@ export const buildResearchPlan = (
             recommended_next_action: "DIAGNOSE_CERTIFICATE_FAILURE",
             why: "The Same-Object Certificate failed; diagnose its failed section.",
             commands: [],
-            expected_artifacts: ["public/same_object_certificate.json"],
+            expected_artifacts: ["artifacts/runs/<run_id>/certificate.json"],
             stop_condition: "Certificate failure is scoped.",
             proof_work_recommended: false,
         };
     }
-    if (certStatus !== "SAME_OBJECT_CANDIDATE") {
+    if (certStatus !== "SAME_OBJECT_PROXY_CANDIDATE") {
         return {
             current_node: "BUILD_SAME_OBJECT_CERTIFICATE",
             completed_nodes: completed,
@@ -152,13 +152,13 @@ export const buildResearchPlan = (
                 ? "The certificate is inconclusive; use targeted reruns or higher fidelity."
                 : "The critical experiments pass; assemble the Same-Object Certificate before running more tests.",
             commands: certStatus === "INCONCLUSIVE" ? [] : ["python -m proof_kernel.same_object_certificate"],
-            expected_artifacts: ["public/same_object_certificate.json"],
-            stop_condition: "Certificate reaches SAME_OBJECT_CANDIDATE, SAME_OBJECT_FAILED, or INCONCLUSIVE.",
+            expected_artifacts: ["artifacts/runs/<run_id>/certificate.json"],
+            stop_condition: "Certificate reaches SAME_OBJECT_PROXY_CANDIDATE, SAME_OBJECT_FAILED, or INCONCLUSIVE.",
             proof_work_recommended: false,
         };
     }
 
-    completed.push("BUILD_SAME_OBJECT_CERTIFICATE", "SAME_OBJECT_CANDIDATE");
+    completed.push("BUILD_SAME_OBJECT_CERTIFICATE", "SAME_OBJECT_PROXY_CANDIDATE");
     if (certificate?.fidelity?.tier === "AUTHORITATIVE") {
         return {
             current_node: "WRITE_NC3_NC4",
@@ -180,7 +180,7 @@ export const buildResearchPlan = (
         recommended_next_action: "RECOMMEND_HIGHER_FIDELITY_OR_SPECIFIC_RERUN",
         why: "The certificate is a candidate but not at AUTHORITATIVE fidelity.",
         commands: [],
-        expected_artifacts: ["public/same_object_certificate.json"],
+        expected_artifacts: ["artifacts/runs/<run_id>/certificate.json"],
         stop_condition: "Reach AUTHORITATIVE fidelity or identify a named blocker.",
         proof_work_recommended: false,
     };

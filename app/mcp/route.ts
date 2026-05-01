@@ -12,26 +12,50 @@ import {
     getDataAssetsEnvelope,
     getDataMigrationReportEnvelope,
     getDataSufficiencyEnvelope,
+    getArtifactFreshnessPayload,
+    getCurrentReportingStatePayload,
     getExperimentEnvelope,
     getHistoryEnvelope,
     getImplementationHealthEnvelope,
+    getLatestRunPayloadPlain,
     getManifestEnvelope,
     getNextActionEnvelope,
     getObligationEnvelope,
     getObligationsEnvelope,
     getOpenGapsEnvelope,
     getPrecisionPolicyEnvelope,
+    getPreflightEnvelope,
     getResearchPlanEnvelope,
+    getRunPresetsEnvelope,
     getRunEventsEnvelope,
     getRunLogsEnvelope,
     getRunStatusEnvelope,
     getSeriesEnvelope,
+    getSelectedDataSourceEnvelope,
     getTheoremCandidateEnvelope,
+    getZeroValidationEnvelope,
     parseCanonicalMode,
     resumeRunEnvelope,
+    resolveRunPresetEnvelope,
     startCustomRunEnvelope,
     startRunEnvelope,
 } from "../../lib/research-api";
+import {
+    acceptHypothesisProposalEnvelope,
+    getBaselineHypothesisEnvelope,
+    getCandidateLemmaEnvelope,
+    getExperimentRawDataEnvelope,
+    getExperimentReviewEnvelope,
+    getHypothesisProposalEnvelope,
+    getModelComparisonEnvelope,
+    getProofDiscoveryEnvelope,
+    listBaselineHypothesesEnvelope,
+    listCandidateLemmasEnvelope,
+    listExperimentReviewsEnvelope,
+    listHypothesisProposalsEnvelope,
+    proposeBaselineUpdateEnvelope,
+    rejectHypothesisProposalEnvelope,
+} from "../../lib/proof-discovery-api";
 import type { McpToolCallParams, McpToolDef, McpToolListResult } from "../../lib/research-types";
 import {
     getDeploymentCapabilities,
@@ -60,10 +84,83 @@ const jsonRpcError = (id: JsonRpcRequest["id"], code: number, message: string, d
         error: { code, message, data },
     });
 
+const toStringArray = (value: unknown): string[] => {
+    if (!Array.isArray(value)) return [];
+    return value.map((item) => String(item));
+};
+
+const collectWarnings = (payload: unknown): string[] => {
+    if (!payload || typeof payload !== "object") return [];
+    const record = payload as Record<string, unknown>;
+    const direct = toStringArray(record.warnings);
+    const data = record.data;
+    if (!data || typeof data !== "object") return direct;
+    return Array.from(new Set([...direct, ...toStringArray((data as Record<string, unknown>).warnings)]));
+};
+
+const toResearchToolResponse = (payload: unknown) => ({
+    ok: true,
+    data: payload,
+    warnings: collectWarnings(payload),
+    errors: [] as string[],
+});
+
+const toMcpToolResult = (payload: unknown) => ({
+    content: [
+        {
+            type: "text",
+            text: JSON.stringify(toResearchToolResponse(payload), null, 2),
+        },
+    ],
+});
+
+const toMcpToolError = (message: string) => ({
+    content: [
+        {
+            type: "text",
+            text: JSON.stringify(
+                {
+                    ok: false,
+                    data: null,
+                    warnings: [] as string[],
+                    errors: [message],
+                },
+                null,
+                2,
+            ),
+        },
+    ],
+    isError: true,
+});
+
 const TOOLS: McpToolDef[] = [
     {
         name: "get_manifest",
         description: "Get project manifest and canonical ontology summary.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_latest_run",
+        description: "Get the latest current-run identity, artifact paths, and certificate freshness.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_artifact_freshness",
+        description: "Classify an artifact as CURRENT, STALE, MISSING_FOR_RUN, or RESET.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                artifact_kind: {
+                    type: "string",
+                    enum: ["experiments", "certificate", "analysis", "data_sufficiency", "research_plan"],
+                },
+                run_id: { type: "string" },
+            },
+        },
+    },
+    {
+        name: "get_current_reporting_state",
+        description: "Get the current-run-only reporting state used by the app.",
         inputSchema: { type: "object", properties: {} },
     },
     {
@@ -87,6 +184,46 @@ const TOOLS: McpToolDef[] = [
                 dps: { type: "integer" },
                 zeros: { type: "integer" },
                 guard_dps: { type: "integer" },
+            },
+        },
+    },
+    {
+        name: "get_run_presets",
+        description: "List run preset contracts.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "resolve_run_preset",
+        description: "Resolve a run preset into its stable contract.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                preset: { type: "string", enum: ["smoke", "standard", "authoritative", "overkill", "overkill_full"] },
+            },
+        },
+    },
+    {
+        name: "get_selected_data_source",
+        description: "Select data sources for a preset using preflight policy.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                preset: { type: "string", enum: ["smoke", "standard", "authoritative", "overkill", "overkill_full"] },
+            },
+        },
+    },
+    {
+        name: "validate_zero_assets",
+        description: "Validate generated zero assets against available Odlyzko/reference data.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "run_preflight",
+        description: "Resolve preset, select data assets, validate policy, and report READY/BLOCKED before a run.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                preset: { type: "string", enum: ["smoke", "standard", "authoritative", "overkill", "overkill_full"] },
             },
         },
     },
@@ -326,7 +463,7 @@ const TOOLS: McpToolDef[] = [
     },
     {
         name: "get_same_object_certificate",
-        description: "Get the Same-Object Certificate: a structured report showing whether the compressed and uncompressed constructions behave as the same analytic case under the declared gauge. This is the computational smoking gun.",
+        description: "Get the current per-run Same-Object Certificate, if it has been built for the latest clean run.",
         inputSchema: { type: "object", properties: {} },
     },
     {
@@ -343,6 +480,156 @@ const TOOLS: McpToolDef[] = [
         name: "get_experiment_relevance",
         description: "Get the from-scratch experiment relevance audit against the base claim.",
         inputSchema: { type: "object", properties: {} },
+    },
+    // -------- proof-discovery layer --------
+    {
+        name: "list_experiment_reviews",
+        description: "List experiment reviews for a run (uses current run if run_id is omitted).",
+        inputSchema: {
+            type: "object",
+            properties: { run_id: { type: "string" } },
+        },
+    },
+    {
+        name: "get_experiment_review",
+        description:
+            "Get the per-experiment review (baseline hypothesis, model comparison, candidate lemmas, intended-vs-actual inference). id accepts EXP_2B, P2-2, p2-2, rogue-isolation.",
+        inputSchema: {
+            type: "object",
+            required: ["id"],
+            properties: { id: { type: "string" }, run_id: { type: "string" } },
+        },
+    },
+    {
+        name: "get_experiment_raw_data",
+        description:
+            "Get the raw observations and verifier signal for an experiment in a given run, alongside its declared baseline. Lets agents inspect data without verdict labels.",
+        inputSchema: {
+            type: "object",
+            required: ["id"],
+            properties: { id: { type: "string" }, run_id: { type: "string" } },
+        },
+    },
+    {
+        name: "get_experiment_model_comparison",
+        description: "Get the model-comparison artifact for an experiment in a given run.",
+        inputSchema: {
+            type: "object",
+            required: ["id"],
+            properties: { id: { type: "string" }, run_id: { type: "string" } },
+        },
+    },
+    {
+        name: "list_candidate_lemmas",
+        description: "List candidate-lemma payloads for every reviewed experiment in a run.",
+        inputSchema: {
+            type: "object",
+            properties: { run_id: { type: "string" } },
+        },
+    },
+    {
+        name: "get_candidate_lemma",
+        description:
+            "Get the candidate-lemma / research-note payload for a single experiment, including markdown rendering and disallowed conclusions.",
+        inputSchema: {
+            type: "object",
+            required: ["id"],
+            properties: { id: { type: "string" }, run_id: { type: "string" } },
+        },
+    },
+    {
+        name: "list_baseline_hypotheses",
+        description: "List the canonical baseline-hypothesis registry (overlay-aware).",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_baseline_hypothesis",
+        description: "Get the canonical baseline hypothesis for an experiment.",
+        inputSchema: {
+            type: "object",
+            required: ["id"],
+            properties: { id: { type: "string" } },
+        },
+    },
+    {
+        name: "get_proof_discovery_index",
+        description:
+            "Get the proof-discovery index for a run: candidate lemmas, formalization targets, alternative hypotheses, and recommended next experiments.",
+        inputSchema: {
+            type: "object",
+            properties: { run_id: { type: "string" } },
+        },
+    },
+    {
+        name: "propose_baseline_update",
+        description:
+            "Propose a revision to a baseline hypothesis. Status starts at PROPOSED and never mutates the canonical registry until accepted.",
+        inputSchema: {
+            type: "object",
+            required: ["source_agent", "experiment_id", "proposed_baseline", "reason"],
+            properties: {
+                source_agent: { type: "string" },
+                experiment_id: { type: "string" },
+                proposed_baseline: { type: "object" },
+                reason: { type: "string" },
+                evidence: { type: "array" },
+                recommended_next_experiment: { type: "string" },
+                run_id: { type: "string" },
+            },
+        },
+    },
+    {
+        name: "list_hypothesis_proposals",
+        description: "List hypothesis proposals for a run, optionally filtered by status.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                run_id: { type: "string" },
+                status: { type: "string", enum: ["PROPOSED", "ACCEPTED", "REJECTED"] },
+            },
+        },
+    },
+    {
+        name: "get_hypothesis_proposal",
+        description: "Get a single hypothesis proposal and its audit record (if any).",
+        inputSchema: {
+            type: "object",
+            required: ["proposal_id"],
+            properties: {
+                proposal_id: { type: "string" },
+                run_id: { type: "string" },
+            },
+        },
+    },
+    {
+        name: "accept_hypothesis_proposal",
+        description:
+            "Accept a hypothesis proposal. Writes an audit trail (old/new baseline hash, accepted_by, timestamp) and applies the overlay.",
+        inputSchema: {
+            type: "object",
+            required: ["proposal_id", "accepted_by"],
+            properties: {
+                proposal_id: { type: "string" },
+                accepted_by: { type: "string" },
+                note: { type: "string" },
+                run_id: { type: "string" },
+            },
+        },
+    },
+    {
+        name: "reject_hypothesis_proposal",
+        description:
+            "Reject a hypothesis proposal. If the proposal was previously accepted, removes its overlay.",
+        inputSchema: {
+            type: "object",
+            required: ["proposal_id", "rejected_by"],
+            properties: {
+                proposal_id: { type: "string" },
+                rejected_by: { type: "string" },
+                reason: { type: "string" },
+                run_id: { type: "string" },
+            },
+        },
     },
 ];
 
@@ -371,12 +658,31 @@ const callTool = (name: string, args: Record<string, unknown>) => {
     switch (name) {
         case "get_manifest":
             return getManifestEnvelope();
+        case "get_latest_run":
+            return getLatestRunPayloadPlain();
+        case "get_artifact_freshness":
+            return getArtifactFreshnessPayload(
+                args.artifact_kind ? String(args.artifact_kind) : "experiments",
+                args.run_id ? String(args.run_id) : null,
+            );
+        case "get_current_reporting_state":
+            return getCurrentReportingStatePayload();
         case "get_theorem_candidate":
             return getTheoremCandidateEnvelope();
         case "get_data_assets":
             return getDataAssetsEnvelope();
         case "check_data_sufficiency":
             return getDataSufficiencyEnvelope(paramsToSearch(args));
+        case "get_run_presets":
+            return getRunPresetsEnvelope();
+        case "resolve_run_preset":
+            return resolveRunPresetEnvelope(paramsToSearch(args));
+        case "get_selected_data_source":
+            return getSelectedDataSourceEnvelope(paramsToSearch(args));
+        case "validate_zero_assets":
+            return getZeroValidationEnvelope();
+        case "run_preflight":
+            return getPreflightEnvelope(paramsToSearch(args));
         case "get_precision_policy":
             return getPrecisionPolicyEnvelope();
         case "get_research_plan":
@@ -430,11 +736,21 @@ const callTool = (name: string, args: Record<string, unknown>) => {
         case "resume_run":
             return resumeRunEnvelope(parseCanonicalMode(args.mode));
         case "get_same_object_certificate": {
-            const certPath = path.join(process.cwd(), "public", "same_object_certificate.json");
+            const latest = getLatestRunPayloadPlain();
+            if (!latest.latest_real_run_id) {
+                return { status: "NOT_BUILT", message: "Same-Object Certificate: not built for current run." };
+            }
+            if (latest.certificate_status === "STALE") {
+                return { status: "STALE", message: "Stale certificate hidden. Build a fresh certificate." };
+            }
+            if (latest.certificate_status !== "CURRENT" || !latest.certificate_path) {
+                return { status: "MISSING_FOR_RUN", message: "Certificate not built for this run." };
+            }
+            const certPath = latest.certificate_path;
             try {
                 return JSON.parse(fs.readFileSync(certPath, "utf-8"));
             } catch {
-                return { status: "NOT_READY", error: "Certificate not yet generated. Run: python -m proof_kernel.same_object_certificate" };
+                return { status: "MISSING_FOR_RUN", message: "Certificate not built for this run." };
             }
         }
         case "get_base_claim": {
@@ -461,6 +777,53 @@ const callTool = (name: string, args: Record<string, unknown>) => {
                 return { error: "experiment_relevance.md not found" };
             }
         }
+        // -------- proof-discovery layer --------
+        case "list_experiment_reviews":
+            return listExperimentReviewsEnvelope(args.run_id ? String(args.run_id) : null);
+        case "get_experiment_review":
+            return getExperimentReviewEnvelope(
+                String(args.id ?? ""),
+                args.run_id ? String(args.run_id) : null,
+            );
+        case "get_experiment_raw_data":
+            return getExperimentRawDataEnvelope(
+                String(args.id ?? ""),
+                args.run_id ? String(args.run_id) : null,
+            );
+        case "get_experiment_model_comparison":
+            return getModelComparisonEnvelope(
+                String(args.id ?? ""),
+                args.run_id ? String(args.run_id) : null,
+            );
+        case "list_candidate_lemmas":
+            return listCandidateLemmasEnvelope(args.run_id ? String(args.run_id) : null);
+        case "get_candidate_lemma":
+            return getCandidateLemmaEnvelope(
+                String(args.id ?? ""),
+                args.run_id ? String(args.run_id) : null,
+            );
+        case "list_baseline_hypotheses":
+            return listBaselineHypothesesEnvelope();
+        case "get_baseline_hypothesis":
+            return getBaselineHypothesisEnvelope(String(args.id ?? ""));
+        case "get_proof_discovery_index":
+            return getProofDiscoveryEnvelope(args.run_id ? String(args.run_id) : null);
+        case "propose_baseline_update":
+            return proposeBaselineUpdateEnvelope(args);
+        case "list_hypothesis_proposals":
+            return listHypothesisProposalsEnvelope(
+                args.run_id ? String(args.run_id) : null,
+                args.status ? String(args.status) : null,
+            );
+        case "get_hypothesis_proposal":
+            return getHypothesisProposalEnvelope(
+                String(args.proposal_id ?? ""),
+                args.run_id ? String(args.run_id) : null,
+            );
+        case "accept_hypothesis_proposal":
+            return acceptHypothesisProposalEnvelope(String(args.proposal_id ?? ""), args);
+        case "reject_hypothesis_proposal":
+            return rejectHypothesisProposalEnvelope(String(args.proposal_id ?? ""), args);
         default:
             throw new ApiError(404, `Unknown tool: ${name}`);
     }
@@ -522,13 +885,9 @@ export async function POST(request: Request) {
 
     try {
         const result = callTool(name, params.arguments ?? {});
-        return jsonRpcResult(id, result);
+        return jsonRpcResult(id, toMcpToolResult(result));
     } catch (error) {
         const errorMessage = error instanceof ApiError ? error.message : String(error);
-        const result = {
-            content: [{ type: "text", text: `Error: ${errorMessage}` }],
-            isError: true,
-        };
-        return jsonRpcResult(id, result);
+        return jsonRpcResult(id, toMcpToolError(errorMessage));
     }
 }

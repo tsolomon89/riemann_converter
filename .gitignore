@@ -67,6 +67,11 @@ yarn-error.log*
 # local runtime artifacts (run logs/events/checkpoints/baselines)
 .runtime/
 
+# generated research run archives; keep lightweight manifests in git instead
+artifacts/runs/
+artifacts/legacy-pre-pathfinding-*/
+_archive/dev_runs_pre_current_model/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -1,0 +1,132 @@
+{
+  "schema_version": "2026.05.hypothesis-registry.v1",
+  "program": "PROGRAM_1",
+  "description": "Program 1 baseline hypotheses. These witnesses, when confirmed at finite precision, suggest finite/proxy lemmas bearing on the Same-Object Certificate, NC3, and NC4. Confirmation never proves the base claim; it preserves the route.",
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_CORE_1_RECONSTRUCTION_COVARIANCE",
+      "experiment_ids": ["EXP_1"],
+      "display_id": "CORE-1",
+      "program": "PROGRAM_1",
+      "role": "witness",
+      "plain_statement": "The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k.",
+      "object_under_test": "explicit_formula_reconstruction",
+      "expected_signature": {
+        "primary_metric": "max_drift_between_k_zero_and_other_k",
+        "expected_value": "near zero (within reconstruction tolerance)",
+        "tolerance": "experiment-declared reconstruction tolerance",
+        "pass_rule": "drift remains within tolerance for every tested k"
+      },
+      "why_this_matters": "Reconstruction covariance is the finite-precision proxy for the same-object behavior the gauge claims. Without it, NC3 (same-case criterion) cannot be witnessed by reconstruction agreement.",
+      "failure_means": [
+        "current reconstruction-covariance baseline was not confirmed in this run",
+        "the route via reconstruction agreement may need a different metric",
+        "the implementation, the precision, or the test window may be wrong"
+      ],
+      "failure_does_not_mean": [
+        "the base claim is refuted",
+        "NC3 is impossible",
+        "Program 2 has been falsified"
+      ],
+      "possible_alternative_hypotheses": [
+        "covariance holds only for a restricted k-range",
+        "covariance holds only with specific tau / dps settings",
+        "reconstruction agreement is the wrong proxy and a different invariant is needed"
+      ],
+      "candidate_lemma_name": "Finite Reconstruction Covariance Lemma",
+      "intended_inference_if_passed": [
+        "the finite reconstruction-covariance proxy is consistent with same-object behavior on the tested window",
+        "this preserves the candidate route to NC3 via reconstruction agreement",
+        "no formal claim about same-object equality is established"
+      ],
+      "disallowed_conclusions": [
+        "this proves RH",
+        "this proves predicate transport",
+        "this turns the proxy into a formal proof"
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_VAL_1_BETA_STABILITY",
+      "experiment_ids": ["EXP_6"],
+      "display_id": "VAL-1",
+      "program": "PROGRAM_1",
+      "role": "witness",
+      "plain_statement": "The recovered beta parameter remains pinned at 1/2 across the tested gauge scales.",
+      "object_under_test": "rh_predicate",
+      "expected_signature": {
+        "primary_metric": "recovered_beta",
+        "expected_value": "0.5",
+        "tolerance": "adaptive precision tolerance for this run",
+        "pass_rule": "|recovered_beta - 0.5| within declared tolerance for every tested k"
+      },
+      "why_this_matters": "Beta stability is the finite-precision proxy for predicate-preservation under the gauge. It is the closest experiment to NC4 (predicate transport).",
+      "failure_means": [
+        "the predicate-preservation proxy is threatened in this window",
+        "the current adaptive tolerance may be too tight or wrong",
+        "the recovery routine may have an implementation bug"
+      ],
+      "failure_does_not_mean": [
+        "RH is refuted",
+        "predicate transport is mathematically impossible",
+        "every Program 1 witness has failed"
+      ],
+      "possible_alternative_hypotheses": [
+        "beta drifts within a bounded envelope rather than being pinned",
+        "beta stability holds only for k near zero",
+        "the measurement is dominated by precision floor"
+      ],
+      "candidate_lemma_name": "Finite Beta-Stability Lemma",
+      "intended_inference_if_passed": [
+        "predicate-preservation proxy is consistent on the tested window",
+        "the route to NC4 via beta stability is preserved",
+        "this is not a proof of NC4"
+      ],
+      "disallowed_conclusions": [
+        "this proves NC4",
+        "this proves RH",
+        "this establishes pointwise predicate transport"
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_WIT_1_ZERO_SCALING_CORRESPONDENCE",
+      "experiment_ids": ["EXP_8"],
+      "display_id": "WIT-1",
+      "program": "PROGRAM_1",
+      "role": "witness",
+      "plain_statement": "Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range.",
+      "object_under_test": "zero_ensemble",
+      "expected_signature": {
+        "primary_metric": "nearest_neighbor_distance_under_scaling",
+        "expected_value": "within adaptive tolerance for every tested k",
+        "tolerance": "experiment adaptive tolerance",
+        "pass_rule": "scaled-zero correspondence holds for every tested k under tolerance"
+      },
+      "why_this_matters": "Scaled-zero correspondence is the witness object for NC3 via zero-ensemble equivalence. Without it, the predicate-transport route loses its finite witness.",
+      "failure_means": [
+        "the current zero-scaling witness is threatened on the tested window",
+        "the chosen correspondence metric may be too strong",
+        "the chosen tolerance may be inappropriate"
+      ],
+      "failure_does_not_mean": [
+        "exact predicate transport is refuted (unless this witness is shown to be necessary)",
+        "the base claim is refuted"
+      ],
+      "possible_alternative_hypotheses": [
+        "correspondence holds modulo a small structured residual",
+        "correspondence holds only for low |k|",
+        "a different distance metric better captures the equivalence"
+      ],
+      "candidate_lemma_name": "Finite Zero-Scaling Correspondence Lemma",
+      "intended_inference_if_passed": [
+        "the zero-ensemble equivalence proxy is consistent on the tested window",
+        "NC3 route via zero-ensemble is preserved",
+        "this is not a proof of NC3"
+      ],
+      "disallowed_conclusions": [
+        "this proves NC3",
+        "this proves predicate transport",
+        "this proves RH"
+      ]
+    }
+  ]
+}

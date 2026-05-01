@@ -2,10 +2,9 @@ import fs from "fs";
 import path from "path";
 import type { ExperimentsData, VerdictHistoryEntry } from "./types";
 import type { ProgramDocSection, WitnessMapStatus } from "./research-types";
+import { getArtifactFreshness, getCurrentReportingState } from "./current-reporting";
 
-const ARTIFACT_PATHS = [
-    path.join(process.cwd(), "public", "experiments.json"),
-];
+const publicExperimentsPath = (cwd = process.cwd()) => path.join(cwd, "public", "experiments.json");
 
 const HISTORY_PATHS = [
     path.join(process.cwd(), "public", "verdict_history.jsonl"),
@@ -46,10 +45,28 @@ const readFirstExisting = (candidates: string[]) => {
     return null;
 };
 
-let cachedArtifact: ExperimentsData | null = null;
+const resolveRepoPath = (candidate: string, cwd = process.cwd()) =>
+    path.isAbsolute(candidate) ? candidate : path.join(cwd, candidate);
+
+const currentArtifactPath = (cwd = process.cwd()) => {
+    const current = getCurrentReportingState(cwd);
+    if (current.engine_status === "NO_CURRENT_RUN" || !current.latest_run_id) {
+        return publicExperimentsPath(cwd);
+    }
+    if (!current.current_experiments_path) {
+        throw new Error("Current run is registered but current_experiments_path is missing.");
+    }
+    const artifactPath = resolveRepoPath(current.current_experiments_path, cwd);
+    const freshness = getArtifactFreshness("experiments", { path: artifactPath }, cwd);
+    if (freshness.freshness !== "CURRENT") {
+        throw new Error(`Current experiments artifact is ${freshness.freshness}: ${freshness.reason}`);
+    }
+    return artifactPath;
+};
 
 export const readArtifact = (): ExperimentsData => {
-    const availablePaths = ARTIFACT_PATHS.filter((candidate) => fs.existsSync(candidate));
+    const artifactPath = currentArtifactPath();
+    const availablePaths = [artifactPath].filter((candidate) => fs.existsSync(candidate));
     if (availablePaths.length === 0) throw new Error("experiments.json not found.");
 
     const errors: string[] = [];
@@ -57,14 +74,12 @@ export const readArtifact = (): ExperimentsData => {
         try {
             const raw = fs.readFileSync(artifactPath, "utf8");
             const parsed = JSON.parse(raw) as ExperimentsData;
-            cachedArtifact = parsed;
             return parsed;
         } catch (err) {
             errors.push(`${path.basename(artifactPath)} => ${String(err)}`);
         }
     }
 
-    if (cachedArtifact) return cachedArtifact;
     throw new Error(`Unable to parse artifact JSON (${errors.join(" | ")})`);
 };
 

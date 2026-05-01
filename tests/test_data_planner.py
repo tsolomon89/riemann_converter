@@ -8,8 +8,9 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from proof_kernel.data_assets import migrate_legacy_assets, write_data_manifest  # noqa: E402
-from proof_kernel.data_planner import check_data_sufficiency  # noqa: E402
+from proof_kernel.data_planner import check_data_sufficiency, run_preflight  # noqa: E402
 from proof_kernel.experiment_requirements import experiment_requirement_catalog  # noqa: E402
+from proof_kernel.run_presets import resolve_run_preset  # noqa: E402
 
 
 def _asset(kind: str, **overrides):
@@ -36,6 +37,12 @@ def _asset(kind: str, **overrides):
 
 def _write_assets(root: Path, assets):
     write_data_manifest(root, list(assets))
+
+
+def _write_zero_file(root: Path, rel: str, values: list[str]) -> None:
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(values) + "\n", encoding="utf-8")
 
 
 def test_agent_context_data_is_not_canonical(tmp_path: Path) -> None:
@@ -111,6 +118,82 @@ def test_zero_planner_ready_when_count_and_guard_dps_sufficient(tmp_path: Path) 
     plan = check_data_sufficiency({"experiments": ["EXP_8"], "requested_dps": 80, "requested_zero_count": 100_000, "n_test": 100_000}, tmp_path)
 
     assert plan["status"] == "READY"
+
+
+def test_overkill_selects_100_dps_generated_zero_asset_over_9_decimal_source(tmp_path: Path) -> None:
+    generated_path = "data/zeros/nontrivial/zeros.generated.dps_100.jsonl"
+    reference_path = "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.jsonl"
+    values = ["14.13472514173469379045", "21.02203963877155499262", "25.01085758014568876321"]
+    _write_zero_file(tmp_path, generated_path, values)
+    _write_zero_file(tmp_path, reference_path, ["14.134725142", "21.022039639", "25.010857580"])
+    _write_assets(tmp_path, [
+        _asset("tau", stored_dps=100, usable_dps=100),
+        _asset("nontrivial_zeta_zeros", asset_id="generated_100", source_path=generated_path, generator="python-flint.acb.zeta_zeros", count=3, stored_dps=100, usable_dps=100, strictly_increasing=True),
+        _asset("nontrivial_zeta_zeros", asset_id="reference_9", source_path=reference_path, generator="existing_file_migration", count=3, stored_dps=9, usable_dps=9, strictly_increasing=True),
+    ])
+
+    plan = check_data_sufficiency({"preset": "overkill", "experiments": ["EXP_8"], "requested_zero_count": 3, "n_test": 3}, tmp_path)
+
+    selected = plan["selected_assets"]["zero"]
+    assert plan["status"] == "READY"
+    assert selected["asset"]["source_path"] == generated_path
+    assert selected["asset"]["stored_dps"] == 100
+    assert selected["validation"]["status"] == "PASS"
+
+
+def test_overkill_blocks_when_no_zero_asset_satisfies_guard_dps(tmp_path: Path) -> None:
+    weak_path = "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.jsonl"
+    _write_zero_file(tmp_path, weak_path, ["14.134725142", "21.022039639", "25.010857580"])
+    _write_assets(tmp_path, [
+        _asset("tau", stored_dps=100, usable_dps=100),
+        _asset("nontrivial_zeta_zeros", asset_id="reference_9", source_path=weak_path, generator="existing_file_migration", count=3, stored_dps=9, usable_dps=9, strictly_increasing=True),
+    ])
+
+    preflight = run_preflight({"preset": "overkill", "experiments": ["EXP_8"], "requested_zero_count": 3, "n_test": 3}, tmp_path)
+
+    assert preflight["status"] == "BLOCKED"
+    assert "only 9 declared decimals" in preflight["reason"]
+
+
+def test_overkill_blocks_when_odlyzko_crosscheck_fails(tmp_path: Path) -> None:
+    generated_path = "data/zeros/nontrivial/zeros.generated.dps_100.jsonl"
+    reference_path = "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.jsonl"
+    _write_zero_file(tmp_path, generated_path, ["14.13472515173469379045", "21.02203963877155499262", "25.01085758014568876321"])
+    _write_zero_file(tmp_path, reference_path, ["14.134725142", "21.022039639", "25.010857580"])
+    _write_assets(tmp_path, [
+        _asset("tau", stored_dps=100, usable_dps=100),
+        _asset("nontrivial_zeta_zeros", asset_id="generated_100", source_path=generated_path, generator="python-flint.acb.zeta_zeros", count=3, stored_dps=100, usable_dps=100, strictly_increasing=True),
+        _asset("nontrivial_zeta_zeros", asset_id="reference_9", source_path=reference_path, generator="existing_file_migration", count=3, stored_dps=9, usable_dps=9, strictly_increasing=True),
+    ])
+
+    preflight = run_preflight({"preset": "overkill", "experiments": ["EXP_8"], "requested_zero_count": 3, "n_test": 3}, tmp_path)
+
+    assert preflight["status"] == "BLOCKED"
+    assert preflight["selected_assets"]["zero"]["validation"]["status"] == "FAIL"
+
+
+def test_standard_preset_warns_when_using_lower_precision_fallback(tmp_path: Path) -> None:
+    weak_path = "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.jsonl"
+    _write_zero_file(tmp_path, weak_path, ["14.134725142", "21.022039639", "25.010857580"])
+    _write_assets(tmp_path, [
+        _asset("tau", stored_dps=60, usable_dps=60),
+        _asset("nontrivial_zeta_zeros", asset_id="reference_9", source_path=weak_path, generator="existing_file_migration", count=3, stored_dps=9, usable_dps=9, strictly_increasing=True),
+    ])
+
+    plan = check_data_sufficiency({"preset": "standard", "experiments": ["EXP_8"], "requested_zero_count": 3, "n_test": 3}, tmp_path)
+
+    assert plan["status"] == "READY"
+    assert any("fallback" in warning for warning in plan["warnings"])
+
+
+def test_resolve_run_preset_returns_stable_overkill_contract() -> None:
+    contract = resolve_run_preset("overkill")
+
+    assert contract["preset"] == "overkill"
+    assert contract["requested_dps"] == 80
+    assert contract["requested_zero_count"] == 100000
+    assert contract["zero_policy"]["allow_lower_precision_fallback"] is False
+    assert contract["zero_policy"]["require_odlyzko_crosscheck"] is True
 
 
 def test_zero_planner_needs_generation_when_count_insufficient(tmp_path: Path) -> None:

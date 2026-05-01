@@ -17,6 +17,29 @@ def build_next_action(
 ) -> Dict[str, Any]:
     ds = data_sufficiency or check_data_sufficiency()
     plan = build_research_plan(ds, experiment_summary or {}, certificate)
+    meta = (experiment_summary or {}).get("meta") if isinstance(experiment_summary, dict) else {}
+    if isinstance(meta, dict):
+        contract = meta.get("run_contract") if isinstance(meta.get("run_contract"), dict) else {}
+        preset = contract.get("preset")
+        selected_zero = (((meta.get("selected_data_sources") or {}).get("zero") or {}).get("asset") or {})
+        declared = selected_zero.get("stored_dps") or (meta.get("zero_source_info") or {}).get("declared_decimals")
+        required = int(contract.get("requested_dps") or meta.get("dps") or 0) + int(contract.get("guard_dps") or 20)
+        planner_zero = (((ds.get("selected_assets") or {}).get("zero") or {}).get("asset") or {})
+        planner_has_stronger = int(planner_zero.get("stored_dps") or 0) >= required
+        if declared is not None and int(declared) < required and (
+            preset in {"overkill", "authoritative", "overkill_full"} or planner_has_stronger
+        ):
+            return {
+                "next_action": "FIX_PRESET_SOURCE_RESOLVER",
+                "command": None,
+                "why": (
+                    f"{'Preset ' + preset if preset else 'Run'} used a zero source with {declared} declared decimals; "
+                    f"required >={required}. Fix preset/source resolver before proof work."
+                ),
+                "blocks": ["DATA_PREFLIGHT"],
+                "data_sufficiency": ds,
+                "research_plan": plan,
+            }
 
     if ds.get("status") != "READY":
         step = (ds.get("generation_plan") or [{}])[0]

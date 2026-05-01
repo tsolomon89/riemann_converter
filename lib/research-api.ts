@@ -9,9 +9,12 @@ import type {
     CompareRunsPayload,
     CompareScalesPayload,
     CompareVerdictsPayload,
+    CurrentReportingStatePayload,
+    ArtifactFreshnessPayload,
     ExperimentPayload,
     HistoryPayload,
     ImplementationHealthPayload,
+    LatestRunPayload,
     ManifestPayload,
     OpenGapsPayload,
     ObligationsPayload,
@@ -31,7 +34,14 @@ import type {
 import { getDeploymentCapabilities } from "./deployment-policy";
 import { readArtifact, readHistory, readProgramDocsSections, resolveWitnessMapStatus } from "./research-service";
 import { getDataAssets, readDataMigrationReport } from "./data-assets";
-import { checkDataSufficiency, type DataPlannerInput } from "./data-planner";
+import {
+    checkDataSufficiency,
+    getSelectedDataSource,
+    runPreflight,
+    validateZeroAssets,
+    type DataPlannerInput,
+} from "./data-planner";
+import { getRunPresets, resolveRunPreset } from "./run-presets";
 import { getPrecisionPolicy } from "./precision-policy";
 import { buildResearchPlan } from "./research-plan";
 import {
@@ -49,6 +59,15 @@ import {
     startConfiguredRun,
     type CustomRunConfig,
 } from "./run-manager";
+import {
+    buildFidelityReport,
+    classifyHistoricalComparison,
+    classifyScopedStatus,
+    getArtifactFreshness,
+    getCurrentReportingState,
+    getLatestRunPayload,
+    type ArtifactKind,
+} from "./current-reporting";
 
 const EXP_SUMMARY_TO_DATA: Record<string, keyof ExperimentsData> = {
     EXP_0: "experiment_0",
@@ -171,6 +190,7 @@ const parseCustomRunConfig = (value: unknown): CustomRunConfig => {
     if (!isObject(value)) throw new ApiError(400, "Missing custom run configuration.");
     return {
         run: optionalString(value, "run", "all") ?? "all",
+        preset: optionalString(value, "preset", undefined),
         zero_source: optionalString(value, "zero_source", "generated"),
         zero_count: optionalNumber(value, "zero_count"),
         dps: optionalNumber(value, "dps"),
@@ -248,9 +268,12 @@ const getArtifactIfAvailable = (): ExperimentsData | undefined => {
 };
 
 const readSameObjectCertificateSafe = () => {
+    const latest = getLatestRunPayload();
+    if (!latest.latest_real_run_id || latest.certificate_status !== "CURRENT" || !latest.certificate_path) {
+        return null;
+    }
     try {
-        const certPath = require("path").join(process.cwd(), "public", "same_object_certificate.json");
-        const certData = require("fs").readFileSync(certPath, "utf-8");
+        const certData = require("fs").readFileSync(latest.certificate_path, "utf-8");
         return JSON.parse(certData);
     } catch {
         return null;
@@ -268,7 +291,8 @@ const parseResearchPlannerInput = (
     const defaultDps = artifactDps && artifactDps > 0 ? artifactDps : 80;
     const defaultZeroCount = artifactZeros && artifactZeros > 0 ? artifactZeros : 100000;
     return {
-        mode: query.get("mode") ?? "same_object_certificate",
+        mode: query.get("mode") ?? query.get("preset") ?? "same_object_certificate",
+        preset: query.get("preset") ?? undefined,
         experiments: experiments ?? ["EXP_1", "EXP_6", "EXP_8"],
         requested_dps: toInt(query.get("dps"), defaultDps),
         requested_zero_count: toInt(query.get("zeros"), defaultZeroCount),
@@ -333,7 +357,31 @@ const applyFieldFilter = (points: Record<string, unknown>[], fields?: string[]):
 const getSummaryExperiment = (artifact: ExperimentsData, expId: string): ExperimentVerdict => {
     const verdict = artifact.summary?.experiments?.[expId];
     if (!verdict) throw new ApiError(404, `Experiment verdict not found: ${expId}`);
-    return verdict;
+    const scoped_status = classifyScopedStatus(verdict);
+    const sanitized = { ...verdict, scoped_status } as ExperimentVerdict & { scoped_status: string };
+    delete (sanitized as { theory_fit?: unknown }).theory_fit;
+    return sanitized;
+};
+
+const withResetReportingStatus = <T extends ProofObligation>(obligation: T): T & {
+    current_status?: "NOT_WITNESSED" | ProofObligation["status"];
+    reporting_status?: "NOT_WITNESSED" | ProofObligation["status"];
+    reporting_reason?: string;
+} => {
+    const current = getCurrentReportingState();
+    if (current.engine_status !== "NO_CURRENT_RUN") {
+        return {
+            ...obligation,
+            current_status: obligation.status,
+            reporting_status: obligation.status,
+        };
+    }
+    return {
+        ...obligation,
+        current_status: "NOT_WITNESSED",
+        reporting_status: "NOT_WITNESSED",
+        reporting_reason: "No current run is registered; proof obligations are awaiting fresh witnesses.",
+    };
 };
 
 const asPoints = (input: unknown): Record<string, unknown>[] => {
@@ -563,6 +611,7 @@ const buildSeriesPoints = (
 export const getManifestEnvelope = (): ResearchEnvelope<ManifestPayload> => {
     const artifact = getArtifactOrThrow();
     const history = getHistorySafe();
+    const current = getCurrentReportingState();
     const obligations = artifact.summary?.proof_program?.obligations ?? [];
     const openGaps = artifact.summary?.proof_program?.open_gaps ?? [];
     const experimentIds = Object.keys(artifact.summary?.experiments ?? {});
@@ -590,7 +639,10 @@ export const getManifestEnvelope = (): ResearchEnvelope<ManifestPayload> => {
         experiments,
         experiment_aliases: experimentAliases,
         zero_source_info: artifact.meta?.zero_source_info,
-        last_run_timestamp: history.length > 0 ? history[history.length - 1].timestamp : undefined,
+        last_run_timestamp:
+            current.historical_comparison_enabled && history.length > 0
+                ? history[history.length - 1].timestamp
+                : undefined,
     };
     return buildEnvelope(artifact, payload);
 };
@@ -606,6 +658,26 @@ export const getProgramDocsEnvelope = (): ResearchEnvelope<ProgramDocsPayload> =
         refreshed_at: new Date().toISOString(),
         sections: readProgramDocsSections(),
     });
+};
+
+export const getCurrentReportingStatePayload = (): CurrentReportingStatePayload =>
+    getCurrentReportingState() as CurrentReportingStatePayload;
+
+export const getLatestRunPayloadPlain = (): LatestRunPayload =>
+    getLatestRunPayload() as LatestRunPayload;
+
+export const getCurrentExperimentsPayloadPlain = (): ExperimentsData => getArtifactOrThrow();
+
+export const getArtifactFreshnessPayload = (
+    kind: string | null,
+    runId?: string | null,
+): ArtifactFreshnessPayload => {
+    const allowed: ArtifactKind[] = ["experiments", "certificate", "analysis", "data_sufficiency", "research_plan"];
+    const resolved = String(kind ?? "experiments") as ArtifactKind;
+    if (!allowed.includes(resolved)) {
+        throw new ApiError(400, `Invalid artifact_kind: ${String(kind)}`);
+    }
+    return getArtifactFreshness(resolved, { run_id: runId ?? undefined }) as ArtifactFreshnessPayload;
 };
 
 export const getDataAssetsEnvelope = () => {
@@ -636,6 +708,84 @@ export const getPrecisionPolicyEnvelope = () => {
     );
 };
 
+export const getRunPresetsEnvelope = () => {
+    const artifact = getArtifactIfAvailable();
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            { presets: getRunPresets() },
+            "Run presets declare research intent and data policy; concrete assets are selected by preflight.",
+            [],
+            null,
+        ),
+    );
+};
+
+export const resolveRunPresetEnvelope = (query: URLSearchParams) => {
+    const artifact = getArtifactIfAvailable();
+    const preset = query.get("preset") ?? query.get("mode") ?? "standard";
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            { contract: resolveRunPreset(preset) },
+            "Run preset contract resolved.",
+            [],
+            null,
+        ),
+    );
+};
+
+export const getSelectedDataSourceEnvelope = (query: URLSearchParams) => {
+    const artifact = getArtifactIfAvailable();
+    const input = parseResearchPlannerInput(query, artifact);
+    const selected = getSelectedDataSource(input);
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            selected,
+            selected.status === "READY"
+                ? "Selected data sources satisfy preset policy."
+                : "Selected data sources do not satisfy preset policy.",
+            [],
+            selected.status === "READY" ? "run_next_research_step" : "fix_data_preflight",
+        ),
+    );
+};
+
+export const getZeroValidationEnvelope = () => {
+    const artifact = getArtifactIfAvailable();
+    const validation = validateZeroAssets();
+    const warnings = validation.validations
+        .filter((item) => item.status !== "PASS")
+        .map((item) => `Zero validation ${item.asset_id ?? "(unknown)"}: ${item.status}`);
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            validation,
+            warnings.length === 0
+                ? "Generated zero assets pass available reference cross-checks."
+                : "One or more generated zero assets failed or could not run reference cross-checks.",
+            warnings,
+            warnings.length === 0 ? null : "validate_against_odlyzko_reference",
+        ),
+    );
+};
+
+export const getPreflightEnvelope = (query: URLSearchParams) => {
+    const artifact = getArtifactIfAvailable();
+    const input = parseResearchPlannerInput(query, artifact);
+    const preflight = runPreflight(input);
+    return buildEnvelope(
+        artifact,
+        withResearchSummary(
+            { ...preflight },
+            preflight.reason,
+            preflight.warnings,
+            preflight.next_action,
+        ),
+    );
+};
+
 export const getDataMigrationReportEnvelope = () => {
     const artifact = getArtifactIfAvailable();
     const report = readDataMigrationReport();
@@ -656,6 +806,7 @@ export const getDataSufficiencyEnvelope = (query: URLSearchParams) => {
     const artifact = getArtifactIfAvailable();
     const input = parseResearchPlannerInput(query, artifact);
     const sufficiency = checkDataSufficiency(input);
+    const fidelity = buildFidelityReport(artifact, { experiments: input.experiments });
     const summary =
         sufficiency.status === "READY"
             ? "Data assets satisfy the requested count, coverage, and guard precision."
@@ -663,9 +814,9 @@ export const getDataSufficiencyEnvelope = (query: URLSearchParams) => {
     return buildEnvelope(
         artifact,
         withResearchSummary(
-            { input, sufficiency },
+            { input, sufficiency, fidelity },
             summary,
-            sufficiency.warnings,
+            Array.from(new Set([...sufficiency.warnings, ...fidelity.warnings])),
             sufficiency.next_action,
         ),
     );
@@ -747,8 +898,14 @@ export const getTheoremCandidateEnvelope = (): ResearchEnvelope<TheoremCandidate
 
 export const getObligationsEnvelope = (): ResearchEnvelope<ObligationsPayload> => {
     const artifact = getArtifactOrThrow();
+    const current = getCurrentReportingState();
     const payload: ObligationsPayload = {
-        obligations: artifact.summary?.proof_program?.obligations ?? [],
+        obligations: (artifact.summary?.proof_program?.obligations ?? []).map(withResetReportingStatus),
+        current_run_status: current.engine_status,
+        note:
+            current.engine_status === "NO_CURRENT_RUN"
+                ? "No current run. Proof obligations are awaiting fresh witnesses; template dependency blockers are not current-run failures."
+                : undefined,
     };
     return buildEnvelope(
         artifact,
@@ -763,16 +920,26 @@ export const getObligationsEnvelope = (): ResearchEnvelope<ObligationsPayload> =
     );
 };
 
-export const getObligationEnvelope = (id: string): ResearchEnvelope<ProofObligation> => {
+export const getObligationEnvelope = (
+    id: string,
+): ResearchEnvelope<
+    ProofObligation & {
+        current_status?: "NOT_WITNESSED" | ProofObligation["status"];
+        reporting_status?: "NOT_WITNESSED" | ProofObligation["status"];
+        reporting_reason?: string;
+    }
+> => {
     const artifact = getArtifactOrThrow();
     const obligations = artifact.summary?.proof_program?.obligations ?? [];
     const obligation = obligations.find((entry) => entry.id === id);
     if (!obligation) throw new ApiError(404, `Obligation not found: ${id}`);
     return buildEnvelope(
         artifact,
-        obligation,
+        withResetReportingStatus(obligation),
         [
             "data.status",
+            "data.current_status",
+            "data.reporting_status",
             "data.witnesses",
             "data.notes",
             "data.blocked_by",
@@ -797,12 +964,20 @@ export const getImplementationHealthEnvelope = (): ResearchEnvelope<Implementati
 
 export const getHistoryEnvelope = (limitQuery: string | null): ResearchEnvelope<HistoryPayload> => {
     const artifact = getArtifactOrThrow();
+    const current = getCurrentReportingState();
     const all = getHistorySafe();
     const limit = Math.max(1, toInt(limitQuery, 50));
     const entries = all.slice(-limit).reverse();
     return buildEnvelope(
         artifact,
-        { total: all.length, entries },
+        {
+            total: all.length,
+            entries,
+            historical_comparison_enabled: current.historical_comparison_enabled,
+            comparison_note: current.historical_comparison_enabled
+                ? undefined
+                : "Historical comparison is disabled during active development. Current reports reflect only the latest clean run.",
+        },
         ["data.entries[].obligation_statuses", "data.entries[].implementation_health_statuses"],
     );
 };
@@ -901,6 +1076,7 @@ export const compareRunsEnvelope = (query: URLSearchParams): ResearchEnvelope<Co
             a.implementation_health_statuses,
             b.implementation_health_statuses,
         ),
+        comparison: classifyHistoricalComparison(a, b),
     };
     return buildEnvelope(
         artifact,
@@ -930,6 +1106,7 @@ export const compareVerdictsEnvelope = (query: URLSearchParams): ResearchEnvelop
                 b.implementation_health_statuses,
             ),
             stage_verdict_deltas: diffStatusMaps(a.stage_verdicts, b.stage_verdicts),
+            comparison: classifyHistoricalComparison(a, b),
         },
         [
             "data.obligation_deltas",

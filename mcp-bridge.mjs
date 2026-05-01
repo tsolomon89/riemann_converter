@@ -94,6 +94,37 @@ const emitToolResult = (req, text, { isError = false } = {}) => {
     });
 };
 
+const toToolText = (payload) => (
+    typeof payload === "string" ? payload : JSON.stringify(payload, null, 2)
+);
+
+const toResearchToolResponse = (payload) => ({
+    ok: true,
+    data: payload,
+    warnings: [],
+    errors: [],
+});
+
+const normalizeHttpMcpResponseText = (req, text) => {
+    if (req?.method !== "tools/call" || !text.trim()) return text;
+    try {
+        const message = JSON.parse(text);
+        if (!message?.result || message.error) return text;
+        if (Array.isArray(message.result.content)) return text;
+        message.result = {
+            content: [
+                {
+                    type: "text",
+                    text: toToolText(toResearchToolResponse(message.result)),
+                },
+            ],
+        };
+        return JSON.stringify(message);
+    } catch {
+        return text;
+    }
+};
+
 const fetchWithTimeout = async (url, init) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -111,19 +142,24 @@ const fetchWithTimeout = async (url, init) => {
 //
 // When the Next.js HTTP endpoint is unreachable (most commonly: dev server not
 // running), read-only MCP tools can still be answered from the canonical
-// artifacts on disk: `public/experiments.json` and `public/verdict_history.jsonl`.
+// artifacts on disk, starting from `public/current.json` and then resolving the
+// latest per-run artifact. `public/experiments.json` is used only for reset
+// placeholders and display mirrors.
 // Run-control tools (start_run, etc.) genuinely need the live HTTP server and
 // must be answered with a visible error explaining the requirement.
 
 const REPO_ROOT = process.env.MCP_BRIDGE_REPO_ROOT || __dirname;
 const EXPERIMENTS_PATH = path.join(REPO_ROOT, "public", "experiments.json");
+const CURRENT_PATH = path.join(REPO_ROOT, "public", "current.json");
 const HISTORY_PATH = path.join(REPO_ROOT, "public", "verdict_history.jsonl");
 const DATA_MANIFEST_PATH = path.join(REPO_ROOT, "data", "manifest.json");
 const DATA_MIGRATION_REPORT_PATH = path.join(REPO_ROOT, "public", "data_migration_report.json");
-const SAME_OBJECT_CERT_PATH = path.join(REPO_ROOT, "public", "same_object_certificate.json");
 
 const READ_ONLY_TOOLS = new Set([
     "get_manifest",
+    "get_latest_run",
+    "get_artifact_freshness",
+    "get_current_reporting_state",
     "get_theorem_candidate",
     "get_obligations",
     "get_obligation",
@@ -133,12 +169,18 @@ const READ_ONLY_TOOLS = new Set([
     "get_experiment",
     "get_data_assets",
     "check_data_sufficiency",
+    "get_run_presets",
+    "resolve_run_preset",
+    "get_selected_data_source",
+    "validate_zero_assets",
+    "run_preflight",
     "get_precision_policy",
     "get_research_plan",
     "get_next_action",
     "explain_why_this_experiment_next",
     "explain_why_stop_experimenting",
     "get_data_migration_report",
+    "get_same_object_certificate",
 ]);
 
 const RUN_CONTROL_TOOLS = new Set([
@@ -155,8 +197,15 @@ const RUN_CONTROL_TOOLS = new Set([
     "compare_verdicts",
 ]);
 
+const resolveRepoPath = (candidate) => path.isAbsolute(candidate) ? candidate : path.join(REPO_ROOT, candidate);
+
 const readExperimentsArtifact = () => {
-    const raw = fs.readFileSync(EXPERIMENTS_PATH, "utf-8");
+    const current = currentState();
+    const artifactPath =
+        current.engine_status === "NO_CURRENT_RUN" || !current.latest_run_id
+            ? EXPERIMENTS_PATH
+            : resolveRepoPath(current.current_experiments_path || path.join("artifacts", "runs", current.latest_run_id, "experiments.json"));
+    const raw = fs.readFileSync(artifactPath, "utf-8");
     return JSON.parse(raw);
 };
 
@@ -183,6 +232,137 @@ const readJsonOrNull = (filePath) => {
     } catch {
         return null;
     }
+};
+
+const resetCurrentState = () => ({
+    engine_status: "NO_CURRENT_RUN",
+    reason: "historical run artifacts cleared during active development",
+    latest_run_id: null,
+    current_experiments_path: null,
+    current_certificate_path: null,
+    certificate_status: "NOT_BUILT",
+    data_assets_status: fs.existsSync(DATA_MANIFEST_PATH) ? "AVAILABLE" : "NEEDS_CHECK",
+    historical_comparison_enabled: false,
+    next_action: "run clean Program 1 critical suite",
+});
+
+const rawCurrentState = () => readJsonOrNull(CURRENT_PATH) || resetCurrentState();
+
+const currentCertificateFallback = () => {
+    const current = rawCurrentState();
+    if (!current.latest_run_id || current.engine_status === "NO_CURRENT_RUN") return null;
+    const certPath = path.join(REPO_ROOT, "artifacts", "runs", current.latest_run_id, "certificate.json");
+    const cert = readJsonOrNull(certPath);
+    if (!cert) return null;
+    return { cert, certPath, status: cert.run_id === current.latest_run_id ? "CURRENT" : "STALE" };
+};
+
+const currentState = () => {
+    const current = rawCurrentState();
+    if (!current.latest_run_id || current.engine_status === "NO_CURRENT_RUN") return current;
+    const currentCert = currentCertificateFallback();
+    return {
+        ...current,
+        certificate_status: currentCert?.status || "MISSING_FOR_RUN",
+        current_certificate_path: currentCert?.status === "CURRENT" ? currentCert.certPath : current.current_certificate_path || null,
+    };
+};
+
+const sameObjectCertificateFallback = () => {
+    const current = currentState();
+    if (!current.latest_run_id || current.engine_status === "NO_CURRENT_RUN") {
+        return { status: "NOT_BUILT", message: "Same-Object Certificate: not built for current run." };
+    }
+    const currentCert = currentCertificateFallback();
+    if (!currentCert) {
+        return { status: "MISSING_FOR_RUN", message: "Certificate not built for this run." };
+    }
+    if (currentCert.status === "STALE") {
+        return { status: "STALE", message: "Stale certificate hidden. Build a fresh certificate." };
+    }
+    return currentCert.cert;
+};
+
+const latestRunFallback = () => {
+    const current = currentState();
+    if (!current.latest_run_id || current.engine_status === "NO_CURRENT_RUN") {
+        return {
+            latest_real_run_id: null,
+            status: "NO_CURRENT_RUN",
+            started_at: null,
+            finished_at: null,
+            experiments_path: null,
+            certificate_path: null,
+            certificate_status: "NOT_BUILT",
+            analysis_path: null,
+            is_public_experiments_current: false,
+            historical_comparison_enabled: false,
+            next_action: current.next_action || "run clean Program 1 critical suite",
+        };
+    }
+    return {
+        latest_real_run_id: current.latest_run_id,
+        status: "SUCCEEDED",
+        started_at: null,
+        finished_at: null,
+        experiments_path: current.current_experiments_path,
+        certificate_path: currentCertificateFallback()?.status === "CURRENT" ? currentCertificateFallback()?.certPath || null : null,
+        certificate_status: currentCertificateFallback()?.status || "MISSING_FOR_RUN",
+        analysis_path: path.join(REPO_ROOT, "artifacts", "runs", current.latest_run_id, "analysis.json"),
+        is_public_experiments_current: readJsonOrNull(EXPERIMENTS_PATH)?.run_id === current.latest_run_id,
+        historical_comparison_enabled: Boolean(current.historical_comparison_enabled),
+        next_action: current.next_action || "run clean Program 1 critical suite",
+    };
+};
+
+const artifactFreshnessFallback = (args = {}) => {
+    const current = currentState();
+    const kind = String(args.artifact_kind || args.kind || "experiments");
+    const runId = String(args.run_id || current.latest_run_id || "");
+    if (!current.latest_run_id || current.engine_status === "NO_CURRENT_RUN") {
+        return {
+            artifact_kind: kind,
+            run_id: runId || null,
+            latest_run_id: current.latest_run_id || null,
+            path: null,
+            freshness: "RESET",
+            reason: "No current run is registered; reset placeholders are expected.",
+            source_artifact_hash: null,
+            expected_source_artifact_hash: null,
+        };
+    }
+    const fileName = {
+        experiments: "experiments.json",
+        certificate: "certificate.json",
+        analysis: "analysis.json",
+        data_sufficiency: "data_sufficiency.json",
+        research_plan: "research_plan.json",
+    }[kind] || "experiments.json";
+    const artifactPath = path.join(REPO_ROOT, "artifacts", "runs", runId, fileName);
+    const artifact = readJsonOrNull(artifactPath);
+    if (!artifact) {
+        return {
+            artifact_kind: kind,
+            run_id: runId || null,
+            latest_run_id: current.latest_run_id,
+            path: artifactPath,
+            freshness: "MISSING_FOR_RUN",
+            reason: `Artifact ${fileName} does not exist for ${current.latest_run_id}.`,
+            source_artifact_hash: null,
+            expected_source_artifact_hash: null,
+        };
+    }
+    const freshness = artifact.run_id === current.latest_run_id ? "CURRENT" : "STALE";
+    return {
+        artifact_kind: kind,
+        run_id: artifact.run_id || runId,
+        latest_run_id: current.latest_run_id,
+        path: artifactPath,
+        freshness,
+        reason: freshness === "CURRENT" ? "Artifact run_id matches the latest run." : "Artifact run_id does not match latest_run_id.",
+        source_artifact_hash: artifact.source_artifact_hash || null,
+        expected_source_artifact_hash: null,
+    };
 };
 
 const precisionPolicy = () => ({
@@ -239,6 +419,47 @@ const bestPrime = (assets) => [...assets].sort((a, b) =>
     - ((a.role === "canonical_static_asset" ? 1e12 : 0) + (Number(a.count) || 0) * 1000 + (Number(a.max_prime || a.max_value) || 0))
 )[0];
 
+const simpleRunPreset = (preset = "standard") => {
+    const id = String(preset || "standard").toLowerCase();
+    const base = {
+        preset: id,
+        requested_dps: id === "smoke" ? 30 : id === "standard" ? 40 : 80,
+        requested_zero_count: id === "smoke" ? 100 : id === "standard" ? 2000 : 100000,
+        guard_dps: id === "smoke" ? 0 : 20,
+        zero_policy: {
+            selection: "highest_available",
+            allow_lower_precision_fallback: id === "smoke" || id === "standard",
+            require_odlyzko_crosscheck: id === "authoritative" || id === "overkill" || id === "overkill_full",
+        },
+        tau_policy: { selection: "highest_available", require_dps_plus_guard: true },
+        prime_policy: { selection: "canonical_7m", require_sufficient_max_prime: true },
+        certificate_policy: { require_raw_high_precision_artifacts: id === "authoritative" || id === "overkill" || id === "overkill_full" },
+    };
+    return base;
+};
+
+const simpleSelectedDataSource = (args = {}) => {
+    const preset = simpleRunPreset(args.preset || args.mode || "standard");
+    const requiredDps = preset.requested_dps + preset.guard_dps;
+    const zeros = validAssets("nontrivial_zeta_zeros");
+    const strong = zeros
+        .filter((asset) => Number(asset.count || 0) >= preset.requested_zero_count && Number(asset.stored_dps || 0) >= requiredDps)
+        .sort((a, b) => (Number(b.stored_dps || 0) - Number(a.stored_dps || 0)) || (Number(b.count || 0) - Number(a.count || 0)))[0];
+    const fallback = bestByCountDps(zeros);
+    const zero = strong || fallback || null;
+    const status = strong || preset.zero_policy.allow_lower_precision_fallback ? "READY" : "BLOCKED";
+    return {
+        preset: preset.preset,
+        status,
+        reason: status === "READY" ? "highest valid asset satisfying preset policy" : "no acceptable zero source satisfies count + dps + guard",
+        selected_assets: {
+            zero: { asset: zero, reason: strong ? "highest valid generated high-dps asset satisfying count + dps + guard" : "fallback or unavailable" },
+            tau: { asset: bestByCountDps(validAssets("tau")), reason: "highest valid tau asset satisfying dps + guard" },
+            prime: { asset: bestPrime(validAssets("primes")), reason: "canonical 7M prime asset" },
+        },
+    };
+};
+
 const simpleDataSufficiency = (args = {}) => {
     const dps = Number(args.dps || args.requested_dps || 80);
     const zeros = Number(args.zeros || args.requested_zero_count || 100000);
@@ -293,7 +514,8 @@ const simpleDataSufficiency = (args = {}) => {
 
 const simpleResearchPlan = (args = {}) => {
     const ds = simpleDataSufficiency(args);
-    const cert = readJsonOrNull(SAME_OBJECT_CERT_PATH);
+    const currentCert = currentCertificateFallback();
+    const cert = currentCert?.status === "CURRENT" ? currentCert.cert : null;
     if (ds.status !== "READY") {
         return {
             current_node: "DATA_PREFLIGHT",
@@ -307,7 +529,7 @@ const simpleResearchPlan = (args = {}) => {
             proof_work_recommended: false,
         };
     }
-    if (cert?.status === "SAME_OBJECT_CANDIDATE" && cert?.fidelity?.tier === "AUTHORITATIVE") {
+    if (cert?.status === "SAME_OBJECT_PROXY_CANDIDATE" && cert?.fidelity?.tier === "AUTHORITATIVE") {
         return {
             current_node: "WRITE_NC3_NC4",
             completed_nodes: ["DATA_PREFLIGHT", "RUN_CORE_1", "RUN_EXP_8", "RUN_EXP_6", "BUILD_SAME_OBJECT_CERTIFICATE"],
@@ -327,7 +549,7 @@ const simpleResearchPlan = (args = {}) => {
         recommended_next_action: "RUN_CORE_1",
         why: "Data is ready and CORE-1 is the first critical path experiment.",
         commands: ["python experiment_engine.py --run exp1"],
-        expected_artifacts: ["public/experiments.json"],
+        expected_artifacts: ["artifacts/runs/<run_id>/experiments.json"],
         stop_condition: "CORE-1 passes or exposes a converter formalization defect.",
         proof_work_recommended: false,
     };
@@ -396,7 +618,31 @@ const resolveExperimentId = (data, id) => {
     return experimentAliasMap(data)[normalizeAliasKey(raw)] || upper;
 };
 
+const resetReportingObligation = (obl) => {
+    const current = currentState();
+    if (current.engine_status !== "NO_CURRENT_RUN") {
+        return { ...obl, current_status: obl.status, reporting_status: obl.status };
+    }
+    return {
+        ...obl,
+        current_status: "NOT_WITNESSED",
+        reporting_status: "NOT_WITNESSED",
+        reporting_reason: "No current run is registered; proof obligations are awaiting fresh witnesses.",
+    };
+};
+
 const fallbackPayload = (toolName, args) => {
+    switch (toolName) {
+        case "get_latest_run":
+            return latestRunFallback();
+        case "get_artifact_freshness":
+            return artifactFreshnessFallback(args);
+        case "get_current_reporting_state":
+            return currentState();
+        case "get_same_object_certificate":
+            return sameObjectCertificateFallback();
+    }
+
     const data = readExperimentsArtifact();
     const summary = data.summary || {};
     const proofProgram = summary.proof_program || {};
@@ -417,11 +663,19 @@ const fallbackPayload = (toolName, args) => {
         case "get_theorem_candidate":
             return proofProgram.theorem_candidate || null;
         case "get_obligations":
-            return proofProgram.obligations || [];
+            return {
+                obligations: (proofProgram.obligations || []).map(resetReportingObligation),
+                current_run_status: currentState().engine_status,
+                note:
+                    currentState().engine_status === "NO_CURRENT_RUN"
+                        ? "No current run. Proof obligations are awaiting fresh witnesses; template dependency blockers are not current-run failures."
+                        : undefined,
+            };
         case "get_obligation": {
             const id = String(args?.id ?? "");
             const obls = proofProgram.obligations || [];
-            return obls.find((o) => o.id === id) || null;
+            const obl = obls.find((o) => o.id === id);
+            return obl ? resetReportingObligation(obl) : null;
         }
         case "get_open_gaps":
             return proofProgram.open_gaps || [];
@@ -431,7 +685,14 @@ const fallbackPayload = (toolName, args) => {
             const history = readHistoryArtifact();
             const limitRaw = Number.parseInt(String(args?.limit ?? ""), 10);
             const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : history.length;
-            return history.slice(-limit);
+            return {
+                total: history.length,
+                entries: history.slice(-limit).reverse(),
+                historical_comparison_enabled: Boolean(currentState().historical_comparison_enabled),
+                comparison_note: currentState().historical_comparison_enabled
+                    ? undefined
+                    : "Historical comparison is disabled during active development. Current reports reflect only the latest clean run.",
+            };
         }
         case "get_data_assets": {
             const manifest = dataManifest();
@@ -439,6 +700,26 @@ const fallbackPayload = (toolName, args) => {
         }
         case "check_data_sufficiency":
             return simpleDataSufficiency(args);
+        case "get_run_presets":
+            return { presets: ["smoke", "standard", "authoritative", "overkill"].map(simpleRunPreset) };
+        case "resolve_run_preset":
+            return { contract: simpleRunPreset(args?.preset || args?.mode || "standard") };
+        case "get_selected_data_source":
+            return simpleSelectedDataSource(args);
+        case "validate_zero_assets":
+            return { validations: [], existing_validation_artifacts: [], note: "zero validation requires the HTTP MCP server for full cross-check execution" };
+        case "run_preflight": {
+            const selected = simpleSelectedDataSource(args);
+            return {
+                ...selected,
+                run_status: selected.status,
+                contract: simpleRunPreset(args?.preset || args?.mode || "standard"),
+                data_sufficiency: simpleDataSufficiency(args),
+                warnings: [],
+                errors: [],
+                next_action: selected.status === "READY" ? "run_next_research_step" : "fix_data_preflight",
+            };
+        }
         case "get_precision_policy":
             return { policy: precisionPolicy() };
         case "get_research_plan":
@@ -479,7 +760,7 @@ const tryFallback = (req) => {
         try {
             const payload = fallbackPayload(toolName, params.arguments || {});
             const banner = "[mcp-bridge fallback: HTTP endpoint unreachable; "
-                + "served from local public/* artifacts]";
+                + "served from local current-run artifacts]";
             emitToolResult(req, `${banner}\n\n${JSON.stringify(payload, null, 2)}`);
             return true;
         } catch (err) {
@@ -543,7 +824,7 @@ const handleLine = async (line) => {
 
                 const data = await res.text();
                 if (data.trim()) {
-                    console.log(data);
+                    console.log(normalizeHttpMcpResponseText(req, data));
                 }
                 return;
             } catch (error) {
@@ -593,6 +874,7 @@ export const __test__ = {
     handleLine,
     tryFallback,
     fallbackPayload,
+    normalizeHttpMcpResponseText,
     readExperimentsArtifact,
     readHistoryArtifact,
     READ_ONLY_TOOLS,

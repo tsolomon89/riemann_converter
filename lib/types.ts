@@ -585,6 +585,10 @@ export interface ExperimentsData {
     };
     code_fingerprint?: { [fname: string]: string };
     zero_source_info?: Record<string, unknown>;
+    selected_data_sources?: Record<string, unknown>;
+    run_contract?: Record<string, unknown>;
+    run_preset?: string;
+    preflight?: Record<string, unknown>;
     /**
      * Single-source-of-truth classification table (Sprint 2a). Replaces the
      * previously duplicated ROLE_MAP in ExperimentSidebar.tsx. UI should read

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Settings,
     ChevronRight,
@@ -394,6 +394,7 @@ const expStatusBadgeStyle = (outcome: string | undefined) => {
 };
 
 const ZERO_SOURCES = [
+    { id: "auto", label: "Auto from preset", path: "auto" },
     { id: "generated", label: "Generated ( Riemann-Siegel )", path: "generated" },
     { id: "odlyzko_100k", label: "Odlyzko (100k Zeros)", path: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz" },
 ];
@@ -414,27 +415,27 @@ const PRESET_DEFS: Array<{
         id: "smoke",
         label: "Smoke",
         hint: "Fast plumbing profile.",
-        patch: { zeroSource: "generated", zeroCount: 100, dps: 30, primeMinCount: 0, primeTargetCount: 0 },
+        patch: { zeroSource: "auto", zeroCount: 100, dps: 30, primeMinCount: 0, primeTargetCount: 0 },
     },
     {
         id: "standard",
         label: "Standard",
         hint: "Iterative development fidelity profile.",
-        patch: { zeroSource: "generated", zeroCount: 2000, dps: 40, primeMinCount: 0, primeTargetCount: 0 },
+        patch: { zeroSource: "auto", zeroCount: 2000, dps: 40, primeMinCount: 0, primeTargetCount: 0 },
     },
     {
         id: "authoritative",
         label: "Authoritative",
         hint: "Reviewer-grade baseline profile.",
-        patch: { zeroSource: "generated", zeroCount: 20000, dps: 50, primeMinCount: 0, primeTargetCount: 0 },
+        patch: { zeroSource: "auto", zeroCount: 100000, dps: 80, primeMinCount: 1_000_000, primeTargetCount: 1_000_000 },
     },
     {
         id: "overkill",
         label: "Overkill",
         hint: "Stress profile with min/target 1,000,000 primes.",
         patch: {
-            zeroSource: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz",
-            zeroCount: 20000,
+            zeroSource: "auto",
+            zeroCount: 100000,
             dps: 80,
             primeMinCount: 1_000_000,
             primeTargetCount: 1_000_000,
@@ -445,8 +446,8 @@ const PRESET_DEFS: Array<{
         label: "Overkill Full",
         hint: "Stress profile with full prime target (7,000,000).",
         patch: {
-            zeroSource: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz",
-            zeroCount: 20000,
+            zeroSource: "auto",
+            zeroCount: 100000,
             dps: 80,
             primeMinCount: 1_000_000,
             primeTargetCount: 7_000_000,
@@ -493,6 +494,20 @@ export interface RunSummaryView {
     workers: string;
     prime_min_count: number;
     prime_target_count: number;
+}
+
+interface PreflightSummary {
+    status?: "READY" | "BLOCKED";
+    reason?: string;
+    selected_assets?: {
+        zero?: {
+            reason?: string;
+            asset?: { source_path?: string; stored_dps?: number };
+            validation?: { status?: string };
+        };
+        tau?: { asset?: { asset_id?: string; source_path?: string } };
+        prime?: { asset?: { source_path?: string } };
+    };
 }
 
 export const buildRunSummaryView = (config: ExperimentConfig): RunSummaryView => {
@@ -626,6 +641,7 @@ export default function ExperimentSidebar({
     const selectedPreset = config.runPreset ?? "custom";
     const showPerturbationSettings = hasPerturbationSelection(config.selectedExperiments);
     const summary = buildRunSummaryView(config);
+    const [preflightSummary, setPreflightSummary] = useState<PreflightSummary | null>(null);
     const summaryExperiments =
         summary.experiments === "none" ? summary.experiments : summary.experiments.toUpperCase();
     const executeState = getExecuteButtonState({
@@ -633,6 +649,28 @@ export default function ExperimentSidebar({
         isRunning,
         selectedCount,
     });
+
+    useEffect(() => {
+        let cancelled = false;
+        if (!selectedPreset || selectedPreset === "custom") {
+            setPreflightSummary(null);
+            return () => {
+                cancelled = true;
+            };
+        }
+        const params = new URLSearchParams({ preset: selectedPreset });
+        fetch(`/api/research/preflight?${params.toString()}`, { cache: "no-store" })
+            .then((response) => response.json())
+            .then((body: { data?: PreflightSummary }) => {
+                if (!cancelled) setPreflightSummary(body.data ?? null);
+            })
+            .catch(() => {
+                if (!cancelled) setPreflightSummary(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedPreset]);
 
     const toggleGroup = (key: string) => {
         setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -1263,6 +1301,57 @@ export default function ExperimentSidebar({
                             <span className="text-gray-500">Zero Source</span>
                             <span className="text-gray-200">{summary.zero_source}</span>
                         </div>
+                        {preflightSummary && (
+                            <>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-gray-500">Run Status</span>
+                                    <span
+                                        className={clsx(
+                                            preflightSummary.status === "READY"
+                                                ? "text-emerald-300"
+                                                : "text-amber-300",
+                                        )}
+                                    >
+                                        {preflightSummary.status ?? "n/a"}
+                                    </span>
+                                </div>
+                                <div className="flex items-start justify-between gap-2">
+                                    <span className="text-gray-500">Selected Zero</span>
+                                    <span
+                                        className="text-gray-200 text-right break-all"
+                                        title={preflightSummary.selected_assets?.zero?.asset?.source_path}
+                                    >
+                                        {preflightSummary.selected_assets?.zero?.asset?.source_path ?? "n/a"}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-gray-500">Odlyzko Cross-check</span>
+                                    <span className="text-gray-200">
+                                        {preflightSummary.selected_assets?.zero?.validation?.status ?? "n/a"}
+                                    </span>
+                                </div>
+                                <div className="flex items-start justify-between gap-2">
+                                    <span className="text-gray-500">Reason</span>
+                                    <span className="text-gray-300 text-right">
+                                        {preflightSummary.selected_assets?.zero?.reason ?? preflightSummary.reason ?? "n/a"}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-gray-500">Tau Source</span>
+                                    <span className="text-gray-200">
+                                        {preflightSummary.selected_assets?.tau?.asset?.asset_id ??
+                                            preflightSummary.selected_assets?.tau?.asset?.source_path ??
+                                            "n/a"}
+                                    </span>
+                                </div>
+                                <div className="flex items-start justify-between gap-2">
+                                    <span className="text-gray-500">Prime Source</span>
+                                    <span className="text-gray-200 text-right break-all">
+                                        {preflightSummary.selected_assets?.prime?.asset?.source_path ?? "n/a"}
+                                    </span>
+                                </div>
+                            </>
+                        )}
                         <div className="flex items-center justify-between gap-2">
                             <span className="text-gray-500">DPS</span>
                             <span className="text-gray-200">{summary.dps}</span>

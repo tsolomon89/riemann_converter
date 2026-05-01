@@ -19,7 +19,9 @@ from riemann_math import (
     save_results,
 )
 from verifier import run_verification
+from proof_kernel.data_planner import run_preflight
 from proof_kernel.run_artifacts import write_run_artifacts
+from proof_kernel.run_presets import is_run_preset, resolve_run_preset
 
 # Schema version of public/experiments.json.
 # Bump when adding/removing/renaming top-level fields or the summary structure.
@@ -119,6 +121,7 @@ def main():
         default="all",
         help="Experiment(s) to run: stable ids (1,1b,...), display aliases (core-1,ctrl-1,val-1,...), or all",
     )
+    parser.add_argument("--preset", type=str, default=None, help="Run preset contract: smoke, standard, authoritative, or overkill")
     parser.add_argument("--quick", action="store_true", help="Run in fast mode with fewer zeros and points")
     parser.add_argument("--zero-source", type=str, default="generated", help="Source of zeros: 'generated' or 'file:<path>'")
     parser.add_argument("--zero-count", type=int, default=ZERO_COUNT, help="Overridden number of zeros")
@@ -140,6 +143,64 @@ def main():
     parser.add_argument("--resume-checkpoint", type=str, default=None, help="Resume/validate against an existing checkpoint JSON file")
     parser.add_argument("--skip-unchanged", action="store_true", help="Skip unchanged experiments when checkpoint cache keys match")
     args = parser.parse_args()
+
+    explicit_zero_source = any(
+        item == "--zero-source" or item.startswith("--zero-source=")
+        for item in sys.argv[1:]
+    )
+    preset_name = args.preset or os.getenv("RIEMANN_RUN_PRESET")
+    preflight = None
+    run_contract = None
+    if preset_name:
+        if not is_run_preset(preset_name):
+            raise ValueError(f"Unknown run preset: {preset_name}")
+        run_contract = resolve_run_preset(preset_name)
+        preflight = run_preflight({
+            "preset": run_contract["preset"],
+            "experiments": None if args.run == "all" else args.run,
+        })
+        if preflight.get("status") != "READY":
+            message = preflight.get("reason") or f"Run blocked by preset preflight: {run_contract['preset']}"
+            emit_run_event(
+                args.emit_run_events,
+                kind="PREFLIGHT",
+                phase="PRECHECK",
+                state="blocked",
+                message=message,
+                percent=0,
+                payload=preflight,
+            )
+            raise SystemExit(message)
+
+        args.dps = int(run_contract["requested_dps"])
+        args.zero_count = int(run_contract["requested_zero_count"])
+        runtime_policy = run_contract.get("runtime_policy") or {}
+        args.resolution = int(runtime_policy.get("resolution") or args.resolution)
+        args.k_values = str(runtime_policy.get("k_values") or args.k_values)
+        args.n_test = int(runtime_policy.get("n_test") or args.n_test)
+        args.prime_min_count = max(int(args.prime_min_count or 0), int(runtime_policy.get("prime_min_count") or 0))
+        args.prime_target_count = max(int(args.prime_target_count or 0), int(runtime_policy.get("prime_target_count") or 0))
+        if runtime_policy.get("x_start") is not None:
+            args.x_start = float(runtime_policy["x_start"])
+        if runtime_policy.get("x_end") is not None:
+            args.x_end = float(runtime_policy["x_end"])
+        if bool(runtime_policy.get("quick")):
+            args.quick = True
+
+        selected_zero = ((preflight.get("selected_assets") or {}).get("zero") or {}).get("asset") or {}
+        selected_path = selected_zero.get("source_path")
+        if selected_path and explicit_zero_source:
+            expected_source = f"file:{selected_path}"
+            allow_fallback = bool((run_contract.get("zero_policy") or {}).get("allow_lower_precision_fallback"))
+            if args.zero_source != expected_source and not allow_fallback:
+                required_dps = int(run_contract["requested_dps"]) + int(run_contract["guard_dps"])
+                raise SystemExit(
+                    "Run blocked. Preset "
+                    f"{run_contract['preset']} requires nontrivial zero asset with >={required_dps} stored dps "
+                    "and Odlyzko cross-check PASS. Explicit zero source is not the selected preset source."
+                )
+        elif selected_path and not explicit_zero_source:
+            args.zero_source = f"file:{selected_path}"
 
     cpu_count = multiprocessing.cpu_count() if multiprocessing.cpu_count() else 1
     auto_workers = max(1, int(cpu_count) - 1)
@@ -183,6 +244,9 @@ def main():
         state="run_config",
         message="Run configuration resolved",
         payload={
+            "preset": run_contract.get("preset") if run_contract else None,
+            "preflight_status": preflight.get("status") if preflight else None,
+            "selected_data_sources": preflight.get("selected_assets") if preflight else None,
             "workers": int(effective_workers),
             "prime_min_count": int(args.prime_min_count),
             "prime_target_count": int(args.prime_target_count),
@@ -278,6 +342,12 @@ def main():
     data["meta"]["code_fingerprint"] = fingerprints
     data["meta"]["zero_source_info"] = get_last_zero_source_info()
     data["meta"]["prime_source_info"] = get_last_prime_source_info()
+    if run_contract:
+        data["meta"]["run_contract"] = run_contract
+        data["meta"]["run_preset"] = run_contract.get("preset")
+    if preflight:
+        data["meta"]["preflight"] = preflight
+        data["meta"]["selected_data_sources"] = preflight.get("selected_assets")
     data["meta"]["run_config"] = {
         "workers": int(effective_workers),
         "prime_min_count": int(args.prime_min_count),
@@ -319,6 +389,7 @@ def main():
     resume_checkpoint = load_checkpoint(args.resume_checkpoint) if args.resume_checkpoint else None
     run_compat_payload = {
         "schema_version": SCHEMA_VERSION,
+        "preset": run_contract.get("preset") if run_contract else None,
         "run": args.run,
         "quick": bool(args.quick),
         "zero_source": args.zero_source,
@@ -357,7 +428,11 @@ def main():
     checkpoint["mode"] = canonical_mode
     checkpoint["compatibility_hash"] = run_compat_hash
     checkpoint["config"] = run_compat_payload
-    run_id = os.getenv("RIEMANN_RUN_ID")
+    run_id = os.getenv("RIEMANN_RUN_ID") or time.strftime("run_%Y%m%dT%H%M%SZ", time.gmtime())
+    data["run_id"] = run_id
+    data["created_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    data["artifact_kind"] = "experiments"
+    data["meta"]["run_id"] = run_id
 
     def set_partial_run_meta(active, current_experiment=None):
         meta = data.setdefault("meta", {})

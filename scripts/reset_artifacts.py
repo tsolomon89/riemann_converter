@@ -1,7 +1,7 @@
 """Reset active run artifacts to an explicit no-current-run state.
 
-This intentionally does not touch source/input datasets such as
-agent_context/primes.csv, agent_context/zeros.dat, or agent_context/zeros_*.gz.
+This intentionally does not touch canonical mathematical assets under data/
+or the data migration audit report under public/data_migration_report.json.
 """
 
 from __future__ import annotations
@@ -54,6 +54,12 @@ def _empty_artifact() -> dict:
     code_fingerprint = _fingerprints()
     experiment_classification = verifier._build_experiment_classification()
     return {
+        "run_id": None,
+        "created_at": None,
+        "schema_version": verifier.EXPECTED_SCHEMA_VERSION,
+        "source_artifact_hash": None,
+        "code_fingerprint": code_fingerprint,
+        "artifact_kind": "experiments",
         "engine_status": "NO_CURRENT_RUN",
         "overall": "SKIP",
         "stage_verdicts": {},
@@ -69,11 +75,21 @@ def _empty_artifact() -> dict:
             "run_config": {},
             "experiment_classification": experiment_classification,
             "reset_reason": "legacy run data cleared; no current evidence run has been executed",
+            "proof_program_template": "retained",
         },
         "summary": {
             "engine_status": "NO_CURRENT_RUN",
             "overall": "SKIP",
             "schema_version": verifier.EXPECTED_SCHEMA_VERSION,
+            "compute_fidelity": "SMOKE",
+            "data_fidelity": "READY_WITH_WARNINGS",
+            "certificate_fidelity": "BLOCKED",
+            "fidelity": {
+                "compute_fidelity": "SMOKE",
+                "data_fidelity": "READY_WITH_WARNINGS",
+                "certificate_fidelity": "BLOCKED",
+                "warnings": [],
+            },
             "experiments": {},
             "stage_verdicts": {},
             "implementation_health": {},
@@ -97,6 +113,36 @@ def _empty_artifact() -> dict:
     }
 
 
+def _data_assets_status() -> str:
+    manifest_path = REPO_ROOT / "data" / "manifest.json"
+    if not manifest_path.exists():
+        return "NEEDS_CHECK"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        kinds = {
+            asset.get("kind")
+            for asset in manifest.get("assets", [])
+            if isinstance(asset, dict) and asset.get("valid") is True
+        }
+        return "AVAILABLE" if {"tau", "nontrivial_zeta_zeros", "primes"}.issubset(kinds) else "NEEDS_CHECK"
+    except Exception:
+        return "NEEDS_CHECK"
+
+
+def _current_state() -> dict:
+    return {
+        "engine_status": "NO_CURRENT_RUN",
+        "reason": "historical run artifacts cleared during active development",
+        "latest_run_id": None,
+        "current_experiments_path": None,
+        "current_certificate_path": None,
+        "certificate_status": "NOT_BUILT",
+        "data_assets_status": _data_assets_status(),
+        "historical_comparison_enabled": False,
+        "next_action": "run clean Program 1 critical suite",
+    }
+
+
 def main() -> int:
     os.chdir(REPO_ROOT)
 
@@ -105,7 +151,9 @@ def main() -> int:
 
     artifact_path = public_dir / "experiments.json"
     artifact_path.write_text(json.dumps(_empty_artifact(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (public_dir / "current.json").write_text(json.dumps(_current_state(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (public_dir / "verdict_history.jsonl").write_text("", encoding="utf-8")
+    _remove_path(public_dir / "same_object_certificate.json")
 
     for stale_public in (
         "riemann_high_res.json",
@@ -116,15 +164,22 @@ def main() -> int:
 
     reports_dir = REPO_ROOT / "reports"
     reports_dir.mkdir(exist_ok=True)
+    _remove_path(reports_dir / "latest.md")
     for report in reports_dir.glob("run-*.md"):
         _remove_path(report)
 
-    _remove_path(REPO_ROOT / ".runtime")
+    _remove_path(REPO_ROOT / "artifacts" / "runs")
+    _remove_path(REPO_ROOT / ".runtime" / "runs")
+    _remove_path(REPO_ROOT / ".runtime" / "checkpoints")
+    _remove_path(REPO_ROOT / ".runtime" / "critical-path")
+    _remove_path(REPO_ROOT / ".runtime" / "critical-path-20k")
+    _remove_path(REPO_ROOT / ".runtime" / "critical-path-20k-r100")
     _remove_path(REPO_ROOT / "dashboard")
 
     print("reset public/experiments.json to NO_CURRENT_RUN")
+    print("wrote public/current.json NO_CURRENT_RUN")
     print("cleared public/verdict_history.jsonl")
-    print("removed stale reports, runtime files, legacy dashboard artifacts, and unused legacy public data")
+    print("removed stale public certificate, run artifacts, checkpoints, reports, runtime logs, and legacy dashboard artifacts")
     return 0
 
 

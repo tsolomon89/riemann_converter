@@ -186,6 +186,38 @@ describe("/api/research contract routes", () => {
         expectEnvelope(body);
     });
 
+    it("returns preset preflight and selected data source envelopes", async () => {
+        const presets = await parse(
+            await GET(new Request("http://localhost/api/research/run-presets"), ctx("run-presets")),
+        );
+        expect(presets.status).toBe(200);
+        expectEnvelope(presets.body);
+        expect((presets.body as { data: { presets: Array<{ preset: string }> } }).data.presets)
+            .toEqual(expect.arrayContaining([expect.objectContaining({ preset: "overkill" })]));
+
+        const selected = await parse(
+            await GET(
+                new Request("http://localhost/api/research/selected-data-source?preset=overkill"),
+                ctx("selected-data-source"),
+            ),
+        );
+        expect(selected.status).toBe(200);
+        expectEnvelope(selected.body);
+        expect((selected.body as { data: { zero_source?: string } }).data.zero_source)
+            .toBe("data/zeros/nontrivial/zeros.generated.dps_100.jsonl");
+
+        const preflight = await parse(
+            await GET(new Request("http://localhost/api/research/preflight?preset=overkill"), ctx("preflight")),
+        );
+        expect(preflight.status).toBe(200);
+        expectEnvelope(preflight.body);
+        expect((preflight.body as { data: { status?: string; selected_assets?: { zero?: { validation?: { status?: string } } } } }).data)
+            .toMatchObject({
+                status: "READY",
+                selected_assets: { zero: { validation: { status: "PASS" } } },
+            });
+    });
+
     it("returns envelope for theorem-candidate", async () => {
         const res = await GET(
             new Request("http://localhost/api/research/theorem-candidate"),

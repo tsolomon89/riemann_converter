@@ -147,9 +147,9 @@ class TestBuildProofAssembly:
         assert assembly["formalization_alive"] is True
 
     def test_certificate_integration(self, passing_experiments):
-        cert = {"status": "SAME_OBJECT_CANDIDATE"}
+        cert = {"status": "SAME_OBJECT_PROXY_CANDIDATE"}
         assembly = build_proof_assembly(passing_experiments, "AUTHORITATIVE", cert)
-        assert assembly["certificate_status"] == "SAME_OBJECT_CANDIDATE"
+        assert assembly["certificate_status"] == "SAME_OBJECT_PROXY_CANDIDATE"
 
     def test_certificate_failure(self, passing_experiments):
         cert = {"status": "SAME_OBJECT_FAILED"}
@@ -187,8 +187,8 @@ class TestCertificateBuilder:
         from proof_kernel.same_object_certificate import build_certificate
         cert = build_certificate(exp_path)
         assert cert["status"] in (
-            "NOT_READY", "SAME_OBJECT_CANDIDATE", "SAME_OBJECT_FAILED",
-            "INCONCLUSIVE", "FORMAL_PROOF_REQUIRED",
+            "NOT_BUILT", "SAME_OBJECT_PROXY_CANDIDATE", "SAME_OBJECT_FAILED",
+            "INCONCLUSIVE", "STALE", "MISSING_FOR_RUN",
         )
         assert "certificate_id" in cert
         assert "reconstruction_agreement" in cert

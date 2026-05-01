@@ -33,6 +33,7 @@ interface Props {
     fidelityTier?: FidelityTier;
     fidelityZeros?: number;
     fidelityDps?: number;
+    noCurrentRun?: boolean;
     onJumpToGaps?: () => void;
 }
 
@@ -104,6 +105,12 @@ const healthStyle = (status: ImplementationHealth["status"]) => {
     }
 };
 
+const friendlyDisallowedConclusion = (value: string) =>
+    value
+        .replace("This obligation alone proves the theorem candidate.", "Not a proof by itself.")
+        .replace("The theorem candidate is proved.", "Proof is not established.")
+        .replace("The theorem candidate is proved without a formal closure artifact.", "Proof is not established without a formal closure artifact.");
+
 export default function ProofProgramMap({
     proofProgram,
     implementationHealth,
@@ -111,6 +118,7 @@ export default function ProofProgramMap({
     fidelityTier,
     fidelityZeros,
     fidelityDps,
+    noCurrentRun,
     onJumpToGaps,
 }: Props) {
     if (!proofProgram) {
@@ -129,7 +137,7 @@ export default function ProofProgramMap({
             {/* Header row */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest text-gray-400 uppercase">
-                    <Beaker size={12} /> Proof Program
+                    <Beaker size={12} /> {noCurrentRun ? "Proof Program Template" : "Proof Program"}
                 </div>
                 <div className="flex items-center gap-3 text-[10px] font-mono text-gray-500">
                     {schemaVersion && <span>schema {schemaVersion}</span>}
@@ -150,6 +158,17 @@ export default function ProofProgramMap({
                     )}
                 </div>
             </div>
+
+            {noCurrentRun && (
+                <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 px-4 py-3">
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-sky-300">
+                        Awaiting current-run witnesses
+                    </div>
+                    <p className="mt-1 text-sm text-sky-100 leading-relaxed">
+                        No current run. Proof obligations are awaiting fresh witnesses; canonical data assets remain available.
+                    </p>
+                </div>
+            )}
 
             {/* Theorem candidate */}
             <section className="space-y-3">
@@ -218,7 +237,7 @@ export default function ProofProgramMap({
             </section>
 
             {/* Obligation ladder */}
-            <ObligationLadder obligations={obligations} />
+            <ObligationLadder obligations={obligations} noCurrentRun={noCurrentRun} />
 
 
             {/* Open gaps strip */}
@@ -309,7 +328,13 @@ export default function ProofProgramMap({
 // obligations render below as the Contradiction Track formalization lane.
 // BLOCKED obligations surface `blocked_by` chips inline on the card (not in
 // tooltips) so blockers are visibly load-bearing, per PROOF_TARGET.md.
-function ObligationLadder({ obligations }: { obligations: ProofObligation[] }) {
+function ObligationLadder({
+    obligations,
+    noCurrentRun,
+}: {
+    obligations: ProofObligation[];
+    noCurrentRun?: boolean;
+}) {
     const ordered = React.useMemo(() => topologicalOrder(obligations), [obligations]);
     const p1 = ordered.filter((o) => o.program === "PROGRAM_1");
     const p2 = ordered.filter((o) => o.program === "PROGRAM_2");
@@ -321,7 +346,9 @@ function ObligationLadder({ obligations }: { obligations: ProofObligation[] }) {
                     Proof obligation ladder ({obligations.length})
                 </div>
                 <div className="text-[9px] font-mono text-gray-500 italic">
-                    Only `PROOF_OBLIGATION_WITNESS` + `CONSISTENT` + AUTHORITATIVE counts as theorem-directed evidence.
+                    {noCurrentRun
+                        ? "No current run: statuses below mean fresh witnesses have not been built yet."
+                        : "Only `PROOF_OBLIGATION_WITNESS` + `CONSISTENT` + AUTHORITATIVE counts as theorem-directed evidence."}
                 </div>
             </div>
 
@@ -337,6 +364,7 @@ function ObligationLadder({ obligations }: { obligations: ProofObligation[] }) {
                                 obl={obl}
                                 step={idx + 1}
                                 isLast={idx === p1.length - 1}
+                                noCurrentRun={noCurrentRun}
                             />
                         ))}
                     </div>
@@ -353,7 +381,7 @@ function ObligationLadder({ obligations }: { obligations: ProofObligation[] }) {
                     </div>
                     <div className="flex flex-col gap-2 opacity-90">
                         {p2.map((obl) => (
-                            <ObligationCard key={obl.id} obl={obl} exploratory />
+                            <ObligationCard key={obl.id} obl={obl} exploratory noCurrentRun={noCurrentRun} />
                         ))}
                     </div>
                 </div>
@@ -367,15 +395,23 @@ function ObligationCard({
     step,
     isLast,
     exploratory,
+    noCurrentRun,
 }: {
     obl: ProofObligation;
     step?: number;
     isLast?: boolean;
     exploratory?: boolean;
+    noCurrentRun?: boolean;
 }) {
-    const s = obligationStatusStyle(obl.status);
+    const resetStyle = {
+        wrap: "bg-slate-900/35 border-sky-500/15",
+        badge: "bg-slate-800/80 text-sky-200 border-sky-500/25",
+        icon: <Circle size={10} />,
+    };
+    const s = noCurrentRun ? resetStyle : obligationStatusStyle(obl.status);
     const prereqs = obl.depends_on ?? [];
     const blockers = obl.blocked_by ?? [];
+    const displayStatus = noCurrentRun ? "NOT_WITNESSED" : obl.status;
 
     return (
         <div
@@ -418,9 +454,9 @@ function ObligationCard({
                             "text-[10px] font-mono px-2 py-0.5 rounded border flex items-center gap-1 uppercase tracking-tight",
                             s.badge,
                         )}
-                    >
-                        {s.icon}
-                        {obl.status}
+                        >
+                            {s.icon}
+                        {displayStatus}
                     </span>
                 </div>
             </div>
@@ -443,7 +479,7 @@ function ObligationCard({
                 </div>
             )}
 
-            {obl.status === "BLOCKED" && blockers.length > 0 && (
+            {!noCurrentRun && obl.status === "BLOCKED" && blockers.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
                     <span className="text-amber-300/90">blocked by:</span>
                     {blockers.map((b) => (
@@ -457,6 +493,30 @@ function ObligationCard({
                                 b.startsWith("GAP_")
                                     ? "Open gap — formal work required"
                                     : "Upstream obligation not yet WITNESSED/PROVEN"
+                            }
+                        >
+                            {b}
+                        </code>
+                    ))}
+                </div>
+            )}
+
+            {noCurrentRun && blockers.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
+                    <span className="text-sky-300/90">fresh run must witness:</span>
+                    {blockers.map((b) => (
+                        <code
+                            key={b}
+                            className={clsx(
+                                "px-1.5 py-0.5 rounded border",
+                                b.startsWith("GAP_")
+                                    ? "bg-red-500/10 text-red-300/80 border-red-500/25"
+                                    : "bg-sky-500/10 text-sky-200 border-sky-500/25",
+                            )}
+                            title={
+                                b.startsWith("GAP_")
+                                    ? "Open formal gap; this is not current-run evidence."
+                                    : "Fresh current-run witness required."
                             }
                         >
                             {b}
@@ -479,9 +539,9 @@ function ObligationCard({
                 {obl.inference.disallowed_conclusion.length > 0 && (
                     <span
                         className="italic text-amber-300/70 truncate max-w-[40%]"
-                        title={obl.inference.disallowed_conclusion.join(" · ")}
+                        title={obl.inference.disallowed_conclusion.map(friendlyDisallowedConclusion).join(" · ")}
                     >
-                        ✗ {obl.inference.disallowed_conclusion[0]}
+                        ✗ {friendlyDisallowedConclusion(obl.inference.disallowed_conclusion[0])}
                     </span>
                 )}
             </div>

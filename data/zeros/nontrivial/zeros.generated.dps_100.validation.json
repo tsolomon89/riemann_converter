@@ -1,0 +1,16 @@
+{
+  "asset_id": "nontrivial_zeros_count_100000_dps_100",
+  "reference_asset_id": "nontrivial_zeros_count_2001052_dps_9",
+  "asset_path": "data/zeros/nontrivial/zeros.generated.dps_100.jsonl",
+  "reference_asset_path": "data/zeros/nontrivial/zeros_2M_four_ten_power_neg_nine.gz",
+  "asset_hash": "544f61a8ecac1e1f7cbb6f3b82a45ce5bae020414b0e9bbf5e14b612a0f73334",
+  "reference_asset_hash": "6acacb4707c429bf368f32823a8eef0e0737b6318d3e144c78975a4986d155da",
+  "validated_count": 100000,
+  "tolerance": "3e-9",
+  "max_deviation": "2.9976945370435715e-9",
+  "p95_deviation": "1.8553691916167736e-9",
+  "failed_indices": [],
+  "status": "PASS",
+  "valid_for_authoritative": true,
+  "reason": null
+}

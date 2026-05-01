@@ -1,0 +1,136 @@
+{
+  "schema_version": "2026.05.hypothesis-registry.v1",
+  "program": "PROGRAM_2",
+  "description": "Program 2 baseline hypotheses. These detectors test whether off-line / perturbed zeros produce structured signatures under compression. Their failure first scopes to baseline-or-route, never automatically to Program 1 or to the base claim.",
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_P2_1_ROGUE_DETECTABILITY",
+      "experiment_ids": ["EXP_2"],
+      "display_id": "P2-1",
+      "program": "PROGRAM_2",
+      "role": "witness",
+      "plain_statement": "A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings.",
+      "object_under_test": "zero_ensemble",
+      "expected_signature": {
+        "primary_metric": "rogue_amplification_signature",
+        "expected_value": "detectable above baseline noise envelope",
+        "tolerance": "experiment-declared detection threshold",
+        "pass_rule": "amplification exceeds threshold for every tested perturbation"
+      },
+      "why_this_matters": "If a planted rogue cannot be detected, NC6 (no hiding under compression) is threatened — but only with respect to the chosen detection metric. The Program 2 contradiction route depends on detectability.",
+      "failure_means": [
+        "the current detectability baseline or chosen metric may be wrong or incomplete",
+        "Program 2 detection coverage in this window is weak",
+        "the perturbation amplitude may be below the instrument floor"
+      ],
+      "failure_does_not_mean": [
+        "Program 1 fails",
+        "the base claim fails",
+        "NC6 is mathematically violated"
+      ],
+      "possible_alternative_hypotheses": [
+        "detectability requires a different compression depth",
+        "detectability requires phase-aware metrics rather than amplitude metrics",
+        "detectability holds only for perturbations above a structured floor"
+      ],
+      "candidate_lemma_name": "Rogue Detectability Candidate Lemma",
+      "intended_inference_if_passed": [
+        "structured rogue zeros produce a detectable signature on the tested window",
+        "the Program 2 contradiction route remains armed in this window",
+        "this is not a proof of NC6"
+      ],
+      "disallowed_conclusions": [
+        "this proves NC6",
+        "this proves RH",
+        "this contradicts Program 1"
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_P2_2_RESIDUAL_ISOLATION",
+      "experiment_ids": ["EXP_2B"],
+      "display_id": "P2-2",
+      "program": "PROGRAM_2",
+      "role": "witness",
+      "plain_statement": "A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope).",
+      "object_under_test": "zero_ensemble",
+      "expected_signature": {
+        "primary_metric": "observed_over_predicted_residual_ratio",
+        "expected_value": "near 1.0 within declared envelope",
+        "tolerance": "experiment-declared residual envelope",
+        "pass_rule": "ratio remains near 1.0 across the tested k / window range"
+      },
+      "why_this_matters": "Residual isolation is the finite-precision baseline for NC6 via single-perturbation modeling. The current ratio model is one specific baseline among several plausible models.",
+      "failure_means": [
+        "the current residual-ratio baseline was not confirmed",
+        "the single-perturbation model may be incomplete",
+        "the chosen normalization or window may be wrong"
+      ],
+      "failure_does_not_mean": [
+        "Program 2 is dead",
+        "the rogue-isolation idea is refuted",
+        "Program 1 is refuted",
+        "NC6 is mathematically violated"
+      ],
+      "possible_alternative_hypotheses": [
+        "phase-dependent residual envelope",
+        "k-depth dependent attenuation of the residual signal",
+        "window-dependent amplification",
+        "multi-zero interference dominates over single-perturbation contribution",
+        "wrong normalization of the observed/predicted ratio"
+      ],
+      "candidate_lemma_name": "Residual Isolation / Residual Envelope Candidate Lemma",
+      "intended_inference_if_passed": [
+        "the single-perturbation residual model is consistent on the tested window",
+        "the Program 2 detection route via residual ratios remains armed",
+        "this is not a proof of NC6"
+      ],
+      "disallowed_conclusions": [
+        "this proves NC6",
+        "this proves the rogue-isolation theorem",
+        "this is consistent with Program 1 in any direct sense"
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_P2_3_CALIBRATED_AMPLIFICATION",
+      "experiment_ids": ["EXP_7"],
+      "display_id": "P2-3",
+      "program": "PROGRAM_2",
+      "role": "witness",
+      "plain_statement": "Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep.",
+      "object_under_test": "zero_ensemble",
+      "expected_signature": {
+        "primary_metric": "amplification_vs_epsilon_curve",
+        "expected_value": "monotonic or otherwise structurally predicted curve",
+        "tolerance": "experiment-declared structural tolerance",
+        "pass_rule": "the amplification curve fits the predicted structural form"
+      },
+      "why_this_matters": "Calibrated amplification is the metrology baseline for Program 2: it gauges whether the detection instrument tracks perturbation size in a predictable way. Without calibration, NC6 cannot be quantified.",
+      "failure_means": [
+        "the current amplification model is incomplete",
+        "the calibration baseline is not confirmed in this window",
+        "Program 2 metrology may need revision"
+      ],
+      "failure_does_not_mean": [
+        "the base theory is refuted",
+        "Program 1 is refuted",
+        "perturbations are undetectable"
+      ],
+      "possible_alternative_hypotheses": [
+        "amplification curve has structured non-monotonicity in some regime",
+        "calibration is regime-split between small and large epsilon",
+        "amplification depends on phase of the planted perturbation"
+      ],
+      "candidate_lemma_name": "Calibrated Amplification Candidate Lemma",
+      "intended_inference_if_passed": [
+        "Program 2 metrology is consistent on the tested epsilon range",
+        "the contradiction-track instrument is calibrated for this window",
+        "this is not a proof of NC6"
+      ],
+      "disallowed_conclusions": [
+        "this proves NC6",
+        "this proves RH",
+        "this refutes Program 1"
+      ]
+    }
+  ]
+}

@@ -29,8 +29,8 @@ def _experiment_failed(summary: Dict[str, Any], exp_id: str) -> bool:
 
 def _certificate_status(certificate: Dict[str, Any] | None) -> str:
     if not isinstance(certificate, dict):
-        return "NOT_READY"
-    return str(certificate.get("status") or "NOT_READY")
+        return "NOT_BUILT"
+    return str(certificate.get("status") or "NOT_BUILT")
 
 
 def _certificate_authoritative(certificate: Dict[str, Any] | None) -> bool:
@@ -94,7 +94,7 @@ def build_research_plan(
             "recommended_next_action": "RUN_CORE_1",
             "why": "Data is ready and CORE-1 has not passed yet.",
             "commands": ["python experiment_engine.py --run exp1"],
-            "expected_artifacts": ["public/experiments.json", "artifacts/runs/<run_id>/raw.json"],
+            "expected_artifacts": ["artifacts/runs/<run_id>/experiments.json", "artifacts/runs/<run_id>/raw.json"],
             "stop_condition": "CORE-1 passes or exposes a converter formalization defect.",
             "proof_work_recommended": False,
         }
@@ -136,7 +136,7 @@ def build_research_plan(
             "recommended_next_action": "RUN_EXP_8",
             "why": "CORE-1 passes. Zero correspondence has not been tested at matching fidelity.",
             "commands": ["python experiment_engine.py --run exp8"],
-            "expected_artifacts": ["public/experiments.json", "artifacts/runs/<run_id>/raw.json"],
+            "expected_artifacts": ["artifacts/runs/<run_id>/experiments.json", "artifacts/runs/<run_id>/raw.json"],
             "stop_condition": "WIT-1 passes or identifies a zero-correspondence defect.",
             "proof_work_recommended": False,
         }
@@ -151,7 +151,7 @@ def build_research_plan(
             "recommended_next_action": "RUN_EXP_6",
             "why": "CORE-1 and WIT-1 pass. Predicate preservation has not been tested at matching fidelity.",
             "commands": ["python experiment_engine.py --run exp6"],
-            "expected_artifacts": ["public/experiments.json", "artifacts/runs/<run_id>/raw.json"],
+            "expected_artifacts": ["artifacts/runs/<run_id>/experiments.json", "artifacts/runs/<run_id>/raw.json"],
             "stop_condition": "VAL-1 passes or identifies a predicate-transport defect.",
             "proof_work_recommended": False,
         }
@@ -167,7 +167,7 @@ def build_research_plan(
             "recommended_next_action": "DIAGNOSE_CERTIFICATE_FAILURE",
             "why": "The Same-Object Certificate failed; more random experiments are lower value than diagnosing the failed section.",
             "commands": [],
-            "expected_artifacts": ["public/same_object_certificate.json"],
+            "expected_artifacts": ["artifacts/runs/<run_id>/certificate.json"],
             "stop_condition": "Certificate failure is scoped to reconstruction, zeros, predicate, or controls.",
             "proof_work_recommended": False,
         }
@@ -179,11 +179,11 @@ def build_research_plan(
             "recommended_next_action": "RECOMMEND_HIGHER_FIDELITY_OR_SPECIFIC_RERUN",
             "why": "The certificate is inconclusive, so only targeted reruns that raise fidelity or isolate the inconclusive section are justified.",
             "commands": [],
-            "expected_artifacts": ["public/same_object_certificate.json"],
-            "stop_condition": "Certificate reaches SAME_OBJECT_CANDIDATE or SAME_OBJECT_FAILED.",
+            "expected_artifacts": ["artifacts/runs/<run_id>/certificate.json"],
+            "stop_condition": "Certificate reaches SAME_OBJECT_PROXY_CANDIDATE or SAME_OBJECT_FAILED.",
             "proof_work_recommended": False,
         }
-    if status != "SAME_OBJECT_CANDIDATE":
+    if status not in {"SAME_OBJECT_PROXY_CANDIDATE", "SAME_OBJECT_CANDIDATE"}:
         return {
             "current_node": "BUILD_SAME_OBJECT_CERTIFICATE",
             "completed_nodes": completed_nodes,
@@ -191,15 +191,15 @@ def build_research_plan(
             "recommended_next_action": "BUILD_SAME_OBJECT_CERTIFICATE",
             "why": "The critical experiments pass; assemble the Same-Object Certificate before running more tests.",
             "commands": ["python -m proof_kernel.same_object_certificate"],
-            "expected_artifacts": ["public/same_object_certificate.json", "artifacts/runs/<run_id>/certificate.json"],
-            "stop_condition": "Certificate reaches SAME_OBJECT_CANDIDATE, SAME_OBJECT_FAILED, or INCONCLUSIVE.",
+            "expected_artifacts": ["artifacts/runs/<run_id>/certificate.json"],
+            "stop_condition": "Certificate reaches SAME_OBJECT_PROXY_CANDIDATE, SAME_OBJECT_FAILED, or INCONCLUSIVE.",
             "proof_work_recommended": False,
         }
 
     completed_nodes.append("BUILD_SAME_OBJECT_CERTIFICATE")
     if _certificate_authoritative(certificate):
         proof_work_recommended = True
-        completed_nodes.append("SAME_OBJECT_CANDIDATE")
+        completed_nodes.append("SAME_OBJECT_PROXY_CANDIDATE")
         return {
             "current_node": "WRITE_NC3_NC4",
             "completed_nodes": completed_nodes,
@@ -219,7 +219,7 @@ def build_research_plan(
         "recommended_next_action": "RECOMMEND_HIGHER_FIDELITY_OR_SPECIFIC_RERUN",
         "why": "The certificate is a candidate but not at AUTHORITATIVE fidelity, so the next empirical work must raise fidelity rather than add unrelated tests.",
         "commands": [],
-        "expected_artifacts": ["public/same_object_certificate.json"],
+        "expected_artifacts": ["artifacts/runs/<run_id>/certificate.json"],
         "stop_condition": "Reach AUTHORITATIVE fidelity or identify a named blocker.",
         "proof_work_recommended": False,
     }

@@ -116,6 +116,95 @@ def compute_fidelity_tier(zeros, dps):
         return "STANDARD"
     return "AUTHORITATIVE"
 
+
+def compute_fidelity_report(data, compute_fidelity):
+    """Split compute precision from source-data and certificate eligibility."""
+    meta = data.get("meta", {}) if isinstance(data.get("meta"), dict) else {}
+    zero_info = meta.get("zero_source_info", {}) if isinstance(meta.get("zero_source_info"), dict) else {}
+    try:
+        requested_dps = int(meta.get("dps"))
+    except Exception:
+        requested_dps = None
+    try:
+        requested_zero_count = int(meta.get("zeros"))
+    except Exception:
+        requested_zero_count = None
+    declared_decimals = zero_info.get("declared_decimals")
+    try:
+        declared_decimals = int(declared_decimals) if declared_decimals is not None else None
+    except Exception:
+        declared_decimals = None
+
+    guard_dps = 20
+    required_stored_dps = requested_dps + guard_dps if requested_dps is not None else None
+    warnings = []
+    data_fidelity = "READY_WITH_WARNINGS"
+    certificate_fidelity = "ELIGIBLE_WITH_WARNINGS"
+
+    if requested_dps is not None and declared_decimals is not None:
+        if declared_decimals < requested_dps:
+            data_fidelity = "INSUFFICIENT"
+            certificate_fidelity = "BLOCKED"
+            warnings.append("Data fidelity warning: zero source precision below certificate policy.")
+        elif required_stored_dps is not None and declared_decimals < required_stored_dps:
+            data_fidelity = "READY_WITH_WARNINGS"
+            certificate_fidelity = "ELIGIBLE_WITH_WARNINGS"
+            warnings.append("Zero source precision meets compute dps but not dps plus guard precision.")
+        else:
+            data_fidelity = "READY"
+            certificate_fidelity = "ELIGIBLE"
+    elif requested_dps is not None:
+        source_kind = str(zero_info.get("source_kind", ""))
+        if source_kind in {"generated_computed", "generated_cache"}:
+            data_fidelity = "READY_WITH_WARNINGS"
+            certificate_fidelity = "ELIGIBLE_WITH_WARNINGS"
+            warnings.append("Zero source precision was inferred from generated data; persisted source precision is not declared.")
+        else:
+            data_fidelity = "READY_WITH_WARNINGS"
+            certificate_fidelity = "ELIGIBLE_WITH_WARNINGS"
+            warnings.append("Zero source precision was not declared; certificate fidelity is warning-gated.")
+
+    return {
+        "compute_fidelity": compute_fidelity,
+        "data_fidelity": data_fidelity,
+        "certificate_fidelity": certificate_fidelity,
+        "requested_dps": requested_dps,
+        "requested_zero_count": requested_zero_count,
+        "zero_source_declared_decimals": declared_decimals,
+        "required_stored_dps": required_stored_dps,
+        "warnings": warnings,
+    }
+
+
+def scoped_status_for(function, program, status, outcome):
+    status = str(status or "").upper()
+    outcome = str(outcome or "").upper()
+    if program == "PROGRAM_2":
+        if status == "SKIP" or not status:
+            return "ROUTE_NOT_RUN"
+        if status == "FAIL" or outcome in {"INCONSISTENT", "IMPLEMENTATION_BROKEN"}:
+            return "ROUTE_NEGATIVE"
+        if status == "PASS" or outcome in {"CONSISTENT", "IMPLEMENTATION_OK"}:
+            return "ROUTE_PASS"
+        return "ROUTE_MIXED"
+    if function == "CONTROL":
+        if status == "PASS" or outcome == "IMPLEMENTATION_OK":
+            return "CONTROL_ARMED"
+        if status == "FAIL" or outcome == "IMPLEMENTATION_BROKEN":
+            return "CONTROL_BROKEN"
+        return "CONTROL_NOT_RUN"
+    if function == "PATHFINDER":
+        if status in {"PASS", "FAIL"} or outcome in {"DIRECTIONAL", "INFORMATIONAL"}:
+            return "PATHFINDER_RESULT"
+        return "PATHFINDER_INCONCLUSIVE"
+    if function in {"PROOF_OBLIGATION_WITNESS", "COHERENCE_WITNESS"}:
+        if status == "PASS" or outcome == "CONSISTENT":
+            return "WITNESS_PASS"
+        if status == "FAIL" or outcome == "INCONSISTENT":
+            return "WITNESS_FAIL"
+        return "WITNESS_INCONCLUSIVE"
+    return status or "NOT_WITNESSED"
+
 # Theory stage for each experiment. Tracks the Gauge -> Lattice -> Brittleness
 # ordering of the three-stage conjecture. "control" is the global falsification
 # sanity check (Exp 3) plus the operator-gauge falsification (Exp 1B).
@@ -1178,6 +1267,7 @@ def run_verification(data=None, progress_callback=None, emit_run_events=False):
     fidelity_zeros = data.get("meta", {}).get("zeros")
     fidelity_dps = data.get("meta", {}).get("dps")
     fidelity_tier = compute_fidelity_tier(fidelity_zeros, fidelity_dps)
+    fidelity_report = compute_fidelity_report(data, fidelity_tier)
     print(
         f" [FIDELITY] tier={fidelity_tier}  "
         f"zeros={fidelity_zeros}  dps={fidelity_dps}"
@@ -1193,6 +1283,10 @@ def run_verification(data=None, progress_callback=None, emit_run_events=False):
         "fidelity_tier": fidelity_tier,
         "fidelity_zeros": fidelity_zeros,
         "fidelity_dps": fidelity_dps,
+        "compute_fidelity": fidelity_report["compute_fidelity"],
+        "data_fidelity": fidelity_report["data_fidelity"],
+        "certificate_fidelity": fidelity_report["certificate_fidelity"],
+        "fidelity": fidelity_report,
         "experiments": {},
     }
 
@@ -1243,10 +1337,11 @@ def run_verification(data=None, progress_callback=None, emit_run_events=False):
                     outcome = "INCONCLUSIVE"
             elif fidelity_tier == "STANDARD" and function == "PROOF_OBLIGATION_WITNESS":
                 provisional = True
+        scoped_status = scoped_status_for(function, program, status, outcome)
 
         print(
             f"\n[{exp_id}] ({stage}/{function}) {type_str}: {status}  "
-            f"[outcome={outcome}, theory_fit={fit}"
+            f"[outcome={outcome}, scoped_status={scoped_status}"
             f"{', provisional' if provisional else ''}]"
         )
         print(f"  > Metrics: {metric_summary}")
@@ -1279,6 +1374,7 @@ def run_verification(data=None, progress_callback=None, emit_run_events=False):
             "stage": stage,
             "type": type_str,
             "status": status,
+            "scoped_status": scoped_status,
             "metrics": metric_summary,
             "interpretation": final_interp,
 
@@ -2355,7 +2451,8 @@ def run_verification(data=None, progress_callback=None, emit_run_events=False):
     # Evaluates each necessary condition against available evidence.
     # Only NC4 (predicate transport) can kill the theory.
     # =========================================================================
-    _certificate = load_certificate()
+    active_run_id = data.get("run_id") or data.get("meta", {}).get("run_id") or os.getenv("RIEMANN_RUN_ID")
+    _certificate = load_certificate(active_run_id)
     summary["proof_assembly"] = build_proof_assembly(
         summary["experiments"], fidelity_tier, _certificate
     )
@@ -2403,74 +2500,75 @@ def run_verification(data=None, progress_callback=None, emit_run_events=False):
     # Canonical history axes are obligation_statuses + implementation_health.
     # Legacy stage_verdicts remains in the record for one-release compatibility.
     # =========================================================================
-    try:
-        prev_line = None
-        if os.path.exists(HISTORY_FILE):
-            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip():
-                        prev_line = line
-        prev_record = json.loads(prev_line) if prev_line else None
+    if os.getenv("RIEMANN_ENABLE_HISTORICAL_COMPARISON", "").lower() in {"1", "true", "yes"}:
+        try:
+            prev_line = None
+            if os.path.exists(HISTORY_FILE):
+                with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.strip():
+                            prev_line = line
+            prev_record = json.loads(prev_line) if prev_line else None
 
-        obligation_statuses = {
-            obl["id"]: obl.get("status", "CONJECTURAL")
-            for obl in summary.get("proof_program", {}).get("obligations", [])
-            if isinstance(obl, dict) and isinstance(obl.get("id"), str)
-        }
-        implementation_health_statuses = {
-            stage_name: details.get("status", "NO_MEMBERS")
-            for stage_name, details in summary.get("implementation_health", {}).items()
-            if isinstance(details, dict)
-        }
+            obligation_statuses = {
+                obl["id"]: obl.get("status", "CONJECTURAL")
+                for obl in summary.get("proof_program", {}).get("obligations", [])
+                if isinstance(obl, dict) and isinstance(obl.get("id"), str)
+            }
+            implementation_health_statuses = {
+                stage_name: details.get("status", "NO_MEMBERS")
+                for stage_name, details in summary.get("implementation_health", {}).items()
+                if isinstance(details, dict)
+            }
 
-        record = {
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
-            "schema_version": EXPECTED_SCHEMA_VERSION,
-            "fidelity_tier": fidelity_tier,
-            "overall": summary["overall"],
-            "obligation_statuses": obligation_statuses,
-            "implementation_health_statuses": implementation_health_statuses,
-            "stage_verdicts": {
-                s: v["status"] for s, v in stage_verdicts.items()
-            },
-            "code_fingerprint": data.get("meta", {}).get("code_fingerprint", {}),
-            "zero_source_info": data.get("meta", {}).get("zero_source_info", {}),
-        }
+            record = {
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
+                "schema_version": EXPECTED_SCHEMA_VERSION,
+                "fidelity_tier": fidelity_tier,
+                "overall": summary["overall"],
+                "obligation_statuses": obligation_statuses,
+                "implementation_health_statuses": implementation_health_statuses,
+                "stage_verdicts": {
+                    s: v["status"] for s, v in stage_verdicts.items()
+                },
+                "code_fingerprint": data.get("meta", {}).get("code_fingerprint", {}),
+                "zero_source_info": data.get("meta", {}).get("zero_source_info", {}),
+            }
 
-        def _collect_flips(curr_map, prev_map):
-            flips = []
-            for key, curr_status in curr_map.items():
-                prev_status = prev_map.get(key)
-                if prev_status is not None and prev_status != curr_status:
-                    flips.append((key, prev_status, curr_status))
-            return flips
+            def _collect_flips(curr_map, prev_map):
+                flips = []
+                for key, curr_status in curr_map.items():
+                    prev_status = prev_map.get(key)
+                    if prev_status is not None and prev_status != curr_status:
+                        flips.append((key, prev_status, curr_status))
+                return flips
 
-        if prev_record is not None:
-            flipped_obligations = _collect_flips(
-                record["obligation_statuses"],
-                prev_record.get("obligation_statuses", {}),
-            )
-            flipped_health = _collect_flips(
-                record["implementation_health_statuses"],
-                prev_record.get("implementation_health_statuses", {}),
-            )
-            if flipped_obligations or flipped_health:
-                print("\n" + "!" * 75)
-                print(" [REGRESSION] Canonical history FLIP(S) detected vs prior run:")
-                for obl_id, prev_status, curr_status in flipped_obligations:
-                    print(f"   - obligation {obl_id}: {prev_status} -> {curr_status}")
-                for stage_name, prev_status, curr_status in flipped_health:
-                    print(
-                        f"   - implementation_health[{stage_name}]: "
-                        f"{prev_status} -> {curr_status}"
-                    )
-                print("!" * 75)
+            if prev_record is not None:
+                flipped_obligations = _collect_flips(
+                    record["obligation_statuses"],
+                    prev_record.get("obligation_statuses", {}),
+                )
+                flipped_health = _collect_flips(
+                    record["implementation_health_statuses"],
+                    prev_record.get("implementation_health_statuses", {}),
+                )
+                if flipped_obligations or flipped_health:
+                    print("\n" + "!" * 75)
+                    print(" [REGRESSION] Canonical history FLIP(S) detected vs prior run:")
+                    for obl_id, prev_status, curr_status in flipped_obligations:
+                        print(f"   - obligation {obl_id}: {prev_status} -> {curr_status}")
+                    for stage_name, prev_status, curr_status in flipped_health:
+                        print(
+                            f"   - implementation_health[{stage_name}]: "
+                            f"{prev_status} -> {curr_status}"
+                        )
+                    print("!" * 75)
 
-        os.makedirs(os.path.dirname(HISTORY_FILE), exist_ok=True)
-        with open(HISTORY_FILE, "a", encoding="utf-8") as f:
-            f.write(json.dumps(record) + "\n")
-    except Exception as exc:
-        print(f" [WARN] Could not append to verdict history log: {exc}")
+            os.makedirs(os.path.dirname(HISTORY_FILE), exist_ok=True)
+            with open(HISTORY_FILE, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
+        except Exception as exc:
+            print(f" [WARN] Could not append to verdict history log: {exc}")
 
     report_progress(message="Verifier complete", status=summary.get("overall"))
     emit_run_event(
@@ -2500,3 +2598,8 @@ if __name__ == "__main__":
     d = run_verification(emit_run_events=cli_args.emit_run_events)
     if d:
         atomic_json_dump(OUTPUT_FILE, d)
+        try:
+            from proof_kernel.run_artifacts import write_run_artifacts
+            write_run_artifacts(d, run_id=os.getenv("RIEMANN_RUN_ID"), root=".")
+        except Exception as exc:
+            print(f" [WARN] Could not write per-run artifacts: {exc}")

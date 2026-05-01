@@ -15,11 +15,12 @@ import type { SameObjectCertificate, SectionResult } from "../lib/same-object-ce
 interface Props {
     certificate?: SameObjectCertificate | null;
     id?: string;
+    emptyMessage?: string;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
-    SAME_OBJECT_CANDIDATE: {
-        label: "Same-Object Candidate",
+    SAME_OBJECT_PROXY_CANDIDATE: {
+        label: "Same-Object Proxy Candidate",
         color: "text-emerald-300",
         bg: "bg-emerald-900/20",
         border: "border-emerald-500/30",
@@ -39,15 +40,22 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
         border: "border-amber-500/30",
         icon: <AlertCircle size={16} className="text-amber-400" />,
     },
-    NOT_READY: {
-        label: "Not Ready",
+    NOT_BUILT: {
+        label: "Not Built",
         color: "text-zinc-400",
         bg: "bg-zinc-800/40",
         border: "border-zinc-600/30",
         icon: <Clock size={16} className="text-zinc-500" />,
     },
-    FORMAL_PROOF_REQUIRED: {
-        label: "Formal Proof Required",
+    STALE: {
+        label: "Stale",
+        color: "text-zinc-400",
+        bg: "bg-zinc-800/40",
+        border: "border-zinc-600/30",
+        icon: <Clock size={16} className="text-zinc-500" />,
+    },
+    MISSING_FOR_RUN: {
+        label: "Missing For Run",
         color: "text-blue-300",
         bg: "bg-blue-900/20",
         border: "border-blue-500/30",
@@ -133,10 +141,25 @@ function MetricLine({ label, value }: { label: string; value: unknown }) {
     );
 }
 
-export default function SameObjectCertificatePanel({ certificate, id }: Props) {
-    if (!certificate) return null;
+export default function SameObjectCertificatePanel({ certificate, id, emptyMessage }: Props) {
+    if (!certificate) {
+        return (
+            <section
+                id={id}
+                className="rounded-xl border border-zinc-700/50 bg-zinc-900/40 p-4 space-y-2"
+            >
+                <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-widest text-zinc-400">
+                    <Clock size={16} className="text-zinc-500" />
+                    Same-Object Certificate
+                </div>
+                <p className="text-sm text-zinc-300">
+                    {emptyMessage ?? "Same-Object Certificate: not built for current run."}
+                </p>
+            </section>
+        );
+    }
 
-    const cfg = STATUS_CONFIG[certificate.status] ?? STATUS_CONFIG.NOT_READY;
+    const cfg = STATUS_CONFIG[certificate.status] ?? STATUS_CONFIG.NOT_BUILT;
 
     return (
         <section

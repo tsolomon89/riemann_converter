@@ -10,9 +10,13 @@ import {
     getDataAssetsEnvelope,
     getDataMigrationReportEnvelope,
     getDataSufficiencyEnvelope,
+    getArtifactFreshnessPayload,
+    getCurrentExperimentsPayloadPlain,
+    getCurrentReportingStatePayload,
     getExperimentEnvelope,
     getHistoryEnvelope,
     getImplementationHealthEnvelope,
+    getLatestRunPayloadPlain,
     getManifestEnvelope,
     getProgramDocsEnvelope,
     getObligationEnvelope,
@@ -20,17 +24,39 @@ import {
     getOpenGapsEnvelope,
     getNextActionEnvelope,
     getPrecisionPolicyEnvelope,
+    getPreflightEnvelope,
     getResearchPlanEnvelope,
+    getRunPresetsEnvelope,
     getRunEventsEnvelope,
     getRunLogsEnvelope,
     getRunStatusEnvelope,
     getSeriesEnvelope,
+    getSelectedDataSourceEnvelope,
     getTheoremCandidateEnvelope,
+    getZeroValidationEnvelope,
     parseCanonicalMode,
     resumeRunEnvelope,
+    resolveRunPresetEnvelope,
     startCustomRunEnvelope,
     startRunEnvelope,
 } from "../../../../lib/research-api";
+import {
+    acceptHypothesisProposalEnvelope,
+    getBaselineHypothesisEnvelope,
+    getCandidateLemmaEnvelope,
+    getExperimentReviewEnvelope,
+    getHypothesisProposalEnvelope,
+    getModelComparisonEnvelope,
+    getProofDiscoveryEnvelope,
+    listBaselineHypothesesEnvelope,
+    listCandidateLemmasEnvelope,
+    listExperimentReviewsEnvelope,
+    listHypothesisProposalsEnvelope,
+    listModelComparisonsEnvelope,
+    proposeBaselineUpdateEnvelope,
+    ProofDiscoveryApiError,
+    rejectHypothesisProposalEnvelope,
+} from "../../../../lib/proof-discovery-api";
 import { getDeploymentCapabilities, getReadOnlyErrorResponse } from "../../../../lib/deployment-policy";
 import { assertRunAuth } from "../../../../lib/run-auth";
 
@@ -49,6 +75,9 @@ const handleError = (error: unknown) => {
     if (error instanceof ApiError) {
         return NextResponse.json({ error: error.message }, { status: error.status });
     }
+    if (error instanceof ProofDiscoveryApiError) {
+        return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ error: `Internal error: ${String(error)}` }, { status: 500 });
 };
 
@@ -58,6 +87,23 @@ const dispatchGet = async (request: Request, segments: string[]) => {
 
     if (segments.length === 1 && head === "manifest") {
         return NextResponse.json(getManifestEnvelope());
+    }
+    if (segments.length === 1 && head === "latest-run") {
+        return NextResponse.json(getLatestRunPayloadPlain());
+    }
+    if (segments.length === 1 && head === "current-experiments") {
+        return NextResponse.json(getCurrentExperimentsPayloadPlain());
+    }
+    if (segments.length === 1 && head === "current-reporting-state") {
+        return NextResponse.json(getCurrentReportingStatePayload());
+    }
+    if (segments.length === 1 && head === "artifact-freshness") {
+        return NextResponse.json(
+            getArtifactFreshnessPayload(
+                url.searchParams.get("artifact_kind") ?? url.searchParams.get("kind"),
+                url.searchParams.get("run_id"),
+            ),
+        );
     }
     if (segments.length === 1 && head === "theorem-candidate") {
         return NextResponse.json(getTheoremCandidateEnvelope());
@@ -70,6 +116,21 @@ const dispatchGet = async (request: Request, segments: string[]) => {
     }
     if (segments.length === 1 && head === "data-sufficiency") {
         return NextResponse.json(getDataSufficiencyEnvelope(url.searchParams));
+    }
+    if (segments.length === 1 && head === "run-presets") {
+        return NextResponse.json(getRunPresetsEnvelope());
+    }
+    if (segments.length === 1 && head === "resolve-run-preset") {
+        return NextResponse.json(resolveRunPresetEnvelope(url.searchParams));
+    }
+    if (segments.length === 1 && head === "selected-data-source") {
+        return NextResponse.json(getSelectedDataSourceEnvelope(url.searchParams));
+    }
+    if (segments.length === 1 && head === "zero-validation") {
+        return NextResponse.json(getZeroValidationEnvelope());
+    }
+    if (segments.length === 1 && head === "preflight") {
+        return NextResponse.json(getPreflightEnvelope(url.searchParams));
     }
     if (segments.length === 1 && head === "research-plan") {
         return NextResponse.json(getResearchPlanEnvelope(url.searchParams));
@@ -148,14 +209,71 @@ const dispatchGet = async (request: Request, segments: string[]) => {
         );
     }
 
+    // ----- proof-discovery layer (baselines / reviews / lemmas / proposals) -----
+    if (segments.length === 1 && head === "experiment-reviews") {
+        return NextResponse.json(listExperimentReviewsEnvelope(url.searchParams.get("run_id")));
+    }
+    if (segments.length === 2 && head === "experiment-reviews" && id) {
+        return NextResponse.json(getExperimentReviewEnvelope(id, url.searchParams.get("run_id")));
+    }
+    if (segments.length === 1 && head === "model-comparisons") {
+        return NextResponse.json(listModelComparisonsEnvelope(url.searchParams.get("run_id")));
+    }
+    if (segments.length === 2 && head === "model-comparisons" && id) {
+        return NextResponse.json(getModelComparisonEnvelope(id, url.searchParams.get("run_id")));
+    }
+    if (segments.length === 1 && head === "candidate-lemmas") {
+        return NextResponse.json(listCandidateLemmasEnvelope(url.searchParams.get("run_id")));
+    }
+    if (segments.length === 2 && head === "candidate-lemmas" && id) {
+        return NextResponse.json(getCandidateLemmaEnvelope(id, url.searchParams.get("run_id")));
+    }
+    if (segments.length === 1 && head === "baseline-hypotheses") {
+        return NextResponse.json(listBaselineHypothesesEnvelope());
+    }
+    if (segments.length === 2 && head === "baseline-hypotheses" && id) {
+        return NextResponse.json(getBaselineHypothesisEnvelope(id));
+    }
+    if (segments.length === 1 && head === "proof-discovery") {
+        return NextResponse.json(getProofDiscoveryEnvelope(url.searchParams.get("run_id")));
+    }
+    if (segments.length === 1 && head === "hypothesis-proposals") {
+        return NextResponse.json(
+            listHypothesisProposalsEnvelope(url.searchParams.get("run_id"), url.searchParams.get("status")),
+        );
+    }
+    if (segments.length === 2 && head === "hypothesis-proposals" && id) {
+        return NextResponse.json(
+            getHypothesisProposalEnvelope(id, url.searchParams.get("run_id")),
+        );
+    }
+
     if (segments.length === 1 && head === "same-object-certificate") {
+        const latest = getLatestRunPayloadPlain();
+        if (!latest.latest_real_run_id) {
+            return NextResponse.json(
+                { status: "NOT_BUILT", message: "Same-Object Certificate: not built for current run." },
+                { status: 404 },
+            );
+        }
+        if (latest.certificate_status === "STALE") {
+            return NextResponse.json(
+                { status: "STALE", message: "Stale certificate hidden. Build a fresh certificate." },
+                { status: 409 },
+            );
+        }
+        if (latest.certificate_status !== "CURRENT" || !latest.certificate_path) {
+            return NextResponse.json(
+                { status: "MISSING_FOR_RUN", message: "Certificate not built for this run." },
+                { status: 404 },
+            );
+        }
         try {
-            const certPath = require("path").join(process.cwd(), "public", "same_object_certificate.json");
-            const certData = require("fs").readFileSync(certPath, "utf-8");
+            const certData = require("fs").readFileSync(latest.certificate_path, "utf-8");
             return NextResponse.json(JSON.parse(certData));
         } catch {
             return NextResponse.json(
-                { error: "Same-Object Certificate not yet generated. Run: python -m proof_kernel.same_object_certificate" },
+                { status: "MISSING_FOR_RUN", message: "Certificate not built for this run." },
                 { status: 404 },
             );
         }
@@ -206,6 +324,24 @@ const dispatchPost = async (request: Request, segments: string[]) => {
         const mode = parseCanonicalMode(body.mode);
         return NextResponse.json(resumeRunEnvelope(mode), { status: 202 });
     }
+
+    // ----- hypothesis proposals (advisory; require explicit human acceptance) -----
+    if (segments.length === 1 && head === "hypothesis-proposals") {
+        const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+        const env = proposeBaselineUpdateEnvelope(body);
+        return NextResponse.json(env, { status: env.ok ? 201 : 400 });
+    }
+    if (segments.length === 3 && head === "hypothesis-proposals" && id && segments[2] === "accept") {
+        const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+        const env = acceptHypothesisProposalEnvelope(id, body);
+        return NextResponse.json(env, { status: env.ok ? 200 : 400 });
+    }
+    if (segments.length === 3 && head === "hypothesis-proposals" && id && segments[2] === "reject") {
+        const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+        const env = rejectHypothesisProposalEnvelope(id, body);
+        return NextResponse.json(env, { status: env.ok ? 200 : 400 });
+    }
+
     return NextResponse.json({ error: "Not found." }, { status: 404 });
 };
 

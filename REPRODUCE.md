@@ -78,13 +78,21 @@ fixed, auditable command shapes:
 | Smoke | `python experiment_engine.py --run all --quick` | ~1 min | Fast plumbing/sanity pass; not citable for theorem-directed evidence. |
 | Standard | `python experiment_engine.py --run all --zero-count 2000 --dps 40` | ~5 min | Iteration tier; witness-class results remain provisional. |
 | Authoritative | `python experiment_engine.py --run all` | 20-40 min | Canonical citation tier for empirical witness outcomes. |
-| Overkill | `python experiment_engine.py --run all --zero-source file:agent_context/zeros_100K_three_ten_power_neg_nine.gz --dps 80` | 1h+ | Stress test against high-precision external zero source. |
+| Overkill | `python experiment_engine.py --run all --zero-source file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz --dps 80` | 1h+ | Stress test against canonical zero asset. |
 
 Fidelity policy summary:
 
 - Smoke forces fidelity-sensitive functions to `INCONCLUSIVE`.
 - Standard keeps witness-class outcomes provisional.
 - Authoritative is the default citation tier for empirical witness claims.
+
+High-precision data generation:
+
+- `python -m proof_kernel.generate_zeros --count 100000 --stored-dps 100`
+  uses `python-flint` when installed for practical high-precision zeta-zero
+  generation, then falls back to slower `mpmath` paths if it is unavailable.
+- Install the optional data-generation dependencies with
+  `python -m pip install -r requirements-data.txt`.
 
 ---
 
@@ -128,7 +136,7 @@ Use these to challenge the result quality:
 
 ```bash
 python experiment_engine.py --run all --dps 50
-python experiment_engine.py --run all --zero-source file:agent_context/zeros_100K_three_ten_power_neg_nine.gz --dps 80
+python experiment_engine.py --run all --zero-source file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz --dps 80
 python verifier.py
 ```
 

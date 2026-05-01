@@ -37,6 +37,36 @@ export const buildNextAction = (
     certificate?: SameObjectCertificate | null,
 ): NextActionOutput => {
     const researchPlan = buildResearchPlan(dataSufficiency, artifact, certificate);
+    const runContract = artifact?.meta?.run_contract as
+        | { preset?: string; requested_dps?: number; guard_dps?: number }
+        | undefined;
+    const declaredDecimals = Number(
+        ((artifact?.meta?.selected_data_sources as { zero?: { asset?: { stored_dps?: unknown } } } | undefined)
+            ?.zero?.asset?.stored_dps) ??
+        artifact?.meta?.zero_source_info?.declared_decimals,
+    );
+    const requiredDps = Number(runContract?.requested_dps ?? artifact?.meta?.dps ?? 0) +
+        Number(runContract?.guard_dps ?? 20);
+    const plannerSelectedDps = Number(dataSufficiency.selected_assets?.zero?.asset?.stored_dps);
+    const plannerHasStrongerSource = Number.isFinite(plannerSelectedDps) && plannerSelectedDps >= requiredDps;
+    const strictPreset = runContract?.preset &&
+        ["overkill", "authoritative", "overkill_full"].includes(runContract.preset);
+    if (
+        Number.isFinite(declaredDecimals) &&
+        declaredDecimals < requiredDps &&
+        (strictPreset || plannerHasStrongerSource)
+    ) {
+        return {
+            next_action: "FIX_PRESET_SOURCE_RESOLVER",
+            command: null,
+            why:
+                `${strictPreset ? `Preset ${runContract?.preset}` : "Run"} used a zero source with ${declaredDecimals} declared decimals; ` +
+                `required >=${requiredDps}. Fix preset/source resolver before proof work.`,
+            blocks: ["DATA_PREFLIGHT"],
+            data_sufficiency: dataSufficiency,
+            research_plan: researchPlan,
+        };
+    }
     if (dataSufficiency.status !== "READY") {
         const step = dataSufficiency.generation_plan[0];
         return {

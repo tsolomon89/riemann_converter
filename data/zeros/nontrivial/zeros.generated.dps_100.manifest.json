@@ -1,0 +1,19 @@
+{
+  "asset_id": "nontrivial_zeros_count_100000_dps_100",
+  "count": 100000,
+  "created_at": "2026-04-29T15:22:12Z",
+  "errors": [],
+  "generator": "python-flint.acb.zeta_zeros",
+  "guard_dps": null,
+  "hash": "544f61a8ecac1e1f7cbb6f3b82a45ce5bae020414b0e9bbf5e14b612a0f73334",
+  "kind": "nontrivial_zeta_zeros",
+  "max_value": "74920.8274989941867938492009469183466202235552168015540934906315761266125515775842389074547418377755065296065",
+  "migrated_at": "2026-04-29T15:22:12Z",
+  "source_original_path": "python-flint.acb.zeta_zeros",
+  "source_path": "data/zeros/nontrivial/zeros.generated.dps_100.jsonl",
+  "stored_dps": 100,
+  "strictly_increasing": true,
+  "usable_dps": 100,
+  "valid": true,
+  "warnings": []
+}

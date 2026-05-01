@@ -48,22 +48,6 @@ const implementationHealthColor = (status: string) => {
 const hasStatuses = (value: Record<string, string> | undefined) =>
     Boolean(value && Object.keys(value).length > 0);
 
-// Lightweight JSONL parser: one JSON object per non-empty line.
-const parseJsonl = (text: string): VerdictHistoryEntry[] => {
-    const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-    const entries: VerdictHistoryEntry[] = [];
-    for (const line of lines) {
-        try {
-            entries.push(JSON.parse(line) as VerdictHistoryEntry);
-        } catch {
-            // Skip malformed lines -- the history log is append-only and may be
-            // mid-write during a race. A skipped line is strictly better than
-            // a crashed panel.
-        }
-    }
-    return entries;
-};
-
 const collectKeys = (
     entries: VerdictHistoryEntry[],
     selector: (entry: VerdictHistoryEntry) => Record<string, string> | undefined,
@@ -97,11 +81,11 @@ export default function VerdictHistoryPanel() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch("/verdict_history.jsonl")
+        fetch("/api/research/history", { cache: "no-store" })
             .then(async (res) => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const text = await res.text();
-                setEntries(parseJsonl(text));
+                const payload = await res.json();
+                setEntries((payload?.data?.entries ?? []) as VerdictHistoryEntry[]);
             })
             .catch((err) => {
                 setError(String(err));
@@ -115,7 +99,7 @@ export default function VerdictHistoryPanel() {
                     <History size={12} />
                     <span className="uppercase tracking-wider">Canonical History</span>
                 </div>
-                No <code>verdict_history.jsonl</code> yet. Run <code className="text-gray-300">python verifier.py</code> to create it.
+                Historical comparison is disabled or unavailable for the current reporting state.
             </div>
         );
     }

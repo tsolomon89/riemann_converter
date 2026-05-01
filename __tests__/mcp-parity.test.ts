@@ -91,6 +91,27 @@ const mcpCall = async (
     return res.json();
 };
 
+type McpToolBody = {
+    result?: {
+        content?: Array<{ type?: string; text?: string }>;
+    };
+};
+
+const unwrapMcpData = (body: McpToolBody) => {
+    expect(body).toHaveProperty("result");
+    if (!body.result) throw new Error("MCP response did not include result.");
+    expect(body.result.content?.[0]?.type).toBe("text");
+    const text = body.result.content?.[0]?.text;
+    expect(typeof text).toBe("string");
+    const parsed = JSON.parse(text as string);
+    expect(parsed).toMatchObject({
+        ok: true,
+        warnings: expect.any(Array),
+        errors: [],
+    });
+    return parsed.data;
+};
+
 const mcpListTools = async () => {
     const res = await MCP_POST(
         new Request("http://localhost/mcp", {
@@ -191,6 +212,33 @@ describe("MCP parity with HTTP research API", () => {
         expect(start?.inputSchema?.properties?.mode?.enum ?? []).toContain("overkill_full");
         expect(custom?.inputSchema?.properties).toHaveProperty("run");
         expect(resume?.inputSchema?.properties?.mode?.enum ?? []).toContain("overkill_full");
+    });
+
+    it("preset resolver tools are listed and return stable overkill JSON", async () => {
+        const listed = await mcpListTools();
+        const tools = (listed.result?.tools ?? []) as Array<{ name?: string }>;
+        expect(tools.map((tool) => tool.name)).toEqual(expect.arrayContaining([
+            "get_run_presets",
+            "resolve_run_preset",
+            "get_selected_data_source",
+            "validate_zero_assets",
+            "run_preflight",
+        ]));
+
+        const resolved = unwrapMcpData(await mcpCall("resolve_run_preset", { preset: "overkill" }));
+        expect(resolved).toMatchObject({
+            data: {
+                contract: {
+                    preset: "overkill",
+                    requested_dps: 80,
+                    requested_zero_count: 100000,
+                    zero_policy: {
+                        allow_lower_precision_fallback: false,
+                        require_odlyzko_crosscheck: true,
+                    },
+                },
+            },
+        });
     });
 
     it("read tools mirror HTTP envelopes", async () => {
@@ -306,8 +354,7 @@ describe("MCP parity with HTTP research API", () => {
         for (const cmp of comparisons) {
             const mcp = await mcpCall(cmp.tool, cmp.args);
             const http = await (await cmp.getHttp()).json();
-            expect(mcp).toHaveProperty("result");
-            expect(mcp.result).toEqual(http);
+            expect(unwrapMcpData(mcp)).toEqual(http);
         }
     });
 
@@ -355,6 +402,7 @@ describe("MCP parity with HTTP research API", () => {
                 { Authorization: "Bearer secret-token" },
             );
             expect(auth).toHaveProperty("result");
+            expect(auth.result.content[0].type).toBe("text");
         } finally {
             setEnv("NODE_ENV", oldNodeEnv);
             setEnv("RESEARCH_RUN_TOKEN", oldToken);
@@ -382,7 +430,7 @@ describe("MCP parity with HTTP research API", () => {
                 ctx("run"),
             )
         ).json();
-        expect(mcpStart.result).toEqual(httpStart);
+        expect(unwrapMcpData(mcpStart)).toEqual(httpStart);
 
         const customPayload = {
             run: "1,6",
@@ -401,7 +449,7 @@ describe("MCP parity with HTTP research API", () => {
                 ctx("run"),
             )
         ).json();
-        expect(mcpCustomStart.result).toEqual(httpCustomStart);
+        expect(unwrapMcpData(mcpCustomStart)).toEqual(httpCustomStart);
 
         const mcpStatus = await mcpCall("get_run_status", { run_id: "run_test" });
         const httpStatus = await (
@@ -410,7 +458,7 @@ describe("MCP parity with HTTP research API", () => {
                 ctx("run"),
             )
         ).json();
-        expect(mcpStatus.result).toEqual(httpStatus);
+        expect(unwrapMcpData(mcpStatus)).toEqual(httpStatus);
 
         const mcpLogs = await mcpCall("get_run_logs", { run_id: "run_test", from: 0 });
         const httpLogs = await (
@@ -419,7 +467,7 @@ describe("MCP parity with HTTP research API", () => {
                 ctx("run", "logs"),
             )
         ).json();
-        expect(mcpLogs.result).toEqual(httpLogs);
+        expect(unwrapMcpData(mcpLogs)).toEqual(httpLogs);
 
         const mcpEvents = await mcpCall("get_run_events", { run_id: "run_test", from: 0 });
         const httpEvents = await (
@@ -428,7 +476,7 @@ describe("MCP parity with HTTP research API", () => {
                 ctx("run", "events"),
             )
         ).json();
-        expect(mcpEvents.result).toEqual(httpEvents);
+        expect(unwrapMcpData(mcpEvents)).toEqual(httpEvents);
 
         const mcpCancel = await mcpCall("cancel_run", { run_id: "run_test" });
         const httpCancel = await (
@@ -441,7 +489,7 @@ describe("MCP parity with HTTP research API", () => {
                 ctx("run", "cancel"),
             )
         ).json();
-        expect(mcpCancel.result).toEqual(httpCancel);
+        expect(unwrapMcpData(mcpCancel)).toEqual(httpCancel);
 
         const mcpResume = await mcpCall("resume_run", { mode: "verify" });
         const httpResume = await (
@@ -454,6 +502,6 @@ describe("MCP parity with HTTP research API", () => {
                 ctx("run", "resume"),
             )
         ).json();
-        expect(mcpResume.result).toEqual(httpResume);
+        expect(unwrapMcpData(mcpResume)).toEqual(httpResume);
     });
 });

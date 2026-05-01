@@ -230,7 +230,7 @@ def build_proof_assembly(experiments, fidelity_tier, certificate=None):
 
     # Certificate integration
     if certificate:
-        cert_status = certificate.get("status", "NOT_READY")
+        cert_status = certificate.get("status", "NOT_BUILT")
         assembly["certificate_status"] = cert_status
         if cert_status == "SAME_OBJECT_FAILED":
             assembly["overall_status"] = "SAME_OBJECT_FAILED"
@@ -250,13 +250,21 @@ def build_proof_assembly(experiments, fidelity_tier, certificate=None):
     return assembly
 
 
-def load_certificate():
-    """Load the pre-built Same-Object Certificate if it exists."""
-    cert_path = os.path.join("public", "same_object_certificate.json")
+def load_certificate(run_id=None, source_artifact_hash=None):
+    """Load only the per-run Same-Object Certificate for the active run."""
+    resolved_run_id = run_id or os.getenv("RIEMANN_RUN_ID")
+    if not resolved_run_id:
+        return None
+    cert_path = os.path.join("artifacts", "runs", resolved_run_id, "certificate.json")
     if not os.path.exists(cert_path):
         return None
     try:
         with open(cert_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            cert = json.load(f)
+        if cert.get("run_id") != resolved_run_id:
+            return None
+        if source_artifact_hash and cert.get("source_artifact_hash") != source_artifact_hash:
+            return None
+        return cert
     except Exception:
         return None

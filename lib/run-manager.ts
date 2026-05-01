@@ -16,6 +16,8 @@ import type {
     RunStatus,
     RunStatusPayload,
 } from "./research-types";
+import { runPreflight, type RunPreflightOutput } from "./data-planner";
+import { resolveRunPreset, type RunPresetId } from "./run-presets";
 
 type SpawnFn = (command: string, args?: string[], options?: Parameters<typeof spawn>[2]) => ChildProcess;
 type ActiveRunStatusPayload = RunStatusPayload & { run_id: string; started_at: string };
@@ -62,6 +64,7 @@ interface RunRecord {
 
 export interface CustomRunConfig {
     run: string;
+    preset?: string;
     zero_source?: string;
     zero_count?: number;
     dps?: number;
@@ -143,13 +146,6 @@ const DEFAULT_RUN_KNOBS = {
     n_test: 500,
 };
 
-const HANDOFF_X_RANGE = {
-    x_start: 2,
-    x_end: 50,
-};
-
-const CANONICAL_ZERO_100K_SOURCE = "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz";
-
 const withDefaultRunKnobs = (payload: Record<string, unknown>, overrides: Partial<typeof DEFAULT_RUN_KNOBS> = {}) => ({
     ...payload,
     ...DEFAULT_RUN_KNOBS,
@@ -170,68 +166,30 @@ const expectedCompatibilityPayload = (mode: CanonicalRunMode): Record<string, un
             prime_target_count: 0,
         });
     }
-    if (mode === "smoke") {
-        return withDefaultRunKnobs({
-            schema_version: SCHEMA_VERSION,
-            run: "all",
-            quick: true,
-            zero_source: "generated",
-            zero_count: 100,
-            dps: 30,
-            workers: defaultWorkerCount(),
-            prime_min_count: 0,
-            prime_target_count: 0,
-        });
-    }
-    if (mode === "standard") {
-        return withDefaultRunKnobs({
-            schema_version: SCHEMA_VERSION,
-            run: "all",
-            quick: false,
-            zero_source: "generated",
-            zero_count: 2000,
-            dps: 40,
-            workers: defaultWorkerCount(),
-            prime_min_count: 0,
-            prime_target_count: 0,
-        });
-    }
-    if (mode === "overkill") {
-        return withDefaultRunKnobs({
-            schema_version: SCHEMA_VERSION,
-            run: "all",
-            quick: false,
-            zero_source: CANONICAL_ZERO_100K_SOURCE,
-            zero_count: 20000,
-            dps: 80,
-            workers: defaultWorkerCount(),
-            prime_min_count: 1_000_000,
-            prime_target_count: 1_000_000,
-        });
-    }
-    if (mode === "overkill_full") {
-        return withDefaultRunKnobs({
-            schema_version: SCHEMA_VERSION,
-            run: "all",
-            quick: false,
-            zero_source: CANONICAL_ZERO_100K_SOURCE,
-            zero_count: 20000,
-            dps: 80,
-            workers: defaultWorkerCount(),
-            prime_min_count: 1_000_000,
-            prime_target_count: 7_000_000,
-        }, HANDOFF_X_RANGE);
-    }
+    const contract = resolveRunPreset(mode);
+    const selected = runPreflight({ preset: mode });
     return withDefaultRunKnobs({
         schema_version: SCHEMA_VERSION,
-        run: "all",
-        quick: false,
-        zero_source: "generated",
-        zero_count: 20000,
-        dps: 50,
+        preset: mode,
+        run: contract.runtime_policy.run,
+        quick: contract.runtime_policy.quick,
+        zero_source: selected.selected_assets.zero?.asset?.source_path
+            ? `file:${selected.selected_assets.zero.asset.source_path}`
+            : "generated",
+        zero_count: contract.requested_zero_count,
+        dps: contract.requested_dps,
         workers: defaultWorkerCount(),
-        prime_min_count: 0,
-        prime_target_count: 0,
+        prime_min_count: contract.runtime_policy.prime_min_count,
+        prime_target_count: contract.runtime_policy.prime_target_count,
+    }, {
+        ...(
+            contract.runtime_policy.x_start !== null && contract.runtime_policy.x_end !== null
+                ? { x_start: contract.runtime_policy.x_start, x_end: contract.runtime_policy.x_end }
+                : {}
+        ),
+        k_values: contract.runtime_policy.k_values,
+        n_test: contract.runtime_policy.n_test,
+        resolution: contract.runtime_policy.resolution,
     });
 };
 
@@ -315,15 +273,20 @@ const buildCustomRunArgs = (config: CustomRunConfig): string[] | null => {
     const runScope = normalizeCustomRunScope(config.run);
     if (!runScope) return null;
     const zeroSource = config.zero_source?.trim() || "generated";
+    const preset = config.preset?.trim();
     const args = [
         "-u",
         "experiment_engine.py",
         "--run",
         runScope,
-        "--zero-source",
-        zeroSource,
         "--emit-run-events",
     ];
+    if (preset && preset !== "custom") {
+        args.push("--preset", preset);
+    }
+    if (zeroSource && zeroSource !== "auto") {
+        args.push("--zero-source", zeroSource);
+    }
 
     appendOptionalNumberArg(args, "--zero-count", config.zero_count);
     appendOptionalNumberArg(args, "--dps", config.dps);
@@ -342,16 +305,20 @@ const canonicalArgsForMode = (
     mode: CanonicalRunMode,
     checkpointPath: string,
     resumeFromCheckpoint: boolean,
+    preflight?: RunPreflightOutput | null,
 ): string[] => {
     if (mode === "verify") {
         return ["-u", "verifier.py", "--emit-run-events"];
     }
+    const contract = preflight?.contract ?? resolveRunPreset(mode);
 
     const common = [
         "-u",
         "experiment_engine.py",
         "--run",
-        "all",
+        contract.runtime_policy.run,
+        "--preset",
+        mode,
         "--emit-run-events",
         "--skip-unchanged",
         "--checkpoint-out",
@@ -361,46 +328,37 @@ const canonicalArgsForMode = (
         common.push("--resume-checkpoint", checkpointPath);
     }
 
-    switch (mode) {
-        case "smoke":
-            return [...common, "--quick"];
-        case "standard":
-            return [...common, "--zero-count", "2000", "--dps", "40"];
-        case "authoritative":
-            return common;
-        case "overkill":
-            return [
-                ...common,
-                "--zero-source",
-                CANONICAL_ZERO_100K_SOURCE,
-                "--dps",
-                "80",
-                "--prime-min-count",
-                "1000000",
-                "--prime-target-count",
-                "1000000",
-            ];
-        case "overkill_full":
-            return [
-                ...common,
-                "--zero-source",
-                CANONICAL_ZERO_100K_SOURCE,
-                "--zero-count",
-                "20000",
-                "--dps",
-                "80",
-                "--resolution",
-                "500",
-                "--x-start",
-                "2",
-                "--x-end",
-                "50",
-                "--prime-min-count",
-                "1000000",
-                "--prime-target-count",
-                "7000000",
-            ];
+    const args = [
+        ...common,
+        "--zero-count",
+        String(contract.requested_zero_count),
+        "--dps",
+        String(contract.requested_dps),
+        "--resolution",
+        String(contract.runtime_policy.resolution),
+        "--k-values",
+        contract.runtime_policy.k_values,
+        "--n-test",
+        String(contract.runtime_policy.n_test),
+        "--prime-min-count",
+        String(contract.runtime_policy.prime_min_count),
+        "--prime-target-count",
+        String(contract.runtime_policy.prime_target_count),
+    ];
+    if (contract.runtime_policy.quick) {
+        args.push("--quick");
     }
+    const selectedZeroSource = preflight?.selected_assets.zero?.asset?.source_path;
+    if (selectedZeroSource) {
+        args.push("--zero-source", `file:${selectedZeroSource}`);
+    }
+    if (contract.runtime_policy.x_start !== null) {
+        args.push("--x-start", String(contract.runtime_policy.x_start));
+    }
+    if (contract.runtime_policy.x_end !== null) {
+        args.push("--x-end", String(contract.runtime_policy.x_end));
+    }
+    return args;
 };
 
 const createConflictError = () => ({
@@ -952,11 +910,25 @@ export const startCanonicalRun = (
     cwd = process.cwd(),
 ): { run: ActiveRunStatusPayload } | { status: 409; error: string } => {
     const checkpointPath = checkpointPathForMode(mode, cwd);
-    const args = canonicalArgsForMode(mode, checkpointPath, false);
+    const preflight = mode === "verify" ? null : runPreflight({ preset: mode });
+    if (preflight && preflight.status !== "READY") {
+        return {
+            status: 409,
+            error: preflight.reason,
+        };
+    }
+    const args = canonicalArgsForMode(mode, checkpointPath, false, preflight);
     const started = startProcess(mode, args, cwd, {
         checkpoint_path: checkpointPath,
         checkpoint_compatible: fs.existsSync(checkpointPath),
         checkpoint_reason: fs.existsSync(checkpointPath) ? undefined : "checkpoint will be created on run",
+        run_config: preflight
+            ? {
+                preset: mode,
+                selected_data_sources: preflight.selected_assets,
+                preflight_status: preflight.status,
+            }
+            : undefined,
     });
     if ("status" in started) return started;
     return { run: toRunStatus(started.run) };
@@ -973,10 +945,24 @@ export const resumeCanonicalRun = (
             error: compatibility.reason ?? "checkpoint is not compatible",
         };
     }
-    const args = canonicalArgsForMode(mode, compatibility.checkpoint_path, true);
+    const preflight = mode === "verify" ? null : runPreflight({ preset: mode });
+    if (preflight && preflight.status !== "READY") {
+        return {
+            status: 409,
+            error: preflight.reason,
+        };
+    }
+    const args = canonicalArgsForMode(mode, compatibility.checkpoint_path, true, preflight);
     const started = startProcess(mode, args, cwd, {
         checkpoint_path: compatibility.checkpoint_path,
         checkpoint_compatible: true,
+        run_config: preflight
+            ? {
+                preset: mode,
+                selected_data_sources: preflight.selected_assets,
+                preflight_status: preflight.status,
+            }
+            : undefined,
     });
     if ("status" in started) return started;
     const run = toRunStatus(started.run);
@@ -1012,6 +998,14 @@ export const startConfiguredRun = (
             error: "Invalid custom run scope.",
         };
     }
+    const preset = config.preset && config.preset !== "custom" ? config.preset : undefined;
+    const preflight = preset ? runPreflight({ preset, experiments: runScope }) : null;
+    if (preflight && preflight.status !== "READY") {
+        return {
+            status: 409,
+            error: preflight.reason,
+        };
+    }
     const args = buildCustomRunArgs({ ...config, run: runScope });
     if (!args) {
         return {
@@ -1024,6 +1018,10 @@ export const startConfiguredRun = (
             ...config,
             run: runScope,
             zero_source: config.zero_source?.trim() || "generated",
+            ...(preflight ? {
+                selected_data_sources: preflight.selected_assets,
+                preflight_status: preflight.status,
+            } : {}),
         },
     });
     if ("status" in started) return started;

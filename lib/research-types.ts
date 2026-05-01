@@ -52,7 +52,15 @@ export interface TheoremCandidatePayload {
 }
 
 export interface ObligationsPayload {
-    obligations: ProofObligation[];
+    obligations: Array<
+        ProofObligation & {
+            current_status?: "NOT_WITNESSED" | ProofObligation["status"];
+            reporting_status?: "NOT_WITNESSED" | ProofObligation["status"];
+            reporting_reason?: string;
+        }
+    >;
+    current_run_status?: "NO_CURRENT_RUN" | "CURRENT_RUN";
+    note?: string;
 }
 
 export interface OpenGapsPayload {
@@ -66,6 +74,8 @@ export interface ImplementationHealthPayload {
 export interface HistoryPayload {
     total: number;
     entries: VerdictHistoryEntry[];
+    historical_comparison_enabled?: boolean;
+    comparison_note?: string;
 }
 
 export interface ExperimentPayload {
@@ -104,6 +114,16 @@ export interface StatusDelta {
     to: string;
 }
 
+export interface HistoricalComparisonPayload {
+    comparison_type: "CONTROLLED_REGRESSION" | "EXPECTED_IMPLEMENTATION_DRIFT" | "INCOMPARABLE";
+    same_code: boolean;
+    same_data: boolean;
+    same_config: boolean;
+    same_schema: boolean;
+    same_verifier: boolean;
+    interpretation: string;
+}
+
 export interface CompareRunsPayload {
     run_a: string;
     run_b: string;
@@ -111,6 +131,7 @@ export interface CompareRunsPayload {
     fidelity_tier: { from?: string; to?: string };
     obligation_deltas: StatusDelta[];
     implementation_health_deltas: StatusDelta[];
+    comparison?: HistoricalComparisonPayload;
 }
 
 export interface CompareVerdictsPayload {
@@ -119,6 +140,7 @@ export interface CompareVerdictsPayload {
     obligation_deltas: StatusDelta[];
     implementation_health_deltas: StatusDelta[];
     stage_verdict_deltas: StatusDelta[];
+    comparison?: HistoricalComparisonPayload;
 }
 
 export type CanonicalRunMode =
@@ -246,6 +268,46 @@ export interface ProgramDocSection {
 export interface ProgramDocsPayload {
     refreshed_at: string;
     sections: ProgramDocSection[];
+}
+
+export interface CurrentReportingStatePayload {
+    engine_status: "NO_CURRENT_RUN" | "CURRENT_RUN";
+    reason?: string;
+    latest_run_id: string | null;
+    current_experiments_path: string | null;
+    current_certificate_path: string | null;
+    certificate_status: "NOT_BUILT" | "CURRENT" | "STALE" | "MISSING_FOR_RUN";
+    data_assets_status: "AVAILABLE" | "NEEDS_CHECK";
+    historical_comparison_enabled: boolean;
+    next_action: string;
+    selected_data_sources?: Record<string, unknown> | null;
+    note?: string;
+    schema_version?: string;
+}
+
+export interface LatestRunPayload {
+    latest_real_run_id: string | null;
+    status: "NO_CURRENT_RUN" | "RUNNING" | "SUCCEEDED" | "FAILED";
+    started_at: string | null;
+    finished_at: string | null;
+    experiments_path: string | null;
+    certificate_path: string | null;
+    certificate_status: "NOT_BUILT" | "CURRENT" | "STALE" | "MISSING_FOR_RUN";
+    analysis_path: string | null;
+    is_public_experiments_current: boolean;
+    historical_comparison_enabled: boolean;
+    next_action: string;
+}
+
+export interface ArtifactFreshnessPayload {
+    artifact_kind: "experiments" | "certificate" | "analysis" | "data_sufficiency" | "research_plan";
+    run_id: string | null;
+    latest_run_id: string | null;
+    path: string | null;
+    freshness: "CURRENT" | "STALE" | "MISSING_FOR_RUN" | "RESET";
+    reason: string;
+    source_artifact_hash: string | null;
+    expected_source_artifact_hash: string | null;
 }
 
 export interface McpToolDef {

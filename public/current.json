@@ -1,0 +1,12 @@
+{
+  "certificate_status": "MISSING_FOR_RUN",
+  "current_certificate_path": null,
+  "current_experiments_path": "artifacts/runs/run_1777543478730_6gu8mh/experiments.json",
+  "data_assets_status": "AVAILABLE",
+  "engine_status": "CURRENT_RUN",
+  "historical_comparison_enabled": false,
+  "latest_run_id": "run_1777543478730_6gu8mh",
+  "next_action": "BUILD_SAME_OBJECT_CERTIFICATE",
+  "note": "Historical run comparison is disabled during active development. Current reports reflect only the latest clean run.",
+  "schema_version": "2026.05.current-run.v1"
+}

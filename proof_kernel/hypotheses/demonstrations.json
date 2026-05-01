@@ -1,0 +1,91 @@
+{
+  "schema_version": "2026.05.hypothesis-registry.v1",
+  "program": "NONE",
+  "description": "Visualization and demonstration baselines. These are descriptive artifacts; their failure is a flaw in the visualization or mapping, not in the theory.",
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_ZETA_0_POLAR_TRACE",
+      "experiment_ids": ["EXP_0"],
+      "display_id": "ZETA-0",
+      "program": "NONE",
+      "role": "visualization",
+      "plain_statement": "The polar trace correctly visualizes ζ(1/2 + it) and the loaded zero positions over the displayed t-window.",
+      "object_under_test": "polar_trace_visualization",
+      "expected_signature": {
+        "primary_metric": "loaded_zeros_align_with_zeta_zero_crossings",
+        "expected_value": "visual coincidence of loaded zeros with crossings of |ζ(1/2 + it)|",
+        "tolerance": "visual / numerical alignment within rendering precision",
+        "pass_rule": "the polar trace passes through zero at every loaded zero position"
+      },
+      "why_this_matters": "This is the entry-point visualization. If it is wrong, every downstream interpretation of zero positions is at risk of being misread.",
+      "failure_means": [
+        "the visualization or the loaded-zero overlay may be misleading",
+        "the t-window or the zero asset may be misaligned",
+        "the rendering pipeline may have a bug"
+      ],
+      "failure_does_not_mean": [
+        "RH failed",
+        "the theory failed",
+        "the underlying zero data is wrong"
+      ],
+      "possible_alternative_hypotheses": [
+        "the rendering uses a different conformal frame than expected",
+        "the loaded-zero list is from a different precision regime",
+        "an off-by-one or offset issue in the display"
+      ],
+      "candidate_lemma_name": "Polar-Trace Demonstration Note",
+      "intended_inference_if_passed": [
+        "the visualization is faithful on the tested window",
+        "downstream readers may rely on it for orientation, not for proof",
+        "this is descriptive only"
+      ],
+      "disallowed_conclusions": [
+        "this proves any necessary condition",
+        "this supports the base claim",
+        "this is a substitute for any other experiment"
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_DEMO_1_BOUNDED_VIEW",
+      "experiment_ids": ["EXP_9"],
+      "display_id": "DEMO-1",
+      "program": "NONE",
+      "role": "demonstration",
+      "plain_statement": "Bounded-view mechanics can map sampled zero heights into the declared bounded window if transport is assumed.",
+      "object_under_test": "bounded_view_mapping_under_assumed_transport",
+      "expected_signature": {
+        "primary_metric": "image_heights_within_declared_window",
+        "expected_value": "all sampled zero heights map into the declared bounded window",
+        "tolerance": "experiment-declared boundary tolerance",
+        "pass_rule": "every sampled zero maps inside the declared window"
+      },
+      "why_this_matters": "DEMO-1 illustrates how a bounded-view reduction would behave conditional on transport. It is not a proof of NC5; it is an illustration of the route's mechanics.",
+      "failure_means": [
+        "the demonstration mapping or formula is flawed",
+        "the bounded-window declaration may be inconsistent with the sampled heights",
+        "the demonstration parameters need revision"
+      ],
+      "failure_does_not_mean": [
+        "transport is refuted",
+        "NC5 is refuted",
+        "Program 1 is refuted"
+      ],
+      "possible_alternative_hypotheses": [
+        "the demonstration window is too small relative to the sample range",
+        "the iteration count is insufficient for this sample",
+        "a different bounded-window declaration would succeed"
+      ],
+      "candidate_lemma_name": "Bounded-Window Demonstration Lemma",
+      "intended_inference_if_passed": [
+        "the bounded-view mechanic is consistent with the declared window assuming transport",
+        "this remains an illustration, not a proof",
+        "NC5 is not formally established by this demonstration"
+      ],
+      "disallowed_conclusions": [
+        "this proves NC5",
+        "this proves predicate transport",
+        "this proves RH"
+      ]
+    }
+  ]
+}

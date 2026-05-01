@@ -1,7 +1,7 @@
 """
 Same-Object Certificate builder.
 
-Assembles evidence from existing experiment results (public/experiments.json)
+Assembles evidence from an existing current-run experiment artifact
 into a structured report determining whether the compressed object behaves
 as the same analytic case as the uncompressed object under the declared gauge.
 
@@ -10,12 +10,13 @@ formal proof.
 
 Usage:
     from proof_kernel.same_object_certificate import build_certificate
-    cert = build_certificate("public/experiments.json")
+    cert = build_certificate("artifacts/runs/<run_id>/experiments.json")
 """
 
 import json
 import os
 import datetime
+import hashlib
 
 
 # ---------------------------------------------------------------------------
@@ -23,12 +24,14 @@ import datetime
 # ---------------------------------------------------------------------------
 
 CERTIFICATE_STATUSES = [
-    "NOT_READY",
-    "SAME_OBJECT_CANDIDATE",
+    "NOT_BUILT",
+    "SAME_OBJECT_PROXY_CANDIDATE",
     "SAME_OBJECT_FAILED",
     "INCONCLUSIVE",
-    "FORMAL_PROOF_REQUIRED",
+    "STALE",
+    "MISSING_FOR_RUN",
 ]
+SCHEMA_VERSION = "2026.05.run-artifact.v1"
 
 OBJECT_CANDIDATES = [
     "explicit_formula_reconstruction",
@@ -317,7 +320,7 @@ def _determine_status(recon, zeros, predicate, controls):
     core_results = [recon["result"], zeros["result"], predicate["result"]]
 
     if any(r == "NOT_TESTED" for r in core_results):
-        return "NOT_READY"
+        return "NOT_BUILT"
 
     if any(r == "FAIL" for r in core_results):
         return "SAME_OBJECT_FAILED"
@@ -336,7 +339,18 @@ def _determine_status(recon, zeros, predicate, controls):
         return "INCONCLUSIVE"
 
     # Everything passes
-    return "SAME_OBJECT_CANDIDATE"
+    return "SAME_OBJECT_PROXY_CANDIDATE"
+
+
+def _sha256_file(path):
+    try:
+        h = hashlib.sha256()
+        with open(path, "rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except Exception:
+        return None
 
 
 def build_certificate(experiments_path="public/experiments.json", primary_object=None):
@@ -364,7 +378,7 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
     if not os.path.exists(experiments_path):
         return {
             "certificate_id": "SOC_TAU_NO_DATA",
-            "status": "NOT_READY",
+            "status": "NOT_BUILT",
             "error": f"No experiment data found at {experiments_path}",
             "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
         }
@@ -382,13 +396,28 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
     summary_block = data.get("summary", {})
     experiments = summary_block.get("experiments", {})
     meta = data.get("meta", {})
+    run_id = data.get("run_id") or meta.get("run_id") or os.getenv("RIEMANN_RUN_ID")
+    created_at = datetime.datetime.utcnow().isoformat() + "Z"
+    source_hash = _sha256_file(experiments_path)
 
     # Extract fidelity
     fidelity = {
         "dps": meta.get("dps"),
         "zeros": meta.get("zeros"),
         "tier": summary_block.get("fidelity_tier", "UNKNOWN"),
+        "selected_zero_stored_dps": (
+            (((meta.get("selected_data_sources") or {}).get("zero") or {}).get("asset") or {}).get("stored_dps")
+            if isinstance(meta.get("selected_data_sources"), dict)
+            else None
+        ),
+        "selected_tau_stored_dps": (
+            (((meta.get("selected_data_sources") or {}).get("tau") or {}).get("asset") or {}).get("stored_dps")
+            if isinstance(meta.get("selected_data_sources"), dict)
+            else None
+        ),
     }
+    selected_data_sources = meta.get("selected_data_sources") if isinstance(meta.get("selected_data_sources"), dict) else {}
+    zero_asset_validation = ((selected_data_sources.get("zero") or {}).get("validation") or {}) if isinstance(selected_data_sources, dict) else {}
 
     # Build each section
     reconstruction = _extract_reconstruction_agreement(data, experiments)
@@ -402,10 +431,10 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
     status = _determine_status(reconstruction, zero_handling, predicate, controls)
 
     # If all pass but NC4 is unproven, status is FORMAL_PROOF_REQUIRED
-    if status == "SAME_OBJECT_CANDIDATE":
+    if status == "SAME_OBJECT_PROXY_CANDIDATE":
         # The certificate shows computational agreement, but the formal
         # transport theorem is still needed
-        status = "SAME_OBJECT_CANDIDATE"
+        status = "SAME_OBJECT_PROXY_CANDIDATE"
         # The remaining_formal_step section makes this explicit
 
     # Secondary objects
@@ -415,11 +444,19 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
         "certificate_id": f"SOC_TAU_{fidelity.get('tier', 'UNKNOWN')}",
         "status": status,
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        "run_id": run_id,
+        "created_at": created_at,
+        "schema_version": SCHEMA_VERSION,
+        "source_artifact_hash": source_hash,
+        "code_fingerprint": meta.get("code_fingerprint", {}),
+        "artifact_kind": "certificate",
         "fidelity": fidelity,
         "artifact_source_policy": {
             "built_from": artifact_source,
             "warnings": artifact_source_warnings,
         },
+        "selected_data_sources": selected_data_sources,
+        "zero_asset_validation": zero_asset_validation,
 
         "object_under_test": {
             "primary": primary_object,
@@ -430,8 +467,8 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
                 "(EXP_1 for reconstruction, EXP_6 for predicate, EXP_8 for zeros)."
             ),
             "scope_note": (
-                f"SAME_OBJECT_CANDIDATE for {primary_object} does not "
-                "automatically imply SAME_OBJECT_CANDIDATE for ζ itself."
+                f"SAME_OBJECT_PROXY_CANDIDATE for {primary_object} does not "
+                "automatically imply SAME_OBJECT_PROXY_CANDIDATE for zeta itself."
             ),
         },
 
@@ -453,6 +490,22 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
         "counterexample_visibility": counterexample,
 
         "controls": controls,
+
+        "status_contributing_sections": {
+            "reconstruction_agreement": reconstruction["result"],
+            "zero_handling": zero_handling["result"],
+            "predicate_preservation": predicate["result"],
+            "controls": (
+                "PASS"
+                if controls["wrong_operator_scaling_fails"]["result"] == "PASS"
+                and controls["wrong_beta_fails"]["result"] == "PASS"
+                else "INCONCLUSIVE"
+            ),
+        },
+
+        "non_contributing_sections": {
+            "program_2_counterexample_visibility": counterexample["result"],
+        },
 
         "allowed_conclusion": [
             "Within the tested finite regime, the compressed and uncompressed "
@@ -495,7 +548,7 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
     return certificate
 
 
-def save_certificate(cert, path="public/same_object_certificate.json"):
+def save_certificate(cert, path):
     """Save certificate to disk."""
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     tmp = f"{path}.tmp"
@@ -503,6 +556,26 @@ def save_certificate(cert, path="public/same_object_certificate.json"):
         json.dump(cert, f, indent=2)
     os.replace(tmp, path)
     return path
+
+
+def mirror_public_certificate(cert, path="public/same_object_certificate.json"):
+    mirror = dict(cert)
+    mirror["mirrors_run_id"] = cert.get("run_id")
+    mirror["freshness"] = "CURRENT" if cert.get("run_id") else "STALE"
+    return save_certificate(mirror, path)
+
+
+def default_current_experiments_path(current_path="public/current.json"):
+    try:
+        with open(current_path, "r", encoding="utf-8") as f:
+            current = json.load(f)
+    except Exception:
+        return "public/experiments.json"
+    run_id = current.get("latest_run_id")
+    experiments_path = current.get("current_experiments_path")
+    if run_id and experiments_path:
+        return experiments_path
+    return "public/experiments.json"
 
 
 # ---------------------------------------------------------------------------
@@ -514,12 +587,17 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Build Same-Object Certificate")
     parser.add_argument(
-        "--input", default="public/experiments.json",
-        help="Path to experiments.json",
+        "--input", default=None,
+        help="Path to per-run experiments.json. Defaults to public/current.json.current_experiments_path.",
     )
     parser.add_argument(
-        "--output", default="public/same_object_certificate.json",
+        "--output", default=None,
         help="Output path for certificate",
+    )
+    parser.add_argument(
+        "--no-public-mirror",
+        action="store_true",
+        help="Do not mirror the per-run certificate to public/same_object_certificate.json",
     )
     parser.add_argument(
         "--primary-object", default="explicit_formula_reconstruction",
@@ -528,8 +606,20 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    cert = build_certificate(args.input, primary_object=args.primary_object)
-    out = save_certificate(cert, args.output)
+    input_path = args.input or default_current_experiments_path()
+    cert = build_certificate(input_path, primary_object=args.primary_object)
+    run_id = cert.get("run_id")
+    if not run_id:
+        parser.error(
+            "certificate input has no run_id; Same-Object Certificate is per-run only. "
+            "Run a current verifier/engine suite first or pass a per-run experiments artifact."
+        )
+    output = args.output
+    if output is None:
+        output = os.path.join("artifacts", "runs", run_id, "certificate.json")
+    out = save_certificate(cert, output)
+    if not args.no_public_mirror:
+        mirror_public_certificate(cert)
 
     # Use ASCII-safe output for Windows console
     print("")

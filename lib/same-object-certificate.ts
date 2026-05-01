@@ -2,16 +2,17 @@
  * Same-Object Certificate types.
  *
  * Mirrors the Python schema in proof_kernel/same_object_certificate.py.
- * This is the computational smoking gun — Level 2 between visualization
+ * This is the current-run computational certificate — Level 2 between visualization
  * and formal proof.
  */
 
 export type CertificateStatus =
-  | "NOT_READY"
-  | "SAME_OBJECT_CANDIDATE"
+  | "NOT_BUILT"
+  | "SAME_OBJECT_PROXY_CANDIDATE"
   | "SAME_OBJECT_FAILED"
   | "INCONCLUSIVE"
-  | "FORMAL_PROOF_REQUIRED";
+  | "STALE"
+  | "MISSING_FOR_RUN";
 
 export type ObjectCandidate =
   | "explicit_formula_reconstruction"
@@ -123,12 +124,24 @@ export interface FidelityInfo {
   dps: number | null;
   zeros: number | null;
   tier: string;
+  selected_zero_stored_dps?: number | null;
+  selected_tau_stored_dps?: number | null;
 }
 
 export interface SameObjectCertificate {
   certificate_id: string;
   status: CertificateStatus;
   timestamp: string;
+  run_id?: string;
+  created_at?: string;
+  artifact_kind?: "certificate";
+  schema_version?: string;
+  source_artifact_hash?: string;
+  code_fingerprint?: Record<string, string>;
+  mirrors_run_id?: string;
+  freshness?: "CURRENT" | "STALE";
+  selected_data_sources?: Record<string, unknown>;
+  zero_asset_validation?: Record<string, unknown>;
   fidelity: FidelityInfo;
   object_under_test: ObjectUnderTest;
   gauge: GaugeSpec;
@@ -142,4 +155,6 @@ export interface SameObjectCertificate {
   disallowed_conclusion: string[];
   remaining_formal_step: RemainingFormalStep;
   wrong_test_guardrail: WrongTestGuardrail;
+  status_contributing_sections?: Record<string, string>;
+  non_contributing_sections?: Record<string, string>;
 }

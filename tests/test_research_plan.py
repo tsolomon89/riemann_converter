@@ -47,7 +47,7 @@ def test_research_dag_recommends_certificate_after_exp8_exp6_pass() -> None:
 
 
 def test_research_dag_recommends_nc3_nc4_after_authoritative_candidate() -> None:
-    cert = {"status": "SAME_OBJECT_CANDIDATE", "fidelity": {"tier": "AUTHORITATIVE"}}
+    cert = {"status": "SAME_OBJECT_PROXY_CANDIDATE", "fidelity": {"tier": "AUTHORITATIVE"}}
     plan = build_research_plan(READY, _summary("EXP_1", "EXP_8", "EXP_6"), cert)
     assert plan["recommended_next_action"] == "RECOMMEND_NC3_NC4_FORMALIZATION"
     assert plan["proof_work_recommended"] is True
@@ -59,7 +59,7 @@ def test_program_2_remains_optional_unless_selected() -> None:
 
 
 def test_next_action_explains_stop_experimenting_after_authoritative_candidate() -> None:
-    cert = {"status": "SAME_OBJECT_CANDIDATE", "fidelity": {"tier": "AUTHORITATIVE"}}
+    cert = {"status": "SAME_OBJECT_PROXY_CANDIDATE", "fidelity": {"tier": "AUTHORITATIVE"}}
     action = build_next_action(READY, _summary("EXP_1", "EXP_8", "EXP_6"), cert)
     assert action["next_action"] == "WRITE_FORMAL_LEMMA"
     assert action["target"] == "NC3/NC4"
