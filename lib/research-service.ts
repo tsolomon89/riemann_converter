@@ -50,18 +50,28 @@ const resolveRepoPath = (candidate: string, cwd = process.cwd()) =>
 
 const currentArtifactPath = (cwd = process.cwd()) => {
     const current = getCurrentReportingState(cwd);
+    const publicPath = publicExperimentsPath(cwd);
     if (current.engine_status === "NO_CURRENT_RUN" || !current.latest_run_id) {
-        return publicExperimentsPath(cwd);
+        return publicPath;
     }
     if (!current.current_experiments_path) {
         throw new Error("Current run is registered but current_experiments_path is missing.");
     }
     const artifactPath = resolveRepoPath(current.current_experiments_path, cwd);
     const freshness = getArtifactFreshness("experiments", { path: artifactPath }, cwd);
-    if (freshness.freshness !== "CURRENT") {
-        throw new Error(`Current experiments artifact is ${freshness.freshness}: ${freshness.reason}`);
+    if (freshness.freshness === "CURRENT") {
+        return artifactPath;
     }
-    return artifactPath;
+
+    const publicFreshness = getArtifactFreshness("experiments", { path: publicPath }, cwd);
+    if (publicFreshness.freshness === "CURRENT") {
+        return publicPath;
+    }
+
+    throw new Error(
+        `Current experiments artifact is ${freshness.freshness}: ${freshness.reason}; ` +
+        `public mirror is ${publicFreshness.freshness}: ${publicFreshness.reason}`,
+    );
 };
 
 export const readArtifact = (): ExperimentsData => {
