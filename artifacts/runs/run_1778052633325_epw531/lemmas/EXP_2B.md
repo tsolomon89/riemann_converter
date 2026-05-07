@@ -18,7 +18,7 @@ Residual deviation exceeds tolerance; rogue isolation not supported at this fide
 Metric summary:
 ```json
 {
-  "summary_metric": 9.68867496086273
+  "summary_metric": 501.0
 }
 ```
 

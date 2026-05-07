@@ -34,8 +34,8 @@ describe("experiment review pipeline", () => {
         // Build a synthetic summary that mixes outcomes:
         //   PASS: EXP_1 (witness), EXP_1B (control), EXP_6 (witness), EXP_8 (witness),
         //         EXP_3 (control), EXP_0 (vis), EXP_9 (demo), EXP_10 (exploratory),
-        //         EXP_1C (pathfinder), EXP_7 (Program 2 witness)
-        //   FAIL: EXP_2 (Program 2), EXP_2B (Program 2)
+        //         EXP_7 (Program 2 witness)
+        //   FAIL: EXP_1C (research note), EXP_2 (Program 2), EXP_2B (Program 2)
         //   INCONCLUSIVE: EXP_4 (pathfinder)
         //   DIRECTIONAL: EXP_5 (pathfinder)
         const summary = {
@@ -43,7 +43,7 @@ describe("experiment review pipeline", () => {
                 EXP_0: { display_id: "ZETA-0", outcome: "INFORMATIONAL", status: "PASS", role: "VISUALIZATION", function: "VISUALIZATION", metrics: {} },
                 EXP_1: { display_id: "CORE-1", outcome: "CONSISTENT", status: "PASS", role: "WITNESS", function: "PROOF_OBLIGATION_WITNESS", metrics: { main_metrics: { max_drift: 0.0001, harmonic_curve_key: "harmonic_N_200" } } },
                 EXP_1B: { display_id: "CTRL-1", outcome: "IMPLEMENTATION_OK", status: "PASS", role: "CONTROL", function: "CONTROL", metrics: {} },
-                EXP_1C: { display_id: "NOTE-1", outcome: "CONSISTENT", status: "PASS", role: "PATHFINDER", function: "RESEARCH_NOTE", metrics: {} },
+                EXP_1C: { display_id: "NOTE-1", outcome: "INFORMATIONAL", status: "FAIL", scoped_status: "FAIL", role: "PATHFINDER", function: "RESEARCH_NOTE", metrics: { max_drift: 284.9, max_ratio_op_over_coord: 667.6 }, interpretation: "Zero-scaling hypothesis fails documented tolerances." },
                 EXP_2: { display_id: "P2-1", outcome: "INCONSISTENT", status: "FAIL", scoped_status: "ROUTE_NEGATIVE", role: "WITNESS", function: "EXPLORATORY", metrics: { detection: 0.0 }, interpretation: "Detection metric below threshold." },
                 EXP_2B: { display_id: "P2-2", outcome: "INCONSISTENT", status: "FAIL", scoped_status: "ROUTE_NEGATIVE", role: "WITNESS", function: "EXPLORATORY", metrics: { residual_ratio: 9.7 }, interpretation: "Residual ratio far from unity." },
                 EXP_3: { display_id: "CTRL-2", outcome: "IMPLEMENTATION_OK", status: "PASS", role: "CONTROL", function: "CONTROL", metrics: {} },
@@ -118,6 +118,16 @@ print("OK")
         const actual = review.actual_run_inference.join(" ").toLowerCase();
         expect(actual).not.toContain("refute");
         expect(actual).not.toContain("theory failed");
+    });
+
+    it("EXP_1C informational failure reads as partial-transport / zero-reuse failure", () => {
+        const review = readExperimentReview(runId, "EXP_1C", tmpRoot)!;
+        expect(review.model_comparison.baseline_status).toBe("FAILED");
+        const actual = review.actual_run_inference.join(" ").toLowerCase();
+        expect(actual).toContain("partial-transport / zero-reuse");
+        expect(actual).toContain("not confirmed");
+        expect(actual).not.toContain("status not determinable");
+        expect(actual).toContain("not as a program 1 same-object failure");
     });
 
     it("control pass reports control / instrument status, not theory support", () => {

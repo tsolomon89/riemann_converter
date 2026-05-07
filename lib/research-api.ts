@@ -816,7 +816,10 @@ export const getDataSufficiencyEnvelope = (query: URLSearchParams) => {
     const artifact = getArtifactIfAvailable();
     const input = parseResearchPlannerInput(query, artifact);
     const sufficiency = checkDataSufficiency(input);
-    const fidelity = buildFidelityReport(artifact, { experiments: input.experiments });
+    const fidelity = buildFidelityReport(artifact, {
+        experiments: input.experiments,
+        data_sufficiency: sufficiency,
+    });
     const summary =
         sufficiency.status === "READY"
             ? "Data assets satisfy the requested count, coverage, and guard precision."

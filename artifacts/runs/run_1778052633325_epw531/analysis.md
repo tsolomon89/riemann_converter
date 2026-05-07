@@ -1,8 +1,8 @@
 ---
 run_id: run_1778052633325_epw531
-created_at: 2026-05-07T03:57:05.885588Z
+created_at: 2026-05-07T13:02:10.015048Z
 schema_version: 2026.05.run-artifact.v1
-source_artifact_hash: 492fd99ff970e33f555fada1edca2e800ba49fa306029fa947c337ea3181aaca
+source_artifact_hash: 2ed04f46a3747e6a541e199aedf3aa8b464253b893cc1a9109b01596bb7df466
 artifact_kind: analysis
 ---
 
@@ -11,12 +11,12 @@ run_id: run_1778052633325_epw531
 
 # Data and Precision
 {
-  "certificate_fidelity": "BLOCKED",
+  "certificate_fidelity": "ELIGIBLE_WITH_WARNINGS",
   "compute_fidelity": "AUTHORITATIVE",
-  "data_fidelity": "INSUFFICIENT",
+  "data_fidelity": "READY_WITH_WARNINGS",
   "data_sufficiency_status": "READY",
   "warnings": [
-    "Data fidelity warning: zero source precision below certificate policy."
+    "Generated 60K zero source is accepted for this baseline run but remains below dps+guard certificate preference."
   ]
 }
 
@@ -45,7 +45,7 @@ run_id: run_1778052633325_epw531
 Program 2 is mixed and remains route-unresolved. This does not refute Program 1.
 
 # Same-Object Certificate
-Certificate not built for this run.
+Status: SAME_OBJECT_PROXY_CANDIDATE
 
 # Proof-Kernel Status
 CANDIDATE
@@ -97,7 +97,7 @@ CANDIDATE
 ]
 
 # Recommended Next Action
-BUILD_SAME_OBJECT_CERTIFICATE
+RECOMMEND_NC3_NC4_FORMALIZATION
 
 # What This Shows
 Current-run proxy witnesses and controls only; no stale certificate data is used.

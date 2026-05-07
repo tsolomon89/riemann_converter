@@ -51,7 +51,7 @@
     "baseline_status": "CONFIRMED",
     "failed_metrics": [],
     "fit_metrics": {
-      "summary_metric": 3.0775471784850645e-76
+      "summary_metric": 1e-30
     }
   },
   "next_hypotheses": [

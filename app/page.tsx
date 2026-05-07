@@ -1054,10 +1054,10 @@ export default function Home() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded text-sm text-emerald-200">
-             <strong>Zero-scaling coherence witness:</strong> The green line (Operator) uses scaled zeros γ·τ<sup>k</sup> at physical coordinates; the blue dashed line (Baseline) uses standard zeros at effective coordinates.
+          <div className="bg-amber-900/10 border border-amber-500/20 p-4 rounded text-sm text-amber-100">
+             <strong>Partial-transport / zero-reuse check:</strong> The green line (Operator) uses scaled zeros γ·τ<sup>k</sup> at physical coordinates; the blue dashed line (Baseline) uses standard zeros at effective coordinates.
              <br/>
-             Overlay to within documented drift/ratio tolerances witnesses that <em>on the tested k-range, at the declared fidelity,</em> scaling zeros by τ<sup>k</sup> is numerically isometric to scaling the lattice by τ<sup>k</sup>. This is a <em>coherence witness</em> bearing on <code>OBL_ZERO_SCALING_EQUIVALENCE</code>.
+             In the current run the traces diverge beyond documented drift/ratio tolerances, so this reads as a failed zero-reuse engineering baseline: scaled pre-computed zeros are not interchangeable with recomputing the coordinate-baseline on this window. This is not a Same-Object Certificate failure and not a theory verdict.
           </div>
         </div>
       );
@@ -1377,10 +1377,27 @@ export default function Home() {
   const program2Mixed =
     program2Outcomes.length > 0 &&
     new Set(program2Outcomes.map((entry) => entry.outcome ?? entry.status)).size > 1;
-  const dataFidelityWarning = (
-    data?.summary as (ExperimentsData["summary"] & { fidelity?: { warnings?: string[] }; data_fidelity?: string }) | undefined
-  )?.fidelity?.warnings?.some((warning) => warning.includes("zero source precision below certificate policy")) ||
-    (data?.summary as (ExperimentsData["summary"] & { data_fidelity?: string }) | undefined)?.data_fidelity === "INSUFFICIENT";
+  const summaryWithFidelity = data?.summary as
+    | (ExperimentsData["summary"] & {
+        data_fidelity?: string;
+        fidelity?: { warnings?: string[]; data_fidelity?: string };
+      })
+    | undefined;
+  const fidelityWarnings = Array.isArray(summaryWithFidelity?.fidelity?.warnings)
+    ? summaryWithFidelity.fidelity.warnings
+    : [];
+  const dataFidelityStatus =
+    summaryWithFidelity?.data_fidelity ?? summaryWithFidelity?.fidelity?.data_fidelity;
+  const dataFidelityWarningText =
+    fidelityWarnings.find(
+      (warning) =>
+        warning.includes("zero source precision below certificate policy") ||
+        warning.includes("accepted for this baseline run"),
+    ) ??
+    (dataFidelityStatus === "INSUFFICIENT"
+      ? "Data fidelity is insufficient for certificate use."
+      : null);
+  const dataFidelityWarning = Boolean(dataFidelityWarningText);
   const heartbeatAgeSec = liveRunStatus?.progress?.heartbeat_at
     ? Math.max(
         0,
@@ -1662,7 +1679,9 @@ export default function Home() {
 
                       {!noCurrentRun && dataFidelityWarning && (
                           <section className="ui-section rounded-lg border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-amber-100">
-                              Data fidelity warning: zero source precision below certificate policy.
+                              {dataFidelityWarningText?.startsWith("Data fidelity")
+                                  ? dataFidelityWarningText
+                                  : `Data fidelity warning: ${dataFidelityWarningText}`}
                           </section>
                       )}
 

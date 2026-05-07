@@ -1,4 +1,4 @@
-# Candidate Lemma / Note: Zero-Reuse Engineering Note (no-lemma)
+# Candidate Lemma / Note: Zero-Reuse Engineering Note (failure-direction)
 
 ## Run
 run_1778052633325_epw531
@@ -18,15 +18,15 @@ Zero-scaling hypothesis fails documented tolerances (drift and/or error-ratio).
 Metric summary:
 ```json
 {
-  "summary_metric": 284.9942038984427
+  "summary_metric": 0.25
 }
 ```
 
 ## Result Against Baseline
-NOT_APPLICABLE
+FAILED
 
 ## Candidate Lemma or Research Note
-This experiment is pathfinder-typed; no candidate lemma is suggested from this run.
+The current baseline (Zero-reuse / zero-handling optimization (scaled-zero reconstruction at physical coordinates) behaves consistently with the baseline reconstruction under the declared tolerance) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.
 
 ## Why It Matters
 Zero-reuse is a research-engineering optimization. If it disagrees with the baseline reconstruction, then either the optimization is wrong or the baseline depends on a hidden detail of zero-handling.
@@ -41,17 +41,20 @@ Zero-reuse is a research-engineering optimization. If it disagrees with the base
 - The theorem candidate is proved or refuted.
 
 ## Required Next Test
-- No specific next test recommended.
+- zero-reuse is valid only at low |k|
+- zero-reuse requires a specific normalization to match the baseline
+- the baseline implicitly does something the optimization skips
 
 ## Formalization Target
 No formalization target suggested by this experiment.
 
 ## Scoped Consequence
-NONE
+BASELINE_MODEL
 
 ## Actual Run Inference (this run only)
-- NOTE-1: status not determinable from this run.
-- This is an instrument / coverage gap, not a theory result.
+- NOTE-1: the partial-transport / zero-reuse baseline was not confirmed on this run.
+- Raw data show the scaled-zero reconstruction at physical coordinates diverged from the coordinate-baseline beyond the documented drift / ratio tolerances.
+- Read this as a zero-reuse engineering failure for the current baseline, not as a Program 1 same-object failure or theory verdict.
 
 ## Intended Inference If Baseline Is Confirmed (do not read as run conclusion)
 - the zero-reuse engineering optimization is consistent with the baseline on this window

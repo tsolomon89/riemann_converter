@@ -1,7 +1,8 @@
 {
   "actual_run_inference": [
-    "NOTE-1: status not determinable from this run.",
-    "This is an instrument / coverage gap, not a theory result."
+    "NOTE-1: the partial-transport / zero-reuse baseline was not confirmed on this run.",
+    "Raw data show the scaled-zero reconstruction at physical coordinates diverged from the coordinate-baseline beyond the documented drift / ratio tolerances.",
+    "Read this as a zero-reuse engineering failure for the current baseline, not as a Program 1 same-object failure or theory verdict."
   ],
   "baseline_hypothesis": {
     "expected_signature": {
@@ -17,10 +18,15 @@
   },
   "candidate_lemmas": [
     {
-      "name": "Zero-Reuse Engineering Note (no-lemma)",
-      "scope": "pathfinder",
-      "statement": "This experiment is pathfinder-typed; no candidate lemma is suggested from this run.",
-      "status": "NO_LEMMA_SUGGESTED",
+      "alternative_directions": [
+        "zero-reuse is valid only at low |k|",
+        "zero-reuse requires a specific normalization to match the baseline",
+        "the baseline implicitly does something the optimization skips"
+      ],
+      "name": "Zero-Reuse Engineering Note (failure-direction)",
+      "scope": "baseline-revision",
+      "statement": "The current baseline (Zero-reuse / zero-handling optimization (scaled-zero reconstruction at physical coordinates) behaves consistently with the baseline reconstruction under the declared tolerance) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
+      "status": "SUGGESTED_FROM_FAILURE",
       "what_it_does_not_prove": [
         "this supports the base claim",
         "this supports Program 1 witnesses directly",
@@ -45,14 +51,24 @@
     "no theoretical claim is added"
   ],
   "model_comparison": {
-    "alternative_model_candidates": [],
-    "baseline_status": "NOT_APPLICABLE",
-    "failed_metrics": [],
+    "alternative_model_candidates": [
+      "zero-reuse is valid only at low |k|",
+      "zero-reuse requires a specific normalization to match the baseline",
+      "the baseline implicitly does something the optimization skips"
+    ],
+    "baseline_status": "FAILED",
+    "failed_metrics": [
+      "scaled_zero_reconstruction_drift_vs_baseline"
+    ],
     "fit_metrics": {
-      "summary_metric": 284.9942038984427
+      "summary_metric": 0.25
     }
   },
-  "next_hypotheses": [],
+  "next_hypotheses": [
+    "zero-reuse is valid only at low |k|",
+    "zero-reuse requires a specific normalization to match the baseline",
+    "the baseline implicitly does something the optimization skips"
+  ],
   "program": "PROGRAM_1",
   "raw_observations": {
     "metrics": {
@@ -88,7 +104,7 @@
   "role": "pathfinder",
   "run_id": "run_1778052633325_epw531",
   "schema_version": "2026.05.experiment-review.v1",
-  "scoped_consequence": "NONE",
+  "scoped_consequence": "BASELINE_MODEL",
   "verifier_signal": {
     "epistemic_level": "INSTRUMENTAL",
     "function": "RESEARCH_NOTE",

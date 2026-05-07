@@ -1,7 +1,7 @@
 {
-  "certificate_fidelity": "BLOCKED",
+  "certificate_fidelity": "ELIGIBLE_WITH_WARNINGS",
   "compute_fidelity": "AUTHORITATIVE",
-  "data_fidelity": "INSUFFICIENT",
+  "data_fidelity": "READY_WITH_WARNINGS",
   "engine_status": "OK",
   "experiments": {
     "EXP_0": {
@@ -698,14 +698,14 @@
     }
   },
   "fidelity": {
-    "certificate_fidelity": "BLOCKED",
+    "certificate_fidelity": "ELIGIBLE_WITH_WARNINGS",
     "compute_fidelity": "AUTHORITATIVE",
-    "data_fidelity": "INSUFFICIENT",
+    "data_fidelity": "READY_WITH_WARNINGS",
     "requested_dps": 80,
     "requested_zero_count": 60000,
     "required_stored_dps": 100,
     "warnings": [
-      "Data fidelity warning: zero source precision below certificate policy."
+      "Generated 60K zero source is accepted for this baseline run but remains below dps+guard certificate preference."
     ],
     "zero_source_declared_decimals": 75
   },

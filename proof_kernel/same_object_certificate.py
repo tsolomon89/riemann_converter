@@ -405,6 +405,18 @@ def build_certificate(experiments_path="public/experiments.json", primary_object
         "dps": meta.get("dps"),
         "zeros": meta.get("zeros"),
         "tier": summary_block.get("fidelity_tier", "UNKNOWN"),
+        "compute_fidelity": summary_block.get("compute_fidelity"),
+        "data_fidelity": summary_block.get("data_fidelity"),
+        "certificate_fidelity": summary_block.get("certificate_fidelity"),
+        "warnings": (summary_block.get("fidelity") or {}).get("warnings", [])
+        if isinstance(summary_block.get("fidelity"), dict)
+        else [],
+        "zero_source_declared_decimals": (summary_block.get("fidelity") or {}).get("zero_source_declared_decimals")
+        if isinstance(summary_block.get("fidelity"), dict)
+        else (meta.get("zero_source_info") or {}).get("declared_decimals"),
+        "required_stored_dps": (summary_block.get("fidelity") or {}).get("required_stored_dps")
+        if isinstance(summary_block.get("fidelity"), dict)
+        else None,
         "selected_zero_stored_dps": (
             (((meta.get("selected_data_sources") or {}).get("zero") or {}).get("asset") or {}).get("stored_dps")
             if isinstance(meta.get("selected_data_sources"), dict)

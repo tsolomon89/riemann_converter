@@ -1,13 +1,13 @@
 {
   "certificate_id": "SOC_TAU_AUTHORITATIVE",
   "status": "SAME_OBJECT_PROXY_CANDIDATE",
-  "timestamp": "2026-04-30T21:51:05.729347Z",
-  "run_id": "run_1777543478730_6gu8mh",
-  "created_at": "2026-04-30T21:51:05.718280Z",
+  "timestamp": "2026-05-07T13:02:09.963895Z",
+  "run_id": "run_1778052633325_epw531",
+  "created_at": "2026-05-07T13:02:09.958174Z",
   "schema_version": "2026.05.run-artifact.v1",
-  "source_artifact_hash": "639d6ec7e545f8eea7e5cea07e202dc878ea4f2d159b09974428b288d23a829f",
+  "source_artifact_hash": "2ed04f46a3747e6a541e199aedf3aa8b464253b893cc1a9109b01596bb7df466",
   "code_fingerprint": {
-    "experiment_engine.py": "bc894adca36f04bb8db96a240defd209",
+    "experiment_engine.py": "c6bce8b01ad87fd27cff20fcb7f12729",
     "riemann_math.py": "b6c78cff1e982a4c8e4b077aeb19b417",
     "run_exp0.py": "db0bca55b548d78205c9aace23ddb954",
     "run_exp1.py": "bf9252ae29c02bcdf6782659fcb75c1a",
@@ -20,13 +20,23 @@
     "run_exp7.py": "3fc8a2a1c0118b4e3b36ac129852d530",
     "run_exp8.py": "471039a1b38ae90b6941a3dfc947517f",
     "run_exp9.py": "1fb93ed73dd42ede296fcb646652c3c1",
-    "verifier.py": "4bbf990576bff43d8c0313003243071d"
+    "verifier.py": "ef50640b3bf936091b31fe096bb10817"
   },
   "artifact_kind": "certificate",
   "fidelity": {
     "dps": 80,
-    "zeros": 20000,
-    "tier": "AUTHORITATIVE"
+    "zeros": 60000,
+    "tier": "AUTHORITATIVE",
+    "compute_fidelity": "AUTHORITATIVE",
+    "data_fidelity": "READY_WITH_WARNINGS",
+    "certificate_fidelity": "ELIGIBLE_WITH_WARNINGS",
+    "warnings": [
+      "Generated 60K zero source is accepted for this baseline run but remains below dps+guard certificate preference."
+    ],
+    "zero_source_declared_decimals": 75,
+    "required_stored_dps": 100,
+    "selected_zero_stored_dps": null,
+    "selected_tau_stored_dps": null
   },
   "artifact_source_policy": {
     "built_from": "display_floats",
@@ -34,6 +44,8 @@
       "Certificate was built from public display artifacts; prefer raw high-precision artifacts when available."
     ]
   },
+  "selected_data_sources": {},
+  "zero_asset_validation": {},
   "object_under_test": {
     "primary": "explicit_formula_reconstruction",
     "secondary": [
@@ -99,9 +111,9 @@
     "same_unscaled_zeros_used": true,
     "scaled_zeros_tested": true,
     "metrics": {
-      "p99_abs_dev": 1.9262925711937202e-08,
-      "p95_residual": 2.1335420197704586e-09,
-      "max_abs_dev": 1.9733255795036385e-08,
+      "p99_abs_dev": 2.1719597014629734e-76,
+      "p95_residual": 2.312085325362657e-77,
+      "max_abs_dev": 1.0886856326694359e-75,
       "count_success": 1500,
       "count_fail": 0,
       "per_k": {
@@ -109,31 +121,31 @@
           "count_fail": 0,
           "count_success": 500,
           "count_total": 500,
-          "max_abs_dev": 4.998492085675269e-10,
-          "max_residual": 4.472127184010663e-09,
-          "p95_abs_dev": 4.809782624621349e-10,
-          "p95_residual": 2.1335420197704586e-09,
-          "p99_abs_dev": 4.949182314661851e-10
+          "max_abs_dev": 2.7781870711979684e-77,
+          "max_residual": 4.337067076251945e-77,
+          "p95_abs_dev": 5.083487407205831e-78,
+          "p95_residual": 2.312085325362657e-77,
+          "p99_abs_dev": 7.83810202599914e-78
         },
         "1": {
           "count_fail": 0,
           "count_success": 500,
           "count_total": 500,
-          "max_abs_dev": 3.1406452030768294e-09,
-          "max_residual": 4.472127184010663e-09,
-          "p95_abs_dev": 3.0220755517748527e-09,
-          "p95_residual": 2.1335420197704586e-09,
-          "p99_abs_dev": 3.10966296020364e-09
+          "max_abs_dev": 1.7287453221903817e-76,
+          "max_residual": 4.337067076251945e-77,
+          "p95_abs_dev": 3.2526772757247485e-77,
+          "p95_residual": 2.312085325362657e-77,
+          "p99_abs_dev": 4.9539342471139685e-77
         },
         "2": {
           "count_fail": 0,
           "count_success": 500,
           "count_total": 500,
-          "max_abs_dev": 1.9733255795036385e-08,
-          "max_residual": 4.472127184010663e-09,
-          "p95_abs_dev": 1.8988260704098395e-08,
-          "p95_residual": 2.1335420197704586e-09,
-          "p99_abs_dev": 1.953858862183209e-08
+          "max_abs_dev": 1.0886856326694359e-75,
+          "max_residual": 4.337067076251945e-77,
+          "p95_abs_dev": 1.9956995613174777e-76,
+          "p95_residual": 2.312085325362657e-77,
+          "p99_abs_dev": 3.0775471784850645e-76
         }
       }
     },
@@ -147,7 +159,7 @@
       "max_harmonic_drift_vs_k0": 0.0,
       "max_mobius_drift_vs_k0": 0.0,
       "max_y_true_drift_vs_k0": 0.0,
-      "stress_max_abs_truth_error": 0.5104566911440855
+      "stress_max_abs_truth_error": 0.5135258303018588
     },
     "result": "PASS",
     "note": "Tests coordinate-gauge covariance: same unscaled zeros reconstruct the prime staircase identically at scaled X coordinates."
@@ -235,6 +247,6 @@
     "right_test": "Does the RH-relevant object/relation/predicate transport under the declared gauge?",
     "exp10_confirms": "EXP_10 shows \u03b6(t) \u2260 \u03b6(\u03c4^k\u00b7t). This is expected and does NOT falsify the base claim."
   },
-  "mirrors_run_id": "run_1777543478730_6gu8mh",
+  "mirrors_run_id": "run_1778052633325_epw531",
   "freshness": "CURRENT"
 }

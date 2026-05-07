@@ -97,7 +97,7 @@ _schema 2026.05.experiment-review.v1_
   "controls": 2,
   "demonstrations": 2,
   "experiments_reviewed": 14,
-  "failed_or_incomplete": 4,
+  "failed_or_incomplete": 5,
   "pathfinders": 4,
   "program_1_total": 4,
   "program_1_witnesses": 3,
@@ -121,7 +121,7 @@ _schema 2026.05.experiment-review.v1_
 - CTRL-2: Beta-Counterfactual Detection Lemma (instrument health) (CONFIRMED)
 
 ## Pathfinding Notes
-- NOTE-1: Zero-Reuse Engineering Note (no-lemma) (NOT_APPLICABLE)
+- NOTE-1: Zero-Reuse Engineering Note (failure-direction) (FAILED)
 - PATH-1: Preferred Gauge-Direction Note (deferred) (INCONCLUSIVE)
 - PATH-2: Zero-Correspondence Pathfinding Note (deferred) (INCOMPLETE)
 - TRANS-1: Direct-Zeta-Transport Guardrail Note (CONFIRMED)
@@ -132,6 +132,10 @@ _schema 2026.05.experiment-review.v1_
 - P2-3: Calibrated Amplification Candidate Lemma (CONFIRMED)
 
 ## Failed or Incomplete Baselines
+- **NOTE-1** — FAILED (scoped: BASELINE_MODEL)
+  - NOTE-1: the partial-transport / zero-reuse baseline was not confirmed on this run.
+  - Raw data show the scaled-zero reconstruction at physical coordinates diverged from the coordinate-baseline beyond the documented drift / ratio tolerances.
+  - Read this as a zero-reuse engineering failure for the current baseline, not as a Program 1 same-object failure or theory verdict.
 - **P2-1** — FAILED (scoped: ROUTE)
   - P2-1: the current baseline was not confirmed on this run.
   - Baseline tested: A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings.
@@ -150,6 +154,10 @@ _schema 2026.05.experiment-review.v1_
   - Strengthening the metric or extending the window is the natural next step.
 
 ## Alternative Hypotheses
+- **NOTE-1**:
+  - zero-reuse is valid only at low |k|
+  - zero-reuse requires a specific normalization to match the baseline
+  - the baseline implicitly does something the optimization skips
 - **P2-1**:
   - detectability requires a different compression depth
   - detectability requires phase-aware metrics rather than amplitude metrics
@@ -172,6 +180,10 @@ _schema 2026.05.experiment-review.v1_
 - Formalize Finite Zero-Scaling Correspondence Lemma as a finite/proxy lemma.
 
 ## Recommended Next Experiments
+- **NOTE-1**:
+  - zero-reuse is valid only at low |k|
+  - zero-reuse requires a specific normalization to match the baseline
+  - the baseline implicitly does something the optimization skips
 - **P2-1**:
   - detectability requires a different compression depth
   - detectability requires phase-aware metrics rather than amplitude metrics
@@ -206,6 +218,14 @@ _schema 2026.05.experiment-review.v1_
 - The RH predicate transports exactly under the gauge.
 - The theorem candidate is proved.
 - Coverage extends beyond Odlyzko's verified range.
+- the gauge-coordinate theory fails
+- Program 1 fails
+- RH is refuted
+- zeta admits a non-trivial multiplicative gauge automorphism.
+- tau (or any other base tested) is uniquely privileged.
+- Small residuals at one base imply transport-invariance of the RH predicate.
+- The residual decay rate provides a path to a proof.
+- The theorem candidate is proved or refuted by this experiment.
 - this supports RH
 - this supports Program 1's positive witnesses directly
 - this proves NC2 in any formal sense
@@ -245,11 +265,3 @@ _schema 2026.05.experiment-review.v1_
 - Transport is established by this experiment.
 - The bounded-view corollary is proved.
 - Anything about whether the gauge actually preserves RH-relevant structure.
-- the gauge-coordinate theory fails
-- Program 1 fails
-- RH is refuted
-- zeta admits a non-trivial multiplicative gauge automorphism.
-- tau (or any other base tested) is uniquely privileged.
-- Small residuals at one base imply transport-invariance of the RH predicate.
-- The residual decay rate provides a path to a proof.
-- The theorem candidate is proved or refuted by this experiment.

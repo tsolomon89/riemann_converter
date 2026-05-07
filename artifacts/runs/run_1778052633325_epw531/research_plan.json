@@ -1,6 +1,8 @@
 {
   "artifact_kind": "research_plan",
-  "blocked_nodes": [],
+  "blocked_nodes": [
+    "FORMAL_PROOF_CLOSURE"
+  ],
   "code_fingerprint": {
     "experiment_engine.py": "c6bce8b01ad87fd27cff20fcb7f12729",
     "riemann_math.py": "b6c78cff1e982a4c8e4b077aeb19b417",
@@ -17,27 +19,28 @@
     "run_exp9.py": "1fb93ed73dd42ede296fcb646652c3c1",
     "verifier.py": "ef50640b3bf936091b31fe096bb10817"
   },
-  "commands": [
-    "python -m proof_kernel.same_object_certificate"
-  ],
+  "commands": [],
   "completed_nodes": [
     "DATA_PREFLIGHT",
     "RUN_CORE_1",
     "RUN_EXP_8",
     "RUN_EXP_6",
     "ZERO_CORRESPONDENCE_READY",
-    "PREDICATE_PROXY_READY"
+    "PREDICATE_PROXY_READY",
+    "BUILD_SAME_OBJECT_CERTIFICATE",
+    "SAME_OBJECT_PROXY_CANDIDATE"
   ],
-  "created_at": "2026-05-07T03:57:05.885588Z",
-  "current_node": "BUILD_SAME_OBJECT_CERTIFICATE",
+  "created_at": "2026-05-07T13:02:10.015048Z",
+  "current_node": "WRITE_NC3_NC4",
   "expected_artifacts": [
-    "artifacts/runs/<run_id>/certificate.json"
+    "proof artifact for NC3/NC4",
+    "proof assembly update"
   ],
-  "proof_work_recommended": false,
-  "recommended_next_action": "BUILD_SAME_OBJECT_CERTIFICATE",
+  "proof_work_recommended": true,
+  "recommended_next_action": "RECOMMEND_NC3_NC4_FORMALIZATION",
   "run_id": "run_1778052633325_epw531",
   "schema_version": "2026.05.run-artifact.v1",
-  "source_artifact_hash": "492fd99ff970e33f555fada1edca2e800ba49fa306029fa947c337ea3181aaca",
-  "stop_condition": "Certificate reaches SAME_OBJECT_PROXY_CANDIDATE, SAME_OBJECT_FAILED, or INCONCLUSIVE.",
-  "why": "The critical experiments pass; assemble the Same-Object Certificate before running more tests."
+  "source_artifact_hash": "2ed04f46a3747e6a541e199aedf3aa8b464253b893cc1a9109b01596bb7df466",
+  "stop_condition": "Stop running more empirical tests unless increasing fidelity or targeting a named blocker.",
+  "why": "Same-Object Certificate passes at AUTHORITATIVE fidelity. Further empirical tests are lower priority than formalizing the same-case criterion and predicate transport."
 }

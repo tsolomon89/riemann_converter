@@ -2,6 +2,15 @@
   "alternative_hypotheses": [
     {
       "alternatives": [
+        "zero-reuse is valid only at low |k|",
+        "zero-reuse requires a specific normalization to match the baseline",
+        "the baseline implicitly does something the optimization skips"
+      ],
+      "display_id": "NOTE-1",
+      "experiment_id": "EXP_1C"
+    },
+    {
+      "alternatives": [
         "detectability requires a different compression depth",
         "detectability requires phase-aware metrics rather than amplitude metrics",
         "detectability holds only for perturbations above a structured floor"
@@ -28,6 +37,13 @@
         "display_id": "ZETA-0",
         "experiment_id": "EXP_0",
         "role": "visualization",
+        "scoped_consequence": "NONE"
+      },
+      {
+        "baseline_status": "CONFIRMED",
+        "display_id": "TRANS-1",
+        "experiment_id": "EXP_10",
+        "role": "exploratory",
         "scoped_consequence": "NONE"
       },
       {
@@ -64,13 +80,6 @@
         "experiment_id": "EXP_9",
         "role": "demonstration",
         "scoped_consequence": "NONE"
-      },
-      {
-        "baseline_status": "CONFIRMED",
-        "display_id": "TRANS-1",
-        "experiment_id": "EXP_10",
-        "role": "exploratory",
-        "scoped_consequence": "NONE"
       }
     ],
     "PROGRAM_1": {
@@ -79,11 +88,11 @@
       "exploratory": [],
       "pathfinders": [
         {
-          "baseline_status": "NOT_APPLICABLE",
+          "baseline_status": "FAILED",
           "display_id": "NOTE-1",
           "experiment_id": "EXP_1C",
           "role": "pathfinder",
-          "scoped_consequence": "NONE"
+          "scoped_consequence": "BASELINE_MODEL"
         }
       ],
       "visualizations": [],
@@ -298,6 +307,17 @@
   "failed_or_incomplete_baselines": [
     {
       "actual_run_inference": [
+        "NOTE-1: the partial-transport / zero-reuse baseline was not confirmed on this run.",
+        "Raw data show the scaled-zero reconstruction at physical coordinates diverged from the coordinate-baseline beyond the documented drift / ratio tolerances.",
+        "Read this as a zero-reuse engineering failure for the current baseline, not as a Program 1 same-object failure or theory verdict."
+      ],
+      "baseline_status": "FAILED",
+      "display_id": "NOTE-1",
+      "experiment_id": "EXP_1C",
+      "scoped_consequence": "BASELINE_MODEL"
+    },
+    {
+      "actual_run_inference": [
         "P2-1: the current baseline was not confirmed on this run.",
         "Baseline tested: A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings.",
         "The raw data may still contain structured behavior \u2014 see candidate lemma and alternative-hypothesis suggestions.",
@@ -363,15 +383,15 @@
   ],
   "pathfinding_notes": [
     {
-      "baseline_status": "NOT_APPLICABLE",
+      "baseline_status": "FAILED",
       "display_id": "NOTE-1",
       "experiment_id": "EXP_1C",
-      "lemma_name": "Zero-Reuse Engineering Note (no-lemma)",
-      "lemma_status": "NO_LEMMA_SUGGESTED",
+      "lemma_name": "Zero-Reuse Engineering Note (failure-direction)",
+      "lemma_status": "SUGGESTED_FROM_FAILURE",
       "program": "PROGRAM_1",
       "role": "pathfinder",
-      "scoped_consequence": "NONE",
-      "statement": "This experiment is pathfinder-typed; no candidate lemma is suggested from this run.",
+      "scoped_consequence": "BASELINE_MODEL",
+      "statement": "The current baseline (Zero-reuse / zero-handling optimization (scaled-zero reconstruction at physical coordinates) behaves consistently with the baseline reconstruction under the declared tolerance) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
       "what_it_does_not_prove": [
         "this supports the base claim",
         "this supports Program 1 witnesses directly",
@@ -546,6 +566,15 @@
   ],
   "recommended_next_experiments": [
     {
+      "display_id": "NOTE-1",
+      "experiment_id": "EXP_1C",
+      "next_hypotheses": [
+        "zero-reuse is valid only at low |k|",
+        "zero-reuse requires a specific normalization to match the baseline",
+        "the baseline implicitly does something the optimization skips"
+      ]
+    },
+    {
       "display_id": "P2-1",
       "experiment_id": "EXP_2",
       "next_hypotheses": [
@@ -588,7 +617,7 @@
     "controls": 2,
     "demonstrations": 2,
     "experiments_reviewed": 14,
-    "failed_or_incomplete": 4,
+    "failed_or_incomplete": 5,
     "pathfinders": 4,
     "program_1_total": 4,
     "program_1_witnesses": 3,
@@ -612,6 +641,14 @@
     "The RH predicate transports exactly under the gauge.",
     "The theorem candidate is proved.",
     "Coverage extends beyond Odlyzko's verified range.",
+    "the gauge-coordinate theory fails",
+    "Program 1 fails",
+    "RH is refuted",
+    "zeta admits a non-trivial multiplicative gauge automorphism.",
+    "tau (or any other base tested) is uniquely privileged.",
+    "Small residuals at one base imply transport-invariance of the RH predicate.",
+    "The residual decay rate provides a path to a proof.",
+    "The theorem candidate is proved or refuted by this experiment.",
     "this supports RH",
     "this supports Program 1's positive witnesses directly",
     "this proves NC2 in any formal sense",
@@ -650,14 +687,6 @@
     "this proves NC5",
     "Transport is established by this experiment.",
     "The bounded-view corollary is proved.",
-    "Anything about whether the gauge actually preserves RH-relevant structure.",
-    "the gauge-coordinate theory fails",
-    "Program 1 fails",
-    "RH is refuted",
-    "zeta admits a non-trivial multiplicative gauge automorphism.",
-    "tau (or any other base tested) is uniquely privileged.",
-    "Small residuals at one base imply transport-invariance of the RH predicate.",
-    "The residual decay rate provides a path to a proof.",
-    "The theorem candidate is proved or refuted by this experiment."
+    "Anything about whether the gauge actually preserves RH-relevant structure."
   ]
 }

@@ -18,7 +18,7 @@ Sampled 500 t-points across 5 bases x 5 k-values. max|residual| at tau, k=1: 6.8
 Metric summary:
 ```json
 {
-  "summary_metric": 6.830321442835776
+  "summary_metric": 48.0
 }
 ```
 

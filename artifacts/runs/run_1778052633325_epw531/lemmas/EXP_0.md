@@ -18,7 +18,7 @@ Polar trace rendered with 500 samples and 10 zero markers in range. Dual-window 
 Metric summary:
 ```json
 {
-  "summary_metric": 500.0
+  "summary_metric": 200.0
 }
 ```
 

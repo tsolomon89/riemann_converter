@@ -50,7 +50,7 @@
     "baseline_status": "NOT_APPLICABLE",
     "failed_metrics": [],
     "fit_metrics": {
-      "summary_metric": 500.0
+      "summary_metric": 200.0
     }
   },
   "next_hypotheses": [],

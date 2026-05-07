@@ -236,6 +236,31 @@ describe("current-run-only reporting", () => {
         expect(report.warnings.join(" ")).toContain("zero source precision below certificate policy");
     });
 
+    it("treats the generated 60K baseline as warning-gated rather than blocked", () => {
+        const report = buildFidelityReport(
+            {
+                meta: {
+                    dps: 80,
+                    zeros: 60000,
+                    zero_source_info: {
+                        declared_decimals: 75,
+                        requested_count: 60000,
+                        loaded_count: 60000,
+                        source_kind: "generated_cache",
+                        source_path: "data/zeros/nontrivial/zeros.generated.jsonl",
+                        valid: true,
+                    },
+                },
+            } as unknown as ExperimentsData,
+            { data_sufficiency: readyData },
+        );
+
+        expect(report.compute_fidelity).toBe("AUTHORITATIVE");
+        expect(report.data_fidelity).toBe("READY_WITH_WARNINGS");
+        expect(report.certificate_fidelity).toBe("ELIGIBLE_WITH_WARNINGS");
+        expect(report.warnings.join(" ")).toContain("accepted for this baseline run");
+    });
+
     it("keeps Program 2 mixed status out of Same-Object Certificate next action", () => {
         const plan = buildResearchPlan(readyData, {
             meta: { dps: 80, zeros: 20000, tau: 6.28 },
@@ -294,6 +319,33 @@ describe("current-run-only reporting", () => {
         await expect(response.json()).resolves.toMatchObject({
             engine_status: "NO_CURRENT_RUN",
             artifact_kind: "experiments",
+        });
+    });
+
+    it("current-experiments endpoint falls back to the public mirror when the per-run artifact is not committed", async () => {
+        const root = process.cwd();
+        writeCurrent(root, "run_public");
+        writeJson(path.join(root, "public", "experiments.json"), {
+            run_id: "run_public",
+            artifact_kind: "experiments",
+            meta: { dps: 80, zeros: 60000, tau: 6.283185307179586 },
+            summary: { overall: "PASS", experiments: {} },
+            experiment_0: {
+                polar_trace: {
+                    samples: [{ t: 2, re: 1, im: 0 }],
+                },
+            },
+        });
+
+        const response = await GET(new Request("http://localhost/api/research/current-experiments"), ctx("current-experiments"));
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toMatchObject({
+            run_id: "run_public",
+            experiment_0: {
+                polar_trace: {
+                    samples: [expect.objectContaining({ t: 2 })],
+                },
+            },
         });
     });
 

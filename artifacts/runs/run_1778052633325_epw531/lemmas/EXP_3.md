@@ -18,7 +18,7 @@ Control armed: beta=pi reconstruction diverges from true by 1138.8x baseline amp
 Metric summary:
 ```json
 {
-  "summary_metric": 17082.167369673043
+  "summary_metric": 15.0
 }
 ```
 

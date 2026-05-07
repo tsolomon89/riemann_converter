@@ -18,7 +18,7 @@ Control armed: naive gamma scaling diverges from baseline by 452.9% (max_drift=6
 Metric summary:
 ```json
 {
-  "summary_metric": 67.9293553585873
+  "summary_metric": 14.99809194731132
 }
 ```
 

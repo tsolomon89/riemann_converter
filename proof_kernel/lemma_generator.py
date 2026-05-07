@@ -39,7 +39,12 @@ SCHEMA_VERSION = "2026.05.experiment-review.v1"
 # Status mapping: run outcome → baseline_status, scoped_consequence
 # ---------------------------------------------------------------------------
 
-def _baseline_status_from_outcome(outcome: str, role: str) -> str:
+def _baseline_status_from_outcome(
+    outcome: str,
+    role: str,
+    status: str = "",
+    scoped_status: Optional[str] = None,
+) -> str:
     """Map a run's outcome to a baseline-aware status.
 
     Roles invert some conventions:
@@ -57,6 +62,10 @@ def _baseline_status_from_outcome(outcome: str, role: str) -> str:
     if o == "DIRECTIONAL":
         return "INCOMPLETE"
     if o == "INFORMATIONAL":
+        s = (status or "").upper()
+        scoped = (scoped_status or "").upper()
+        if s == "FAIL" or scoped == "FAIL":
+            return "FAILED"
         return "NOT_APPLICABLE"
     if not o:
         return "INCOMPLETE"
@@ -205,9 +214,21 @@ def _build_actual_run_inference(
                 "The visualization or mapping needs review; this does not refute the theory.",
             ]
         if role in ("pathfinder", "exploratory"):
+            if display_id == "NOTE-1":
+                return [
+                    f"{display_id}: the partial-transport / zero-reuse baseline was not confirmed on this run.",
+                    (
+                        "Raw data show the scaled-zero reconstruction at physical coordinates diverged "
+                        "from the coordinate-baseline beyond the documented drift / ratio tolerances."
+                    ),
+                    (
+                        "Read this as a zero-reuse engineering failure for the current baseline, "
+                        "not as a Program 1 same-object failure or theory verdict."
+                    ),
+                ]
             return [
-                f"{display_id}: the pathfinder / guardrail did not give a decisive signal on this run.",
-                "The direction note is inconclusive; the theory is not refuted.",
+                f"{display_id}: the pathfinder / guardrail baseline was not confirmed on this run.",
+                "The direction note needs revision or a narrower baseline; the theory is not refuted.",
             ]
         # witness
         return [
@@ -331,7 +352,7 @@ def build_experiment_review(
     outcome = exp.get("outcome") or exp.get("status") or ""
     scoped_status = exp.get("scoped_status")
     role = baseline["role"]
-    baseline_status = _baseline_status_from_outcome(outcome, role)
+    baseline_status = _baseline_status_from_outcome(outcome, role, exp.get("status") or "", scoped_status)
     raw = _extract_raw_observations(exp)
     summary_metric = _summary_metric(exp)
     actual = _build_actual_run_inference(exp, baseline, baseline_status)
@@ -395,8 +416,9 @@ def build_model_comparison(
     baseline: Dict[str, Any],
 ) -> Dict[str, Any]:
     outcome = exp.get("outcome") or exp.get("status") or ""
+    scoped_status = exp.get("scoped_status")
     role = baseline["role"]
-    baseline_status = _baseline_status_from_outcome(outcome, role)
+    baseline_status = _baseline_status_from_outcome(outcome, role, exp.get("status") or "", scoped_status)
     summary_metric = _summary_metric(exp)
     series_refs = _extract_series_refs(exp)
 

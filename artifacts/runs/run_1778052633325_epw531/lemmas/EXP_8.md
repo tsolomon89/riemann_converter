@@ -18,7 +18,7 @@ Scaled-zeta zeros align with tau-scaled baseline zeros within adaptive tolerance
 Metric summary:
 ```json
 {
-  "summary_metric": 3.0775471784850645e-76
+  "summary_metric": 1e-30
 }
 ```
 

@@ -263,6 +263,24 @@ def _write_current_state(
     _safe_json(repo / "public" / "current.json", payload)
 
 
+def _selected_sources_for_current_state(meta: Dict[str, Any], ds: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    selected = meta.get("selected_data_sources") if isinstance(meta.get("selected_data_sources"), dict) else None
+    if selected:
+        return selected
+
+    planned = ds.get("selected_assets") if isinstance(ds.get("selected_assets"), dict) else None
+    if not planned:
+        return None
+
+    zero_info = meta.get("zero_source_info") if isinstance(meta.get("zero_source_info"), dict) else {}
+    actual_zero_path = zero_info.get("source_path")
+    planned_zero = ((planned.get("zero") or {}).get("asset") or {}) if isinstance(planned, dict) else {}
+    planned_zero_path = planned_zero.get("source_path")
+    if actual_zero_path and planned_zero_path and actual_zero_path != planned_zero_path:
+        return None
+    return planned
+
+
 def write_run_artifacts(
     data: Dict[str, Any],
     run_id: Optional[str] = None,
@@ -372,6 +390,6 @@ def write_run_artifacts(
         certificate_path=cert_path,
         certificate_status=cert_status,
         next_action=rp.get("recommended_next_action") or ds.get("next_action"),
-        selected_data_sources=meta.get("selected_data_sources") if isinstance(meta.get("selected_data_sources"), dict) else ds.get("selected_assets"),
+        selected_data_sources=_selected_sources_for_current_state(meta, ds),
     )
     return out_dir
