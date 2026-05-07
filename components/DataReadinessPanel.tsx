@@ -137,7 +137,7 @@ function Metric({ label, value }: { label: string; value: unknown }) {
 function AssetCard({ asset }: { asset: Asset }) {
     const status = asset.valid === true ? "VALID" : asset.valid === false ? "INVALID" : "UNKNOWN";
     return (
-        <div className="rounded border border-white/10 bg-black/20 p-3">
+        <div className="min-w-0 rounded border border-white/10 bg-black/20 p-3">
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                     <div className="truncate text-[11px] font-semibold text-zinc-200" title={asset.asset_id}>
@@ -167,7 +167,7 @@ function AssetCard({ asset }: { asset: Asset }) {
 
 function SelectedSourceRow({ label, item }: { label: string; item?: SelectedAsset }) {
     return (
-        <div className="grid grid-cols-[90px_1fr_auto] items-center gap-2 border-b border-white/5 py-2 text-[10px] last:border-b-0">
+        <div className="grid min-w-0 grid-cols-[90px_1fr_auto] items-center gap-2 border-b border-white/5 py-2 text-[10px] last:border-b-0">
             <span className="font-mono uppercase tracking-wider text-zinc-500">{label}</span>
             <span className="min-w-0 truncate text-zinc-300" title={item?.asset?.source_path ?? item?.asset?.asset_id}>
                 {item?.asset?.source_path ?? item?.asset?.asset_id ?? "n/a"}
@@ -292,7 +292,7 @@ export default function DataReadinessPanel({ id }: { id?: string }) {
             </div>
 
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.15fr_0.85fr]">
-                <div className="space-y-3">
+                <div className="min-w-0 space-y-3">
                     <div>
                         <div className="mb-2 flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-zinc-400">
                             <HardDrive size={13} />
@@ -327,7 +327,7 @@ export default function DataReadinessPanel({ id }: { id?: string }) {
                     </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="min-w-0 space-y-3">
                     <div className="rounded border border-white/10 bg-black/20 p-3">
                         <div className="mb-2 flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-zinc-400">
                             <CheckCircle2 size={13} />

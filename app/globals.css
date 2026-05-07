@@ -40,6 +40,65 @@ body {
     box-shadow: 0 0 15px rgba(100, 200, 255, 0.1);
 }
 
+/* App readability scale.
+   The instrument uses many fixed Tailwind pixel utilities for dense research
+   panels. Keep the change scoped to the app shell so docs/tests and framework
+   chrome are unaffected. */
+#app-shell .text-\[8px\] {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+#app-shell .text-\[9px\] {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+#app-shell .text-\[10px\] {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+#app-shell .text-\[11px\] {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+#app-shell .text-\[12px\] {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+#app-shell .text-xs {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+#app-shell .text-sm {
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+#app-shell .text-base {
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+#app-shell .text-lg {
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+#app-shell .text-xl {
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+#app-shell .text-2xl {
+  font-size: 28px;
+  line-height: 1.2;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
