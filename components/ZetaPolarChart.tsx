@@ -6,7 +6,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   ComposedChart,
   ReferenceLine,
 } from "recharts";
@@ -39,6 +38,7 @@ interface ZetaPolarChartProps {
   mode: "polar" | "dual";
   polarTrace?: PolarTraceData;
   dualWindow?: DualWindowData;
+  /** Cartesian grid side length in pixels. */
   height?: number;
 }
 
@@ -90,37 +90,107 @@ const PolarTooltip = ({ active, payload }: { active?: boolean; payload?: Tooltip
   );
 };
 
+// Keep the Cartesian plotting region square; the chart shell includes axis space.
+const CHART_MARGIN = { top: 24, right: 28, bottom: 34, left: 10 };
+const X_AXIS_HEIGHT = 44;
+const Y_AXIS_WIDTH = 64;
+
+const finite = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const squareDomain = (points: Array<{ re?: number; im?: number }>) => {
+  const xs = points.map((point) => point.re).filter(finite);
+  const ys = points.map((point) => point.im).filter(finite);
+
+  if (xs.length === 0 || ys.length === 0) {
+    return { x: ["auto", "auto"] as const, y: ["auto", "auto"] as const };
+  }
+
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  const rawSpan = Math.max(maxX - minX, maxY - minY);
+  const span = (rawSpan > 0 ? rawSpan : 1) * 1.08;
+  const half = span / 2;
+
+  return {
+    x: [centerX - half, centerX + half] as [number, number],
+    y: [centerY - half, centerY + half] as [number, number],
+  };
+};
+
+function SquareChartFrame({
+  gridSide,
+  children,
+}: {
+  gridSide: number;
+  children: React.ReactNode;
+}) {
+  const width = gridSide + Y_AXIS_WIDTH + CHART_MARGIN.left + CHART_MARGIN.right;
+  const height = gridSide + X_AXIS_HEIGHT + CHART_MARGIN.top + CHART_MARGIN.bottom;
+
+  return (
+    <div className="w-full overflow-x-auto pb-2">
+      <div className="mx-auto" style={{ width, height }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function ZetaPolarChart({
   mode,
   polarTrace,
   dualWindow,
-  height = 480,
+  height = 640,
 }: ZetaPolarChartProps) {
+  const gridSide = height;
+  const chartWidth = gridSide + Y_AXIS_WIDTH + CHART_MARGIN.left + CHART_MARGIN.right;
+  const chartHeight = gridSide + X_AXIS_HEIGHT + CHART_MARGIN.top + CHART_MARGIN.bottom;
+
   if (mode === "polar") {
     if (!polarTrace || !polarTrace.samples?.length) {
       return (
-        <div className="h-[480px] flex items-center justify-center text-gray-500 text-sm">
-          No polar trace data available. Run ZETA-0 to populate.
-        </div>
+        <SquareChartFrame gridSide={gridSide}>
+          <div className="flex h-full items-center justify-center text-gray-500 text-sm">
+            No polar trace data available. Run ZETA-0 to populate.
+          </div>
+        </SquareChartFrame>
       );
     }
+    const domains = squareDomain([
+      ...polarTrace.samples,
+      ...(polarTrace.zero_markers ?? []),
+    ]);
+
     return (
-      <div className="w-full" style={{ height }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={polarTrace.samples} margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
+      <SquareChartFrame gridSide={gridSide}>
+        <ComposedChart
+          width={chartWidth}
+          height={chartHeight}
+          data={polarTrace.samples}
+          margin={CHART_MARGIN}
+        >
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
             <XAxis
               type="number"
               dataKey="re"
-              domain={["auto", "auto"]}
-              tick={{ fill: "#94a3b8", fontSize: 11 }}
+              domain={domains.x}
+              tickCount={7}
+              height={X_AXIS_HEIGHT}
+              tick={{ fill: "#94a3b8", fontSize: 13 }}
               label={{ value: "Re ζ(½ + it)", position: "insideBottom", offset: -10, fill: "#94a3b8" }}
             />
             <YAxis
               type="number"
               dataKey="im"
-              domain={["auto", "auto"]}
-              tick={{ fill: "#94a3b8", fontSize: 11 }}
+              domain={domains.y}
+              tickCount={7}
+              width={Y_AXIS_WIDTH}
+              tick={{ fill: "#94a3b8", fontSize: 13 }}
               label={{ value: "Im ζ(½ + it)", angle: -90, position: "insideLeft", fill: "#94a3b8" }}
             />
             <ReferenceLine x={0} stroke="#475569" strokeDasharray="4 4" />
@@ -145,40 +215,52 @@ export default function ZetaPolarChart({
                 isAnimationActive={false}
               />
             )}
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
+        </ComposedChart>
+      </SquareChartFrame>
     );
   }
 
   // dual mode
   if (!dualWindow || !dualWindow.uncompressed?.length || !dualWindow.compressed?.length) {
     return (
-      <div className="h-[480px] flex items-center justify-center text-gray-500 text-sm">
-        No dual-window data available. Run ZETA-0 to populate.
-      </div>
+      <SquareChartFrame gridSide={gridSide}>
+        <div className="flex h-full items-center justify-center text-gray-500 text-sm">
+          No dual-window data available. Run ZETA-0 to populate.
+        </div>
+      </SquareChartFrame>
     );
   }
 
   const cfg = dualWindow.config || {};
+  const domains = squareDomain([
+    ...dualWindow.uncompressed,
+    ...dualWindow.compressed,
+  ]);
 
   return (
-    <div className="w-full" style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
+    <SquareChartFrame gridSide={gridSide}>
+      <ComposedChart
+        width={chartWidth}
+        height={chartHeight}
+        margin={CHART_MARGIN}
+      >
           <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
           <XAxis
             type="number"
             dataKey="re"
-            domain={["auto", "auto"]}
-            tick={{ fill: "#94a3b8", fontSize: 11 }}
+            domain={domains.x}
+            tickCount={7}
+            height={X_AXIS_HEIGHT}
+            tick={{ fill: "#94a3b8", fontSize: 13 }}
             label={{ value: "Re ζ(½ + it)", position: "insideBottom", offset: -10, fill: "#94a3b8" }}
           />
           <YAxis
             type="number"
             dataKey="im"
-            domain={["auto", "auto"]}
-            tick={{ fill: "#94a3b8", fontSize: 11 }}
+            domain={domains.y}
+            tickCount={7}
+            width={Y_AXIS_WIDTH}
+            tick={{ fill: "#94a3b8", fontSize: 13 }}
             label={{ value: "Im ζ(½ + it)", angle: -90, position: "insideLeft", fill: "#94a3b8" }}
           />
           <ReferenceLine x={0} stroke="#475569" strokeDasharray="4 4" />
@@ -205,8 +287,7 @@ export default function ZetaPolarChart({
             isAnimationActive={false}
             name={`Compressed: ${cfg.base_name}^${cfg.k}·t`}
           />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
+      </ComposedChart>
+    </SquareChartFrame>
   );
 }
