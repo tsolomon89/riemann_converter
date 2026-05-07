@@ -10,6 +10,37 @@ from .data_planner import check_data_sufficiency
 from .research_plan import build_research_plan
 
 
+def _overkill_60k_run_completed(experiment_summary: Dict[str, Any] | None) -> bool:
+    meta = (experiment_summary or {}).get("meta") if isinstance(experiment_summary, dict) else {}
+    if not isinstance(meta, dict):
+        return False
+    contract = meta.get("run_contract") if isinstance(meta.get("run_contract"), dict) else {}
+    selected_zero = (((meta.get("selected_data_sources") or {}).get("zero") or {}))
+    validation = selected_zero.get("validation") or {}
+    asset = selected_zero.get("asset") or {}
+    return (
+        contract.get("preset") == "overkill"
+        and int(contract.get("requested_zero_count") or 0) == 60000
+        and int(contract.get("requested_dps") or 0) == 80
+        and int(contract.get("guard_dps") or 20) == 20
+        and validation.get("status") == "PASS"
+        and int(validation.get("validated_count") or 0) >= 60000
+        and int(asset.get("stored_dps") or 0) >= 100
+    )
+
+
+def _blocked_data_next_action(ds: Dict[str, Any]) -> str:
+    reasons = {item.get("reason") for item in ds.get("insufficient_assets") or []}
+    if "ODLYZKO_CROSSCHECK_FAILED" in reasons:
+        return "INVESTIGATE_ZERO_MISMATCH"
+    if {"ODLYZKO_REFERENCE_UNAVAILABLE", "ODLYZKO_CROSSCHECK_INCOMPLETE"} & reasons:
+        return "VALIDATE_GENERATED_ZEROS_AGAINST_ODLYZKO"
+    if "INSUFFICIENT_COUNT" in reasons and ds.get("preset") == "overkill":
+        return "EXTEND_ZERO_ASSET_TO_60000"
+    step = (ds.get("generation_plan") or [{}])[0]
+    return str(step.get("action") or ds.get("next_action") or "FIX_DATA").upper()
+
+
 def build_next_action(
     data_sufficiency: Dict[str, Any] | None = None,
     experiment_summary: Dict[str, Any] | None = None,
@@ -43,12 +74,21 @@ def build_next_action(
 
     if ds.get("status") != "READY":
         step = (ds.get("generation_plan") or [{}])[0]
-        action = str(step.get("action") or ds.get("next_action") or "FIX_DATA").upper()
         return {
-            "next_action": action,
+            "next_action": _blocked_data_next_action(ds),
             "command": step.get("command"),
             "why": _data_why(ds),
             "blocks": [item for item in plan.get("blocked_nodes", [])],
+            "data_sufficiency": ds,
+            "research_plan": plan,
+        }
+
+    if ds.get("preset") == "overkill" and not _overkill_60k_run_completed(experiment_summary):
+        return {
+            "next_action": "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS",
+            "command": "python experiment_engine.py --preset overkill --zero-count 60000 --dps 80",
+            "why": "Overkill 60K preflight is ready; a clean overkill 60K run has not completed yet.",
+            "blocks": ["RUN_OVERKILL_60K"],
             "data_sufficiency": ds,
             "research_plan": plan,
         }

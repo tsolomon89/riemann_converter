@@ -424,7 +424,7 @@ const simpleRunPreset = (preset = "standard") => {
     const base = {
         preset: id,
         requested_dps: id === "smoke" ? 30 : id === "standard" ? 40 : 80,
-        requested_zero_count: id === "smoke" ? 100 : id === "standard" ? 2000 : 100000,
+        requested_zero_count: id === "smoke" ? 100 : id === "standard" ? 2000 : id === "overkill" ? 60000 : 100000,
         guard_dps: id === "smoke" ? 0 : 20,
         zero_policy: {
             selection: "highest_available",
@@ -438,22 +438,63 @@ const simpleRunPreset = (preset = "standard") => {
     return base;
 };
 
+const isGeneratedZeroAsset = (asset) => {
+    const text = ["asset_id", "source_path", "source_original_path", "generator"]
+        .map((key) => String(asset?.[key] || ""))
+        .join(" ")
+        .toLowerCase();
+    return text.includes("generated") || ["python-flint", "mpmath", "siegelz", "zetazero"].some((token) => text.includes(token));
+};
+
+const zeroValidationArtifacts = () => {
+    const dir = path.join(REPO_ROOT, "data", "zeros", "nontrivial");
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir)
+        .filter((name) => name.endsWith(".validation.json"))
+        .map((name) => readJsonOrNull(path.join(dir, name)))
+        .filter(Boolean);
+};
+
+const validationForAsset = (asset) => zeroValidationArtifacts().find((validation) =>
+    validation?.asset_id === asset?.asset_id ||
+    validation?.asset_path === asset?.source_path ||
+    validation?.generated_asset_path === asset?.source_path
+) || null;
+
 const simpleSelectedDataSource = (args = {}) => {
     const preset = simpleRunPreset(args.preset || args.mode || "standard");
     const requiredDps = preset.requested_dps + preset.guard_dps;
     const zeros = validAssets("nontrivial_zeta_zeros");
-    const strong = zeros
-        .filter((asset) => Number(asset.count || 0) >= preset.requested_zero_count && Number(asset.stored_dps || 0) >= requiredDps)
+    const strongGenerated = zeros
+        .filter((asset) =>
+            isGeneratedZeroAsset(asset) &&
+            Number(asset.count || 0) >= preset.requested_zero_count &&
+            Number(asset.stored_dps || 0) >= requiredDps)
         .sort((a, b) => (Number(b.stored_dps || 0) - Number(a.stored_dps || 0)) || (Number(b.count || 0) - Number(a.count || 0)))[0];
+    const strongValidation = validationForAsset(strongGenerated);
     const fallback = bestByCountDps(zeros);
-    const zero = strong || fallback || null;
-    const status = strong || preset.zero_policy.allow_lower_precision_fallback ? "READY" : "BLOCKED";
+    const validationReady = !preset.zero_policy.require_odlyzko_crosscheck ||
+        (strongValidation?.status === "PASS" && Number(strongValidation.validated_count || 0) >= preset.requested_zero_count);
+    const zero = (strongGenerated && validationReady) ? strongGenerated : fallback || null;
+    const status = (strongGenerated && validationReady) || preset.zero_policy.allow_lower_precision_fallback ? "READY" : "BLOCKED";
     return {
         preset: preset.preset,
+        requested_zero_count: preset.requested_zero_count,
+        requested_dps: preset.requested_dps,
+        guard_dps: preset.guard_dps,
+        required_stored_dps: requiredDps,
+        selected_zero_source: zero?.source_path || null,
+        zero_validation_status: strongValidation?.status || "NOT_AVAILABLE",
+        reference_source: strongValidation?.reference_asset_path || null,
         status,
-        reason: status === "READY" ? "highest valid asset satisfying preset policy" : "no acceptable zero source satisfies count + dps + guard",
+        blocking_reasons: status === "READY" ? [] : ["ODLYZKO_CROSSCHECK_NOT_PASS"],
+        reason: status === "READY" ? "highest valid asset satisfying preset policy" : "no acceptable zero source satisfies count + dps + guard + Odlyzko validation",
         selected_assets: {
-            zero: { asset: zero, reason: strong ? "highest valid generated high-dps asset satisfying count + dps + guard" : "fallback or unavailable" },
+            zero: {
+                asset: zero,
+                reason: strongGenerated ? "highest valid generated high-dps asset satisfying count + dps + guard" : "fallback or unavailable",
+                validation: strongValidation,
+            },
             tau: { asset: bestByCountDps(validAssets("tau")), reason: "highest valid tau asset satisfying dps + guard" },
             prime: { asset: bestPrime(validAssets("primes")), reason: "canonical 7M prime asset" },
         },
@@ -461,15 +502,21 @@ const simpleSelectedDataSource = (args = {}) => {
 };
 
 const simpleDataSufficiency = (args = {}) => {
-    const dps = Number(args.dps || args.requested_dps || 80);
-    const zeros = Number(args.zeros || args.requested_zero_count || 100000);
-    const guard = Number(args.guard_dps || 20);
+    const preset = simpleRunPreset(args.preset || args.mode || "standard");
+    const dps = Number(args.dps || args.requested_dps || preset.requested_dps);
+    const zeros = Number(args.zeros || args.requested_zero_count || preset.requested_zero_count);
+    const guard = Number(args.guard_dps || preset.guard_dps);
+    const defaultPrimeTarget = preset.preset === "overkill" || preset.preset === "overkill_full"
+        ? 7000000
+        : preset.preset === "authoritative"
+            ? 1000000
+            : 0;
     const requiredDps = dps + guard;
     const required = [
         { kind: "tau", stored_dps: requiredDps },
         { kind: "nontrivial_zeta_zeros", count: zeros, stored_dps: requiredDps },
         { kind: "trivial_zeta_zeros", formula: "s = -2n" },
-        { kind: "primes", count: Number(args.prime_target_count || 0), max_prime: 1974 },
+        { kind: "primes", count: Number(args.prime_target_count || defaultPrimeTarget), max_prime: 1974 },
     ];
     const available = [];
     const missing = [];
@@ -501,6 +548,7 @@ const simpleDataSufficiency = (args = {}) => {
     return {
         status,
         mode: args.mode || "same_object_certificate",
+        preset: preset.preset,
         required_assets: required,
         available_assets: available,
         missing_assets: missing,
@@ -565,6 +613,16 @@ const simpleNextAction = (args = {}) => {
             command: step.command,
             why: "Data assets are not sufficient for the requested run.",
             blocks: plan.blocked_nodes,
+            data_sufficiency: ds,
+            research_plan: plan,
+        };
+    }
+    if (ds.preset === "overkill") {
+        return {
+            next_action: "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS",
+            command: "python experiment_engine.py --preset overkill --zero-count 60000 --dps 80",
+            why: "Overkill 60K preflight is ready; run the validated high-dps zero source before proof work.",
+            blocks: ["RUN_OVERKILL_60K"],
             data_sufficiency: ds,
             research_plan: plan,
         };
@@ -701,7 +759,7 @@ const fallbackPayload = (toolName, args) => {
         case "check_data_sufficiency":
             return simpleDataSufficiency(args);
         case "get_run_presets":
-            return { presets: ["smoke", "standard", "authoritative", "overkill"].map(simpleRunPreset) };
+            return { presets: ["smoke", "standard", "authoritative", "overkill", "overkill_full"].map(simpleRunPreset) };
         case "resolve_run_preset":
             return { contract: simpleRunPreset(args?.preset || args?.mode || "standard") };
         case "get_selected_data_source":
@@ -717,7 +775,11 @@ const fallbackPayload = (toolName, args) => {
                 data_sufficiency: simpleDataSufficiency(args),
                 warnings: [],
                 errors: [],
-                next_action: selected.status === "READY" ? "run_next_research_step" : "fix_data_preflight",
+                next_action: selected.status === "READY" && selected.preset === "overkill"
+                    ? "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS"
+                    : selected.status === "READY"
+                        ? "run_next_research_step"
+                        : "fix_data_preflight",
             };
         }
         case "get_precision_policy":

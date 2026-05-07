@@ -63,3 +63,12 @@ def test_next_action_explains_stop_experimenting_after_authoritative_candidate()
     action = build_next_action(READY, _summary("EXP_1", "EXP_8", "EXP_6"), cert)
     assert action["next_action"] == "WRITE_FORMAL_LEMMA"
     assert action["target"] == "NC3/NC4"
+
+
+def test_next_action_requires_clean_overkill_60k_run_before_proof_work() -> None:
+    ready_overkill = {**READY, "preset": "overkill"}
+    cert = {"status": "SAME_OBJECT_PROXY_CANDIDATE", "fidelity": {"tier": "AUTHORITATIVE"}}
+
+    action = build_next_action(ready_overkill, _summary("EXP_1", "EXP_8", "EXP_6"), cert)
+
+    assert action["next_action"] == "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS"

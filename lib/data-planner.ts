@@ -7,8 +7,8 @@ import {
 import { requirementsForExperiments, type RunRequirementInput, type RequiredAsset } from "./experiment-requirements";
 import { isRunPreset, resolveRunPreset, type RunPresetContract } from "./run-presets";
 import {
-    DEFAULT_ZERO_REFERENCE_TOLERANCE,
     readZeroValidationArtifacts,
+    toleranceForReferenceAsset,
     validateZeroAssetAgainstReference,
     type ZeroValidationArtifact,
 } from "./zero-validation";
@@ -64,6 +64,11 @@ const assetRef = (asset: DataAsset | undefined): Partial<DataAsset> | null => {
         "guard_dps",
         "strictly_increasing",
         "valid",
+        "validation_artifact_path",
+        "validation_status",
+        "reference_asset_id",
+        "reference_asset_path",
+        "valid_for_overkill",
         "warnings",
         "errors",
     ];
@@ -142,7 +147,6 @@ const selectZeroAsset = (
     const requiredCount = Number(required.count ?? 0);
     const requiredDps = Number(required.stored_dps ?? 0);
     const referenceAsset = bestReferenceZeroAsset(assets, requiredCount);
-    const tolerance = zeroPolicy.crosscheck_tolerance ?? DEFAULT_ZERO_REFERENCE_TOLERANCE;
     const strictBlock = Boolean((zeroPolicy as { block_on_policy_failure?: boolean }).block_on_policy_failure || (zeroPolicy.require_odlyzko_crosscheck && !zeroPolicy.allow_lower_precision_fallback));
     const warnings: string[] = [];
     const blockers: Array<Record<string, unknown>> = [];
@@ -154,31 +158,72 @@ const selectZeroAsset = (
             Number(asset.count ?? 0) >= requiredCount &&
             Number(asset.stored_dps ?? 0) >= requiredDps)
         .sort(compareAssetsByDpsCount);
+    const incompleteGenerated = assets
+        .filter((asset) =>
+            isGeneratedZeroAsset(asset) &&
+            Number(asset.count ?? 0) < requiredCount &&
+            Number(asset.stored_dps ?? 0) >= requiredDps)
+        .sort(compareAssetsByDpsCount);
 
     if (strongGenerated[0]) {
-        const selected = strongGenerated[0];
+        let selected = strongGenerated[0];
         if (zeroPolicy.require_odlyzko_crosscheck) {
-            validation = validateZeroAssetAgainstReference(selected, referenceAsset, tolerance);
-            if (validation.status !== "PASS") {
+            for (const candidate of strongGenerated) {
+                selected = candidate;
+                const tolerance = zeroPolicy.crosscheck_tolerance ?? toleranceForReferenceAsset(referenceAsset);
+                validation = validateZeroAssetAgainstReference(candidate, referenceAsset, tolerance, requiredCount);
+                if (validation.status === "PASS" && Number(validation.validated_count ?? 0) >= requiredCount) {
+                    return {
+                        selected: candidate,
+                        reason: "highest valid generated high-dps asset satisfying count + dps + guard",
+                        referenceAsset,
+                        validation,
+                        warnings,
+                        blockers,
+                    };
+                }
                 blockers.push({
                     kind: "nontrivial_zeta_zeros",
                     reason: validation.status === "NOT_AVAILABLE"
                         ? "ODLYZKO_REFERENCE_UNAVAILABLE"
+                        : validation.status === "PASS"
+                            ? "ODLYZKO_CROSSCHECK_INCOMPLETE"
                         : "ODLYZKO_CROSSCHECK_FAILED",
                     status: "BLOCKED",
                     required,
-                    available: assetRef(selected),
+                    available: assetRef(candidate),
                     validation,
                 });
-            } else if (Number(validation.validated_count ?? 0) < requiredCount) {
-                blockers.push({
-                    kind: "nontrivial_zeta_zeros",
-                    reason: "ODLYZKO_CROSSCHECK_INCOMPLETE",
-                    status: "BLOCKED",
-                    required,
-                    available: assetRef(selected),
+            }
+            const strongReference = assets
+                .filter((asset) =>
+                    isReferenceZeroAsset(asset) &&
+                    Number(asset.count ?? 0) >= requiredCount &&
+                    Number(asset.stored_dps ?? 0) >= requiredDps)
+                .sort(compareAssetsByDpsCount);
+            if (strongReference[0]) {
+                const selectedReference = strongReference[0];
+                validation = {
+                    asset_id: selectedReference.asset_id,
+                    reference_asset_id: selectedReference.asset_id,
+                    validated_count: Number(selectedReference.count ?? 0),
+                    tolerance: "self",
+                    max_deviation: "0",
+                    p95_deviation: "0",
+                    failed_indices: [],
+                    status: "PASS",
+                    valid_for_overkill: Number(selectedReference.count ?? 0) >= 60_000 && Number(selectedReference.stored_dps ?? 0) >= 100,
+                    valid_for_authoritative: true,
+                    reason: "selected reference asset",
+                };
+                return {
+                    selected: selectedReference,
+                    reason: "highest valid Odlyzko/reference asset satisfying count + precision",
+                    referenceAsset: selectedReference,
                     validation,
-                });
+                    warnings,
+                    blockers: [],
+                };
             }
         }
         return {
@@ -188,6 +233,18 @@ const selectZeroAsset = (
             validation,
             warnings,
             blockers,
+        };
+    }
+
+    if (incompleteGenerated[0] && !zeroPolicy.allow_lower_precision_fallback) {
+        return {
+            selected: incompleteGenerated[0],
+            reason: "generated high-dps zero source requires extension to requested count",
+            referenceAsset,
+            validation,
+            warnings,
+            blockers,
+            precisionFallback: false,
         };
     }
 
@@ -285,7 +342,9 @@ export const checkDataSufficiency = (input: DataPlannerInput = {}): DataPlannerO
     const requestedDps = Number(input.requested_dps ?? input.dps ?? contract?.requested_dps ?? 80);
     const requestedZeroCount = Number(input.requested_zero_count ?? input.zeros ?? input.zero_count ?? contract?.requested_zero_count ?? 100000);
     const guardDps = Number(input.guard_dps ?? contract?.guard_dps ?? 20);
+    const runtimeDefaults = contract?.runtime_policy ?? {};
     const requirements = requirementsForExperiments(experiments, {
+        ...runtimeDefaults,
         ...input,
         requested_dps: requestedDps,
         requested_zero_count: requestedZeroCount,
@@ -465,7 +524,19 @@ const blockReason = (plan: DataPlannerOutput) => {
         const required = insufficient.required as { stored_dps?: number } | undefined;
         const available = insufficient.available as { stored_dps?: number } | undefined;
         if (insufficient.reason === "ODLYZKO_CROSSCHECK_FAILED") {
-            const validation = insufficient.validation as { status?: string } | undefined;
+            const validation = insufficient.validation as {
+                status?: string;
+                failed_details?: Array<Record<string, unknown>>;
+            } | undefined;
+            const failed = validation?.failed_details?.[0];
+            if (failed) {
+                return (
+                    `Run blocked. Preset ${plan.preset} requires Odlyzko cross-check PASS; ` +
+                    `first failed index ${String(failed.index)}: generated=${String(failed.generated_value)}, ` +
+                    `reference=${String(failed.reference_value)}, deviation=${String(failed.deviation)}, ` +
+                    `tolerance=${String(failed.tolerance)}.`
+                );
+            }
             return `Run blocked. Preset ${plan.preset} requires Odlyzko cross-check PASS; validation status is ${validation?.status}.`;
         }
         if (insufficient.reason === "ODLYZKO_REFERENCE_UNAVAILABLE") {
@@ -491,25 +562,43 @@ const blockReason = (plan: DataPlannerOutput) => {
 };
 
 const preflightNextAction = (plan: DataPlannerOutput) => {
-    if (plan.status === "READY") return "run_next_research_step";
+    if (plan.status === "READY") {
+        return plan.preset === "overkill"
+            ? "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS"
+            : "run_next_research_step";
+    }
     const zero = plan.selected_assets?.zero?.asset;
     const required = plan.required_assets.find((asset) => asset.kind === "nontrivial_zeta_zeros");
     const selectedDps = Number(zero?.stored_dps ?? 0);
     const requiredDps = Number(required?.stored_dps ?? 0);
     if (zero && selectedDps < requiredDps) return "generate_high_dps_zero_asset";
+    if (plan.insufficient_assets.some((item) => item.reason === "INSUFFICIENT_COUNT")) {
+        return plan.preset === "overkill" ? "EXTEND_ZERO_ASSET_TO_60000" : "extend_zero_asset";
+    }
     if (plan.insufficient_assets.some((item) => item.reason === "ODLYZKO_CROSSCHECK_FAILED")) {
-        return "validate_against_odlyzko_reference";
+        return "INVESTIGATE_ZERO_MISMATCH";
     }
     if (plan.insufficient_assets.some((item) => item.reason === "ODLYZKO_REFERENCE_UNAVAILABLE")) {
-        return "add_odlyzko_reference_asset";
+        return "VALIDATE_GENERATED_ZEROS_AGAINST_ODLYZKO";
+    }
+    if (plan.insufficient_assets.some((item) => item.reason === "ODLYZKO_CROSSCHECK_INCOMPLETE")) {
+        return "VALIDATE_GENERATED_ZEROS_AGAINST_ODLYZKO";
     }
     return plan.next_action ?? "fix_data_preflight";
 };
 
 export interface RunPreflightOutput {
     preset: string;
+    requested_zero_count: number;
+    requested_dps: number;
+    guard_dps: number;
+    required_stored_dps: number;
+    selected_zero_source?: string | null;
+    zero_validation_status: "PASS" | "FAIL" | "NOT_AVAILABLE";
+    reference_source?: string | null;
     status: "READY" | "BLOCKED";
     run_status: "READY" | "BLOCKED";
+    blocking_reasons: string[];
     reason: string;
     contract: RunPresetContract;
     selected_assets: NonNullable<DataPlannerOutput["selected_assets"]>;
@@ -524,10 +613,22 @@ export const runPreflight = (input: DataPlannerInput = {}): RunPreflightOutput =
     const contract = resolveRunPreset(preset);
     const plan = checkDataSufficiency({ ...contract, ...input, preset: contract.preset });
     const status = plan.status === "READY" ? "READY" : "BLOCKED";
+    const zero = plan.selected_assets?.zero;
+    const blockingReasons = plan.insufficient_assets
+        .map((item) => item.reason)
+        .filter((item): item is string => typeof item === "string");
     return {
         preset: contract.preset,
+        requested_zero_count: contract.requested_zero_count,
+        requested_dps: contract.requested_dps,
+        guard_dps: contract.guard_dps,
+        required_stored_dps: contract.requested_dps + contract.guard_dps,
+        selected_zero_source: zero?.asset?.source_path,
+        zero_validation_status: zero?.validation?.status ?? "NOT_AVAILABLE",
+        reference_source: zero?.reference_asset?.source_path,
         status,
         run_status: status,
+        blocking_reasons: blockingReasons,
         reason: status === "READY" ? "highest valid assets satisfy preset policies" : blockReason(plan),
         contract,
         selected_assets: plan.selected_assets ?? {},
@@ -558,7 +659,12 @@ export const validateZeroAssets = () => {
     const reference = bestReferenceZeroAsset(zeros, 1);
     const validations = zeros
         .filter(isGeneratedZeroAsset)
-        .map((asset) => validateZeroAssetAgainstReference(asset, reference, DEFAULT_ZERO_REFERENCE_TOLERANCE));
+        .map((asset) => validateZeroAssetAgainstReference(
+            asset,
+            reference,
+            toleranceForReferenceAsset(reference),
+            60_000,
+        ));
     return {
         reference_asset: assetRef(reference),
         validations,

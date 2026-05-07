@@ -1,0 +1,32 @@
+﻿{
+    "status":  "STOPPED",
+    "processes_found":  [
+                            {
+                                "process_id":  27444,
+                                "parent_process_id":  34180,
+                                "name":  "python.exe",
+                                "command_line":  "python -u experiment_engine.py --run 0,1,1b,1c,2,2b,3,4,5,6,7,8,9,10 --emit-run-events --zero-count 100000 --dps 80 --resolution 500 --x-start 2 --x-end 50 --beta-offset 0.0001 --k-power -20 --prime-min-count 6000000 --prime-target-count 7000000",
+                                "run_id":  "run_1777665620945_xz48gu"
+                            }
+                        ],
+    "processes_stopped":  [
+                              {
+                                  "process_id":  27444,
+                                  "run_id":  "run_1777665620945_xz48gu",
+                                  "method":  "POST /api/research/run/cancel",
+                                  "result":  "CANCELLED",
+                                  "force_kill_used":  false
+                              }
+                          ],
+    "generated_asset_path":  "data/zeros/nontrivial/zeros.generated.jsonl",
+    "line_count_after_stop":  68100,
+    "notes":  [
+                  "Cancellation used the application run-manager path and completed without force kill.",
+                  "Partial generated zero file was preserved and was not marked invalid for being short of the old 100K target.",
+                  "Partial file validates against the reference for 60,000 indices but has observed stored_dps=75, so it is not eligible for overkill requiring stored_dps\u003e=100.",
+                  "Existing data/zeros/nontrivial/zeros.generated.dps_100.jsonl remains the overkill-eligible high-dps source and validates for 60,000 indices."
+              ],
+    "errors":  [
+
+               ]
+}

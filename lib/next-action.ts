@@ -31,6 +31,35 @@ const dataWhy = (ds: DataPlannerOutput) => {
     return "Data preflight is not ready.";
 };
 
+const overkill60kRunCompleted = (artifact?: ExperimentsData) => {
+    const contract = artifact?.meta?.run_contract as
+        | { preset?: string; requested_zero_count?: number; requested_dps?: number; guard_dps?: number }
+        | undefined;
+    const selectedZero = (artifact?.meta?.selected_data_sources as
+        | { zero?: { validation?: { status?: string; validated_count?: number }; asset?: { stored_dps?: number } } }
+        | undefined)?.zero;
+    return (
+        contract?.preset === "overkill" &&
+        Number(contract.requested_zero_count) === 60_000 &&
+        Number(contract.requested_dps) === 80 &&
+        Number(contract.guard_dps ?? 20) === 20 &&
+        selectedZero?.validation?.status === "PASS" &&
+        Number(selectedZero.validation.validated_count ?? 0) >= 60_000 &&
+        Number(selectedZero.asset?.stored_dps ?? 0) >= 100
+    );
+};
+
+const blockedDataNextAction = (ds: DataPlannerOutput) => {
+    const reasons = new Set(ds.insufficient_assets.map((item) => item.reason));
+    if (reasons.has("ODLYZKO_CROSSCHECK_FAILED")) return "INVESTIGATE_ZERO_MISMATCH";
+    if (reasons.has("ODLYZKO_REFERENCE_UNAVAILABLE") || reasons.has("ODLYZKO_CROSSCHECK_INCOMPLETE")) {
+        return "VALIDATE_GENERATED_ZEROS_AGAINST_ODLYZKO";
+    }
+    if (reasons.has("INSUFFICIENT_COUNT") && ds.preset === "overkill") return "EXTEND_ZERO_ASSET_TO_60000";
+    const step = ds.generation_plan[0];
+    return String(step?.action ?? ds.next_action ?? "FIX_DATA").toUpperCase();
+};
+
 export const buildNextAction = (
     dataSufficiency: DataPlannerOutput = checkDataSufficiency(),
     artifact?: ExperimentsData,
@@ -70,10 +99,20 @@ export const buildNextAction = (
     if (dataSufficiency.status !== "READY") {
         const step = dataSufficiency.generation_plan[0];
         return {
-            next_action: String(step?.action ?? dataSufficiency.next_action ?? "FIX_DATA").toUpperCase(),
+            next_action: blockedDataNextAction(dataSufficiency),
             command: step?.command,
             why: dataWhy(dataSufficiency),
             blocks: researchPlan.blocked_nodes,
+            data_sufficiency: dataSufficiency,
+            research_plan: researchPlan,
+        };
+    }
+    if (dataSufficiency.preset === "overkill" && !overkill60kRunCompleted(artifact)) {
+        return {
+            next_action: "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS",
+            command: "python experiment_engine.py --preset overkill --zero-count 60000 --dps 80",
+            why: "Overkill 60K preflight is ready; a clean overkill 60K run has not completed yet.",
+            blocks: ["RUN_OVERKILL_60K"],
             data_sufficiency: dataSufficiency,
             research_plan: researchPlan,
         };

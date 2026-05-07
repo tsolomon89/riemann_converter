@@ -155,6 +155,60 @@ def test_overkill_blocks_when_no_zero_asset_satisfies_guard_dps(tmp_path: Path) 
     assert "only 9 declared decimals" in preflight["reason"]
 
 
+def test_overkill_blocks_when_high_dps_generated_asset_has_fewer_than_60k_zeros(tmp_path: Path) -> None:
+    generated_path = "data/zeros/nontrivial/zeros.generated.dps_100.jsonl"
+    _write_zero_file(tmp_path, generated_path, ["14.13472514173469379045", "21.02203963877155499262"])
+    _write_assets(tmp_path, [
+        _asset("tau", stored_dps=100, usable_dps=100),
+        _asset(
+            "nontrivial_zeta_zeros",
+            asset_id="generated_100_partial",
+            source_path=generated_path,
+            generator="python-flint.acb.zeta_zeros",
+            count=59_999,
+            stored_dps=100,
+            usable_dps=80,
+            guard_dps=20,
+            strictly_increasing=True,
+        ),
+    ])
+
+    preflight = run_preflight({"preset": "overkill", "experiments": ["EXP_8"], "n_test": 60_000}, tmp_path)
+
+    assert preflight["status"] == "BLOCKED"
+    assert preflight["requested_zero_count"] == 60_000
+    assert preflight["next_action"] == "EXTEND_ZERO_ASSET_TO_60000"
+    assert "INSUFFICIENT_COUNT" in preflight["blocking_reasons"]
+    command = preflight["data_sufficiency"]["generation_plan"][0]["command"]
+    assert "--count 60000" in command
+    assert "--count 100000" not in command
+
+
+def test_overkill_blocks_when_reference_validation_is_unavailable(tmp_path: Path) -> None:
+    generated_path = "data/zeros/nontrivial/zeros.generated.dps_100.jsonl"
+    _write_zero_file(tmp_path, generated_path, ["14.13472514173469379045", "21.02203963877155499262"])
+    _write_assets(tmp_path, [
+        _asset("tau", stored_dps=100, usable_dps=100),
+        _asset(
+            "nontrivial_zeta_zeros",
+            asset_id="generated_100",
+            source_path=generated_path,
+            generator="python-flint.acb.zeta_zeros",
+            count=60_000,
+            stored_dps=100,
+            usable_dps=80,
+            guard_dps=20,
+            strictly_increasing=True,
+        ),
+    ])
+
+    preflight = run_preflight({"preset": "overkill", "experiments": ["EXP_8"]}, tmp_path)
+
+    assert preflight["status"] == "BLOCKED"
+    assert preflight["zero_validation_status"] == "NOT_AVAILABLE"
+    assert preflight["next_action"] == "VALIDATE_GENERATED_ZEROS_AGAINST_ODLYZKO"
+
+
 def test_overkill_blocks_when_odlyzko_crosscheck_fails(tmp_path: Path) -> None:
     generated_path = "data/zeros/nontrivial/zeros.generated.dps_100.jsonl"
     reference_path = "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.jsonl"
@@ -170,6 +224,31 @@ def test_overkill_blocks_when_odlyzko_crosscheck_fails(tmp_path: Path) -> None:
 
     assert preflight["status"] == "BLOCKED"
     assert preflight["selected_assets"]["zero"]["validation"]["status"] == "FAIL"
+    failure = preflight["selected_assets"]["zero"]["validation"]["failed_details"][0]
+    assert failure["index"] == 1
+    assert failure["generated_value"] == "14.13472515173469379045"
+    assert failure["reference_value"] == "14.134725142"
+    assert failure["tolerance"] == "5e-9"
+    assert "first failed index 1" in preflight["reason"]
+
+
+def test_validation_tolerance_uses_reference_declared_decimals(tmp_path: Path) -> None:
+    generated_path = "data/zeros/nontrivial/zeros.generated.dps_100.jsonl"
+    reference_path = "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.jsonl"
+    _write_zero_file(tmp_path, generated_path, ["14.134725148"])
+    _write_zero_file(tmp_path, reference_path, ["14.134725142"])
+    _write_assets(tmp_path, [
+        _asset("tau", stored_dps=100, usable_dps=100),
+        _asset("nontrivial_zeta_zeros", asset_id="generated_100", source_path=generated_path, generator="python-flint.acb.zeta_zeros", count=1, stored_dps=100, usable_dps=80, guard_dps=20, strictly_increasing=True),
+        _asset("nontrivial_zeta_zeros", asset_id="reference_9", source_path=reference_path, generator="existing_file_migration", count=1, stored_dps=9, usable_dps=9, strictly_increasing=True),
+    ])
+
+    preflight = run_preflight({"preset": "overkill", "experiments": ["EXP_8"], "requested_zero_count": 1, "n_test": 1}, tmp_path)
+
+    validation = preflight["selected_assets"]["zero"]["validation"]
+    assert validation["reference_declared_decimals"] == 9
+    assert validation["tolerance"] == "5e-9"
+    assert validation["status"] == "FAIL"
 
 
 def test_standard_preset_warns_when_using_lower_precision_fallback(tmp_path: Path) -> None:
@@ -191,9 +270,17 @@ def test_resolve_run_preset_returns_stable_overkill_contract() -> None:
 
     assert contract["preset"] == "overkill"
     assert contract["requested_dps"] == 80
-    assert contract["requested_zero_count"] == 100000
+    assert contract["requested_zero_count"] == 60000
     assert contract["zero_policy"]["allow_lower_precision_fallback"] is False
     assert contract["zero_policy"]["require_odlyzko_crosscheck"] is True
+    assert contract["runtime_policy"]["prime_target_count"] == 7_000_000
+
+
+def test_overkill_full_remains_explicit_100k_opt_in() -> None:
+    contract = resolve_run_preset("overkill_full")
+
+    assert contract["preset"] == "overkill_full"
+    assert contract["requested_zero_count"] == 100000
 
 
 def test_zero_planner_needs_generation_when_count_insufficient(tmp_path: Path) -> None:

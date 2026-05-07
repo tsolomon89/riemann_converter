@@ -106,15 +106,16 @@ _PRESETS: Dict[str, Dict[str, Any]] = {
     "overkill": _contract(
         preset="overkill",
         requested_dps=80,
-        requested_zero_count=100000,
+        requested_zero_count=60000,
         guard_dps=20,
         allow_lower_precision_fallback=False,
         require_odlyzko_crosscheck=True,
         require_raw_high_precision_artifacts=True,
-        runtime_policy={"prime_min_count": 1000000, "prime_target_count": 1000000},
+        runtime_policy={"prime_min_count": 1000000, "prime_target_count": 7000000},
     ),
-    # Back-compat extension retained for existing UI/API callers. The preset
-    # contract is the same as overkill except for requesting the full prime file.
+    # Explicit long-run extension retained for existing UI/API callers. Normal
+    # overkill intentionally stops at 60K zeros; overkill_full keeps the 100K
+    # zero target and full prime file as opt-in behavior.
     "overkill_full": _contract(
         preset="overkill_full",
         requested_dps=80,

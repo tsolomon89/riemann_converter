@@ -56,6 +56,16 @@ describe("experiment sidebar config semantics", () => {
         expect(next.workers).toBe(7);
     });
 
+    it("applies overkill as 60K zeros with the 7M prime asset target", () => {
+        const next = applyPresetDefaults(baseConfig, "overkill");
+
+        expect(next.runPreset).toBe("overkill");
+        expect(next.zeroCount).toBe(60000);
+        expect(next.dps).toBe(80);
+        expect(next.primeMinCount).toBe(1_000_000);
+        expect(next.primeTargetCount).toBe(7_000_000);
+    });
+
     it("keeps runPreset when only experiment selection changes", () => {
         const config: ExperimentConfig = {
             ...baseConfig,

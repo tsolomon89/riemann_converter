@@ -288,8 +288,18 @@ const parseResearchPlannerInput = (
     const noCurrentRun = artifact?.summary?.engine_status === "NO_CURRENT_RUN";
     const artifactDps = noCurrentRun ? undefined : artifact?.meta?.dps;
     const artifactZeros = noCurrentRun ? undefined : artifact?.meta?.zeros;
-    const defaultDps = artifactDps && artifactDps > 0 ? artifactDps : 80;
-    const defaultZeroCount = artifactZeros && artifactZeros > 0 ? artifactZeros : 100000;
+    const presetName = query.get("preset") ?? query.get("mode");
+    let presetContract: ReturnType<typeof resolveRunPreset> | null = null;
+    if (presetName) {
+        try {
+            presetContract = resolveRunPreset(presetName);
+        } catch {
+            presetContract = null;
+        }
+    }
+    const defaultDps = presetContract?.requested_dps ?? (artifactDps && artifactDps > 0 ? artifactDps : 80);
+    const defaultZeroCount =
+        presetContract?.requested_zero_count ?? (artifactZeros && artifactZeros > 0 ? artifactZeros : 100000);
     return {
         mode: query.get("mode") ?? query.get("preset") ?? "same_object_certificate",
         preset: query.get("preset") ?? undefined,

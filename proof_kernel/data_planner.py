@@ -11,7 +11,9 @@ from .experiment_requirements import default_run_config, requirements_for_experi
 from .run_presets import is_run_preset, resolve_run_preset
 from .zero_validation import (
     DEFAULT_ZERO_REFERENCE_TOLERANCE,
+    OVERKILL_VALIDATION_COUNT,
     load_zero_validation_artifacts,
+    tolerance_for_reference_asset,
     validate_zero_asset_against_reference,
 )
 
@@ -138,6 +140,11 @@ def _asset_ref(asset: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         "guard_dps",
         "strictly_increasing",
         "valid",
+        "validation_artifact_path",
+        "validation_status",
+        "reference_asset_id",
+        "reference_asset_path",
+        "valid_for_overkill",
         "warnings",
         "errors",
     ]
@@ -156,13 +163,21 @@ def _select_zero_asset(
     allow_fallback = bool(zero_policy.get("allow_lower_precision_fallback"))
     require_crosscheck = bool(zero_policy.get("require_odlyzko_crosscheck"))
     strict_block = bool(zero_policy.get("block_on_policy_failure") or (require_crosscheck and not allow_fallback))
-    tolerance = str(zero_policy.get("crosscheck_tolerance") or DEFAULT_ZERO_REFERENCE_TOLERANCE)
+    configured_tolerance = zero_policy.get("crosscheck_tolerance")
 
     strong_generated = [
         asset for asset in candidates
         if (
             _is_generated_zero_asset(asset)
             and int(asset.get("count") or 0) >= required_count
+            and int(asset.get("stored_dps") or 0) >= required_dps
+        )
+    ]
+    incomplete_generated = [
+        asset for asset in candidates
+        if (
+            _is_generated_zero_asset(asset)
+            and int(asset.get("count") or 0) < required_count
             and int(asset.get("stored_dps") or 0) >= required_dps
         )
     ]
@@ -180,39 +195,99 @@ def _select_zero_asset(
     validation: Optional[Dict[str, Any]] = None
 
     if strong_generated:
-        selected = sorted(strong_generated, key=_asset_sort_key, reverse=True)[0]
+        sorted_generated = sorted(strong_generated, key=_asset_sort_key, reverse=True)
+        selected = sorted_generated[0]
         reason = "highest valid generated high-dps asset satisfying count + dps + guard"
         if require_crosscheck:
-            if not reference_asset:
-                validation = validate_zero_asset_against_reference(selected, None, tolerance, root)
-                blockers.append({
-                    "kind": "nontrivial_zeta_zeros",
-                    "reason": "ODLYZKO_REFERENCE_UNAVAILABLE",
-                    "status": "BLOCKED",
-                    "required": required,
-                    "available": _asset_ref(selected),
-                    "validation": validation,
-                })
-            else:
-                validation = validate_zero_asset_against_reference(selected, reference_asset, tolerance, root)
+            for candidate in sorted_generated:
+                selected = candidate
+                tolerance = str(configured_tolerance or tolerance_for_reference_asset(reference_asset))
+                if not reference_asset:
+                    validation = validate_zero_asset_against_reference(
+                        candidate,
+                        None,
+                        tolerance,
+                        root,
+                        max_count=required_count,
+                    )
+                    blockers.append({
+                        "kind": "nontrivial_zeta_zeros",
+                        "reason": "ODLYZKO_REFERENCE_UNAVAILABLE",
+                        "status": "BLOCKED",
+                        "required": required,
+                        "available": _asset_ref(candidate),
+                        "validation": validation,
+                    })
+                    continue
+                validation = validate_zero_asset_against_reference(
+                    candidate,
+                    reference_asset,
+                    tolerance,
+                    root,
+                    max_count=required_count,
+                )
+                if validation.get("status") == "PASS" and int(validation.get("validated_count") or 0) >= required_count:
+                    return {
+                        "selected": candidate,
+                        "reason": reason,
+                        "validation": validation,
+                        "reference_asset": reference_asset,
+                        "warnings": warnings,
+                        "blockers": [],
+                    }
                 if validation.get("status") != "PASS":
                     blockers.append({
                         "kind": "nontrivial_zeta_zeros",
                         "reason": "ODLYZKO_CROSSCHECK_FAILED",
                         "status": "BLOCKED",
                         "required": required,
-                        "available": _asset_ref(selected),
+                        "available": _asset_ref(candidate),
                         "validation": validation,
                     })
-                elif int(validation.get("validated_count") or 0) < required_count:
+                else:
                     blockers.append({
                         "kind": "nontrivial_zeta_zeros",
                         "reason": "ODLYZKO_CROSSCHECK_INCOMPLETE",
                         "status": "BLOCKED",
                         "required": required,
-                        "available": _asset_ref(selected),
+                        "available": _asset_ref(candidate),
                         "validation": validation,
                     })
+            if strong_reference:
+                selected_reference = sorted(strong_reference, key=_asset_sort_key, reverse=True)[0]
+                validation = {
+                    "asset_id": selected_reference.get("asset_id"),
+                    "reference_asset_id": selected_reference.get("asset_id"),
+                    "validated_count": int(selected_reference.get("count") or 0),
+                    "tolerance": "self",
+                    "max_deviation": "0",
+                    "p95_deviation": "0",
+                    "failed_indices": [],
+                    "status": "PASS",
+                    "valid_for_overkill": (
+                        int(selected_reference.get("count") or 0) >= 60000
+                        and int(selected_reference.get("stored_dps") or 0) >= 100
+                    ),
+                    "valid_for_authoritative": True,
+                    "reason": "selected reference asset",
+                }
+                return {
+                    "selected": selected_reference,
+                    "reason": "highest valid Odlyzko/reference asset satisfying count + precision",
+                    "validation": validation,
+                    "reference_asset": selected_reference,
+                    "warnings": warnings,
+                    "blockers": [],
+                }
+        else:
+            return {
+                "selected": selected,
+                "reason": reason,
+                "validation": validation,
+                "reference_asset": reference_asset,
+                "warnings": warnings,
+                "blockers": blockers,
+            }
         return {
             "selected": selected,
             "reason": reason,
@@ -220,6 +295,18 @@ def _select_zero_asset(
             "reference_asset": reference_asset,
             "warnings": warnings,
             "blockers": blockers,
+        }
+
+    if incomplete_generated and not allow_fallback:
+        selected = sorted(incomplete_generated, key=_asset_sort_key, reverse=True)[0]
+        return {
+            "selected": selected,
+            "reason": "generated high-dps zero source requires extension to requested count",
+            "validation": None,
+            "reference_asset": reference_asset,
+            "warnings": warnings,
+            "blockers": blockers,
+            "precision_fallback": False,
         }
 
     if strong_reference:
@@ -336,15 +423,33 @@ def check_data_sufficiency(input_payload: Dict[str, Any] | None = None, root: Pa
     )
     guard_dps = int(payload.get("guard_dps") or (contract or {}).get("guard_dps") or 20)
 
+    runtime_defaults = {}
+    if isinstance((contract or {}).get("runtime_policy"), dict):
+        runtime_defaults.update((contract or {}).get("runtime_policy") or {})
+    runtime_overrides = {
+        k: v
+        for k, v in payload.items()
+        if k not in {
+            "experiments",
+            "requested_dps",
+            "dps",
+            "requested_zero_count",
+            "zeros",
+            "zero_count",
+            "guard_dps",
+            "preset",
+            "zero_policy",
+            "tau_policy",
+            "prime_policy",
+            "certificate_policy",
+            "runtime_policy",
+        }
+    }
     run = default_run_config(
         requested_dps=requested_dps,
         requested_zero_count=requested_zero_count,
         guard_dps=guard_dps,
-        **{
-            k: v
-            for k, v in payload.items()
-            if k not in {"experiments", "requested_dps", "dps", "requested_zero_count", "zeros", "zero_count", "guard_dps"}
-        },
+        **{**runtime_defaults, **runtime_overrides},
     )
     requirements = requirements_for_experiments(experiments, run)
     manifest = load_data_manifest(root)
@@ -568,6 +673,15 @@ def _block_reason(plan: Dict[str, Any]) -> str:
         available = first.get("available") or {}
         if reason == "ODLYZKO_CROSSCHECK_FAILED":
             validation = first.get("validation") or {}
+            details = validation.get("failed_details") or []
+            if details:
+                failed = details[0]
+                return (
+                    f"Run blocked. Preset {plan.get('preset')} requires Odlyzko cross-check PASS; "
+                    f"first failed index {failed.get('index')}: generated={failed.get('generated_value')}, "
+                    f"reference={failed.get('reference_value')}, deviation={failed.get('deviation')}, "
+                    f"tolerance={failed.get('tolerance')}."
+                )
             return (
                 f"Run blocked. Preset {plan.get('preset')} requires Odlyzko cross-check PASS; "
                 f"validation status is {validation.get('status')}."
@@ -603,6 +717,8 @@ def _block_reason(plan: Dict[str, Any]) -> str:
 
 def _next_action_for_preflight(plan: Dict[str, Any]) -> Optional[str]:
     if plan.get("status") == "READY":
+        if plan.get("preset") == "overkill":
+            return "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS"
         return "run_next_research_step"
     selected_zero = ((plan.get("selected_assets") or {}).get("zero") or {}).get("asset") or {}
     required = next(
@@ -625,11 +741,13 @@ def _next_action_for_preflight(plan: Dict[str, Any]) -> Optional[str]:
         if high_dps_assets:
             return "fix_preset_source_resolver"
         return "generate_high_dps_zero_asset"
-    if any(
-        item.get("reason") in {"ODLYZKO_CROSSCHECK_FAILED", "ODLYZKO_REFERENCE_UNAVAILABLE"}
-        for item in plan.get("insufficient_assets") or []
-    ):
-        return "validate_against_odlyzko_reference"
+    reasons = {item.get("reason") for item in plan.get("insufficient_assets") or []}
+    if "INSUFFICIENT_COUNT" in reasons:
+        return "EXTEND_ZERO_ASSET_TO_60000" if plan.get("preset") == "overkill" else "extend_zero_asset"
+    if "ODLYZKO_CROSSCHECK_FAILED" in reasons:
+        return "INVESTIGATE_ZERO_MISMATCH"
+    if {"ODLYZKO_REFERENCE_UNAVAILABLE", "ODLYZKO_CROSSCHECK_INCOMPLETE"} & reasons:
+        return "VALIDATE_GENERATED_ZEROS_AGAINST_ODLYZKO"
     return plan.get("next_action") or "fix_data_preflight"
 
 
@@ -639,10 +757,27 @@ def run_preflight(input_payload: Dict[str, Any] | None = None, root: Path = ROOT
     contract = resolve_run_preset(str(preset))
     plan = check_data_sufficiency({**contract, **payload, "preset": contract["preset"]}, root)
     status = "READY" if plan.get("status") == "READY" else "BLOCKED"
+    zero_selection = (plan.get("selected_assets") or {}).get("zero") or {}
+    zero_asset = zero_selection.get("asset") or {}
+    zero_validation = zero_selection.get("validation") or {}
+    reference_asset = zero_selection.get("reference_asset") or {}
+    blocking_reasons = [
+        item.get("reason")
+        for item in plan.get("insufficient_assets") or []
+        if item.get("reason")
+    ]
     return {
         "preset": contract["preset"],
+        "requested_zero_count": contract["requested_zero_count"],
+        "requested_dps": contract["requested_dps"],
+        "guard_dps": contract["guard_dps"],
+        "required_stored_dps": int(contract["requested_dps"]) + int(contract["guard_dps"]),
+        "selected_zero_source": zero_asset.get("source_path"),
+        "zero_validation_status": zero_validation.get("status") or "NOT_AVAILABLE",
+        "reference_source": reference_asset.get("source_path"),
         "status": status,
         "run_status": status,
+        "blocking_reasons": blocking_reasons,
         "reason": _block_reason(plan) if status != "READY" else "highest valid assets satisfy preset policies",
         "contract": contract,
         "selected_assets": plan.get("selected_assets") or {},
@@ -675,7 +810,16 @@ def validate_zero_assets(root: Path = ROOT) -> Dict[str, Any]:
     for asset in zeros:
         if not _is_generated_zero_asset(asset):
             continue
-        validations.append(validate_zero_asset_against_reference(asset, reference, DEFAULT_ZERO_REFERENCE_TOLERANCE, root))
+        tolerance = tolerance_for_reference_asset(reference)
+        validations.append(
+            validate_zero_asset_against_reference(
+                asset,
+                reference,
+                tolerance,
+                root,
+                max_count=OVERKILL_VALIDATION_COUNT,
+            )
+        )
     return {
         "reference_asset": _asset_ref(reference),
         "validations": validations,

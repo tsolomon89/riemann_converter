@@ -193,7 +193,10 @@ describe("/api/research contract routes", () => {
         expect(presets.status).toBe(200);
         expectEnvelope(presets.body);
         expect((presets.body as { data: { presets: Array<{ preset: string }> } }).data.presets)
-            .toEqual(expect.arrayContaining([expect.objectContaining({ preset: "overkill" })]));
+            .toEqual(expect.arrayContaining([expect.objectContaining({
+                preset: "overkill",
+                requested_zero_count: 60000,
+            })]));
 
         const selected = await parse(
             await GET(
@@ -211,9 +214,12 @@ describe("/api/research contract routes", () => {
         );
         expect(preflight.status).toBe(200);
         expectEnvelope(preflight.body);
-        expect((preflight.body as { data: { status?: string; selected_assets?: { zero?: { validation?: { status?: string } } } } }).data)
+        expect((preflight.body as { data: { status?: string; requested_zero_count?: number; selected_zero_source?: string; zero_validation_status?: string; selected_assets?: { zero?: { validation?: { status?: string } } } } }).data)
             .toMatchObject({
                 status: "READY",
+                requested_zero_count: 60000,
+                selected_zero_source: "data/zeros/nontrivial/zeros.generated.dps_100.jsonl",
+                zero_validation_status: "PASS",
                 selected_assets: { zero: { validation: { status: "PASS" } } },
             });
     });

@@ -245,9 +245,9 @@ const getModeExpectation = (mode: string | undefined): string | undefined => {
         case "authoritative":
             return "Reviewer-grade evidence run (20-40 min).";
         case "overkill":
-            return "High-precision stress run (1h+).";
+            return "High-precision 60K-zero stress run with Odlyzko validation.";
         case "overkill_full":
-            return "High-precision stress run with full prime file (1h+).";
+            return "High-precision 100K-zero stress run with full prime file; explicit opt-in.";
         default:
             return undefined;
     }

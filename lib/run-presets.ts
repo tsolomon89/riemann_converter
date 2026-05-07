@@ -118,11 +118,11 @@ const PRESETS: Record<RunPresetId, RunPresetContract> = {
         requireRawHighPrecisionArtifacts: true,
         runtimePolicy: { prime_min_count: 1_000_000, prime_target_count: 1_000_000 },
     }),
-    overkill: contract("overkill", 80, 100000, 20, {
+    overkill: contract("overkill", 80, 60000, 20, {
         allowLowerPrecisionFallback: false,
         requireOdlyzkoCrosscheck: true,
         requireRawHighPrecisionArtifacts: true,
-        runtimePolicy: { prime_min_count: 1_000_000, prime_target_count: 1_000_000 },
+        runtimePolicy: { prime_min_count: 1_000_000, prime_target_count: 7_000_000 },
     }),
     overkill_full: contract("overkill_full", 80, 100000, 20, {
         allowLowerPrecisionFallback: false,

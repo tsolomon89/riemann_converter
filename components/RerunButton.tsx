@@ -135,14 +135,14 @@ const MODE_LABELS: Record<Mode, { label: string; icon: React.ReactNode; hint: st
         hint: "20k zeros, dps=50 (20-40 min). THE evidence run - cite these verdicts.",
     },
     overkill: {
-        label: "Overkill",
+        label: "Overkill 60K",
         icon: <Rocket size={12} />,
-        hint: "Odlyzko 100k zeros, dps=80 (1h+). Stress test against high-precision external source.",
+        hint: "60K zeros, dps=80, 7M prime asset, high-dps generated source, Odlyzko-validated. Normal overkill does not start a 100K job.",
     },
     overkill_full: {
         label: "Overkill Full",
         icon: <Rocket size={12} />,
-        hint: "Odlyzko 100k zeros, dps=80, full prime file target (7M). Highest-stress runtime profile.",
+        hint: "100K zeros, dps=80, full prime file target (7M). Long-running explicit opt-in profile.",
     },
 };
 

@@ -231,7 +231,7 @@ describe("MCP parity with HTTP research API", () => {
                 contract: {
                     preset: "overkill",
                     requested_dps: 80,
-                    requested_zero_count: 100000,
+                    requested_zero_count: 60000,
                     zero_policy: {
                         allow_lower_precision_fallback: false,
                         require_odlyzko_crosscheck: true,

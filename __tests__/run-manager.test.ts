@@ -171,7 +171,7 @@ describe("run manager", () => {
         }
     });
 
-    it("overkill canonical args include 1M prime policy", () => {
+    it("overkill canonical args use 60K zeros and 7M prime target", () => {
         const fake = new FakeChild();
         let capturedArgs: string[] = [];
         __setSpawnImplForTests(
@@ -186,10 +186,16 @@ describe("run manager", () => {
         expect(capturedArgs).toEqual(expect.arrayContaining([
             "--run",
             "all",
+            "--zero-count",
+            "60000",
+            "--dps",
+            "80",
             "--prime-min-count",
             "1000000",
             "--prime-target-count",
-            "1000000",
+            "7000000",
+            "--zero-source",
+            "file:data/zeros/nontrivial/zeros.generated.dps_100.jsonl",
         ]));
 
         fake.emit("close", 0);

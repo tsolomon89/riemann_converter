@@ -396,7 +396,7 @@ const expStatusBadgeStyle = (outcome: string | undefined) => {
 const ZERO_SOURCES = [
     { id: "auto", label: "Auto from preset", path: "auto" },
     { id: "generated", label: "Generated ( Riemann-Siegel )", path: "generated" },
-    { id: "odlyzko_100k", label: "Odlyzko (100k Zeros)", path: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz" },
+    { id: "odlyzko_100k", label: "Odlyzko Reference (100k, 9 decimals)", path: "file:data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.gz" },
 ];
 
 const PRESET_DEFS: Array<{
@@ -431,20 +431,20 @@ const PRESET_DEFS: Array<{
     },
     {
         id: "overkill",
-        label: "Overkill",
-        hint: "Stress profile with min/target 1,000,000 primes.",
+        label: "Overkill - 60K zeros",
+        hint: "60K zeros, dps=80, 7M prime asset, high-dps generated source, Odlyzko-validated.",
         patch: {
             zeroSource: "auto",
-            zeroCount: 100000,
+            zeroCount: 60000,
             dps: 80,
             primeMinCount: 1_000_000,
-            primeTargetCount: 1_000_000,
+            primeTargetCount: 7_000_000,
         },
     },
     {
         id: "overkill_full",
-        label: "Overkill Full",
-        hint: "Stress profile with full prime target (7,000,000).",
+        label: "Overkill Full - 100K",
+        hint: "Long-running explicit opt-in profile with full prime target (7,000,000).",
         patch: {
             zeroSource: "auto",
             zeroCount: 100000,
@@ -1255,13 +1255,13 @@ export default function ExperimentSidebar({
                                         onClick={() =>
                                             updateParameters({
                                                 primeMinCount: 1_000_000,
-                                                primeTargetCount: 1_000_000,
+                                                primeTargetCount: 7_000_000,
                                             })
                                         }
                                         className="px-2 py-1 rounded border border-emerald-500/30 text-[10px] text-emerald-200 hover:bg-emerald-900/20"
                                         title="Set overkill prime policy"
                                     >
-                                        Overkill 1M
+                                        Overkill 7M
                                     </button>
                                     <button
                                         type="button"
