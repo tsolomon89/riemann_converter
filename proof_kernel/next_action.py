@@ -10,7 +10,41 @@ from .data_planner import check_data_sufficiency
 from .research_plan import build_research_plan
 
 
+def _as_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _is_generated_zero_source(info: Dict[str, Any]) -> bool:
+    source_kind = str(info.get("source_kind") or "")
+    source_path = str(info.get("source_path") or "")
+    return "generated" in source_kind or "zeros.generated" in source_path
+
+
+def _overkill_60k_baseline_artifact(experiment_summary: Dict[str, Any] | None) -> bool:
+    meta = (experiment_summary or {}).get("meta") if isinstance(experiment_summary, dict) else {}
+    if not isinstance(meta, dict):
+        return False
+    info = meta.get("zero_source_info") if isinstance(meta.get("zero_source_info"), dict) else {}
+    requested = _as_int(info.get("requested_count"), _as_int(meta.get("zeros")))
+    loaded = _as_int(info.get("loaded_count"), _as_int(meta.get("zeros")))
+    declared = _as_int(info.get("declared_decimals"), 75)
+    return (
+        _as_int(meta.get("dps")) == 80
+        and requested == 60000
+        and loaded >= 60000
+        and info.get("valid") is not False
+        and _is_generated_zero_source(info)
+        and declared >= 75
+    )
+
+
 def _overkill_60k_run_completed(experiment_summary: Dict[str, Any] | None) -> bool:
+    if _overkill_60k_baseline_artifact(experiment_summary):
+        return True
+
     meta = (experiment_summary or {}).get("meta") if isinstance(experiment_summary, dict) else {}
     if not isinstance(meta, dict):
         return False
@@ -58,7 +92,8 @@ def build_next_action(
         planner_zero = (((ds.get("selected_assets") or {}).get("zero") or {}).get("asset") or {})
         planner_has_stronger = int(planner_zero.get("stored_dps") or 0) >= required
         if declared is not None and int(declared) < required and (
-            preset in {"overkill", "authoritative", "overkill_full"} or planner_has_stronger
+            not _overkill_60k_baseline_artifact(experiment_summary)
+            and (preset in {"overkill", "authoritative", "overkill_full"} or planner_has_stronger)
         ):
             return {
                 "next_action": "FIX_PRESET_SOURCE_RESOLVER",

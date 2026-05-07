@@ -563,9 +563,7 @@ const blockReason = (plan: DataPlannerOutput) => {
 
 const preflightNextAction = (plan: DataPlannerOutput) => {
     if (plan.status === "READY") {
-        return plan.preset === "overkill"
-            ? "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS"
-            : "run_next_research_step";
+        return "run_next_research_step";
     }
     const zero = plan.selected_assets?.zero?.asset;
     const required = plan.required_assets.find((asset) => asset.kind === "nontrivial_zeta_zeros");

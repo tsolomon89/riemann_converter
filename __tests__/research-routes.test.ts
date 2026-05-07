@@ -214,12 +214,13 @@ describe("/api/research contract routes", () => {
         );
         expect(preflight.status).toBe(200);
         expectEnvelope(preflight.body);
-        expect((preflight.body as { data: { status?: string; requested_zero_count?: number; selected_zero_source?: string; zero_validation_status?: string; selected_assets?: { zero?: { validation?: { status?: string } } } } }).data)
+        expect((preflight.body as { data: { status?: string; requested_zero_count?: number; selected_zero_source?: string; zero_validation_status?: string; next_action?: string; selected_assets?: { zero?: { validation?: { status?: string } } } } }).data)
             .toMatchObject({
                 status: "READY",
                 requested_zero_count: 60000,
                 selected_zero_source: "data/zeros/nontrivial/zeros.generated.dps_100.jsonl",
                 zero_validation_status: "PASS",
+                next_action: "run_next_research_step",
                 selected_assets: { zero: { validation: { status: "PASS" } } },
             });
     });

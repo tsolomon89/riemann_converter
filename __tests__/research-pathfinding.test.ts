@@ -150,4 +150,65 @@ describe("research pathfinding API and MCP surfaces", () => {
             blocks: ["DATA_PREFLIGHT"],
         });
     });
+
+    it("next action treats generated 60K overkill output as the baseline completed run", () => {
+        const dataSufficiency: DataPlannerOutput = {
+            status: "READY",
+            mode: "overkill",
+            preset: "overkill",
+            required_assets: [{ kind: "nontrivial_zeta_zeros", count: 60000, stored_dps: 100 }],
+            selected_assets: {
+                zero: {
+                    asset: {
+                        source_path: "data/zeros/nontrivial/zeros.generated.dps_100.jsonl",
+                        stored_dps: 100,
+                    },
+                    reason: "highest valid generated high-dps asset satisfying count + dps + guard",
+                },
+            },
+            available_assets: [],
+            missing_assets: [],
+            insufficient_assets: [],
+            generation_plan: [],
+            warnings: [],
+            errors: [],
+            next_action: "run_next_research_step",
+            requirements: {
+                experiments: [],
+                declarations: {},
+                required_assets: [],
+                required_stored_dps: 100,
+                guard_dps: 20,
+                requested_dps: 80,
+            },
+        };
+        const artifact = {
+            meta: {
+                dps: 80,
+                zeros: 60000,
+                tau: 6.28,
+                zero_source_info: {
+                    source_kind: "generated_cache",
+                    source_path: "data/zeros/nontrivial/zeros.generated.jsonl",
+                    requested_count: 60000,
+                    loaded_count: 60000,
+                    declared_decimals: 75,
+                    valid: true,
+                },
+            },
+            summary: {
+                overall: "PASS",
+                experiments: {
+                    EXP_1: { outcome: "CONSISTENT", status: "PASS" },
+                    EXP_6: { outcome: "CONSISTENT", status: "PASS" },
+                    EXP_8: { outcome: "CONSISTENT", status: "PASS" },
+                },
+            },
+        } as unknown as ExperimentsData;
+
+        expect(buildNextAction(dataSufficiency, artifact, null)).toMatchObject({
+            next_action: "BUILD_SAME_OBJECT_CERTIFICATE",
+            blocks: [],
+        });
+    });
 });

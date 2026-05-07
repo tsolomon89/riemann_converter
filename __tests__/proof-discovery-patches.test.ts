@@ -210,41 +210,57 @@ describe("patch 1: proposal mutations require auth + write-enabled deployment", 
         for (const key of ENV_KEYS) setEnv(key, saved[key]);
     });
 
-    it("API: POST /hypothesis-proposals returns READ_ONLY_DEPLOYMENT in read-only deployments", async () => {
-        process.env.RESEARCH_ENABLE_HOSTED_RUNS = "";
-        process.env.VERCEL = "1";
-        process.env.VERCEL_ENV = "production";
+    const expectEnvelopeError = async (resp: Response, expectedStatus: number) => {
+        expect(resp.status).toBe(expectedStatus);
+        const body = (await resp.json()) as Record<string, unknown>;
+        // Proof-discovery envelope shape — no bare {error} or {code} at top level.
+        expect(body).toHaveProperty("ok", false);
+        expect(body).toHaveProperty("schema_version");
+        expect(body).toHaveProperty("data", null);
+        expect(body).toHaveProperty("errors");
+        expect(body).toHaveProperty("warnings");
+        expect(body).toHaveProperty("plain_language_summary");
+        expect(body).not.toHaveProperty("error");
+        expect(body).not.toHaveProperty("code");
+        return body;
+    };
+
+    it("API: POST /hypothesis-proposals in read-only deployment returns ok=false envelope, status 403, code via warnings", async () => {
+        setEnv("RESEARCH_ENABLE_HOSTED_RUNS", "");
+        setEnv("VERCEL", "1");
+        setEnv("VERCEL_ENV", "production");
         const resp = await POST(
             reqJsonPost("/api/research/hypothesis-proposals", { source_agent: "x", experiment_id: "EXP_2B", proposed_baseline: { plain_statement: "x", expected_signature: { primary_metric: "x" } }, reason: "x" }),
             ctx("hypothesis-proposals"),
         );
-        expect(resp.status).toBe(403);
-        expect(await resp.json()).toMatchObject({ code: "READ_ONLY_DEPLOYMENT" });
+        const body = await expectEnvelopeError(resp, 403);
+        expect((body.warnings as string[]).join(" ")).toMatch(/READ_ONLY_DEPLOYMENT/);
+        expect((body.errors as string[]).join(" ")).toMatch(/read-only/i);
     });
 
-    it("API: POST /hypothesis-proposals/:id/accept blocked in read-only deployments", async () => {
-        process.env.RESEARCH_ENABLE_HOSTED_RUNS = "";
-        process.env.VERCEL = "1";
-        process.env.VERCEL_ENV = "production";
+    it("API: POST /hypothesis-proposals/:id/accept blocked in read-only deployments (envelope)", async () => {
+        setEnv("RESEARCH_ENABLE_HOSTED_RUNS", "");
+        setEnv("VERCEL", "1");
+        setEnv("VERCEL_ENV", "production");
         const resp = await POST(
             reqJsonPost("/api/research/hypothesis-proposals/prop_test/accept", { accepted_by: "user:x" }),
             ctx("hypothesis-proposals", "prop_test", "accept"),
         );
-        expect(resp.status).toBe(403);
+        await expectEnvelopeError(resp, 403);
     });
 
-    it("API: POST /hypothesis-proposals/:id/reject blocked in read-only deployments", async () => {
-        process.env.RESEARCH_ENABLE_HOSTED_RUNS = "";
-        process.env.VERCEL = "1";
-        process.env.VERCEL_ENV = "production";
+    it("API: POST /hypothesis-proposals/:id/reject blocked in read-only deployments (envelope)", async () => {
+        setEnv("RESEARCH_ENABLE_HOSTED_RUNS", "");
+        setEnv("VERCEL", "1");
+        setEnv("VERCEL_ENV", "production");
         const resp = await POST(
             reqJsonPost("/api/research/hypothesis-proposals/prop_test/reject", { rejected_by: "user:x" }),
             ctx("hypothesis-proposals", "prop_test", "reject"),
         );
-        expect(resp.status).toBe(403);
+        await expectEnvelopeError(resp, 403);
     });
 
-    it("API: write-enabled but missing token returns 401 (auth required)", async () => {
+    it("API: write-enabled but missing token returns 401 envelope (auth required, envelope-shaped)", async () => {
         setEnv("NODE_ENV", "production");
         setEnv("RESEARCH_RUN_TOKEN", "secret-token");
         setEnv("RESEARCH_ENABLE_HOSTED_RUNS", "1");
@@ -254,7 +270,8 @@ describe("patch 1: proposal mutations require auth + write-enabled deployment", 
             reqJsonPost("/api/research/hypothesis-proposals", { source_agent: "x", experiment_id: "EXP_2B", proposed_baseline: { plain_statement: "x", expected_signature: { primary_metric: "x" } }, reason: "x" }),
             ctx("hypothesis-proposals"),
         );
-        expect(resp.status).toBe(401);
+        const body = await expectEnvelopeError(resp, 401);
+        expect((body.errors as string[]).join(" ")).toMatch(/unauthorized/i);
     });
 
     it("MCP: propose_baseline_update returns READ_ONLY error in read-only deployment", async () => {
@@ -286,6 +303,143 @@ describe("patch 1: proposal mutations require auth + write-enabled deployment", 
         process.env.VERCEL_ENV = "production";
         const result = await callMcp("reject_hypothesis_proposal", { proposal_id: "prop_x", rejected_by: "user:x" });
         expect(result.rpcError).toBeDefined();
+    });
+
+    // -----------------------------------------------------------------------
+    // Direct MCP mutation-auth tests: production-mode bearer-token enforcement.
+    // assertRunAuth() enforces auth when NODE_ENV is not "development" / "test".
+    // -----------------------------------------------------------------------
+
+    const productionEnv = () => {
+        setEnv("NODE_ENV", "production");
+        setEnv("RESEARCH_RUN_TOKEN", "test-secret-token");
+        setEnv("RESEARCH_ENABLE_HOSTED_RUNS", "1");
+        setEnv("VERCEL", "");
+        setEnv("VERCEL_ENV", "");
+    };
+
+    it.each([
+        ["propose_baseline_update", { source_agent: "claude", experiment_id: "EXP_2B", proposed_baseline: { plain_statement: "X", expected_signature: { primary_metric: "x", expected_value: "y", tolerance: "z", pass_rule: "w" } }, reason: "test" }],
+        ["accept_hypothesis_proposal", { proposal_id: "prop_x", accepted_by: "user:test" }],
+        ["reject_hypothesis_proposal", { proposal_id: "prop_x", rejected_by: "user:test" }],
+    ])(
+        "MCP: %s without bearer token in production returns -32001 Unauthorized",
+        async (toolName, args) => {
+            productionEnv();
+            const result = await callMcp(toolName, args as Record<string, unknown>);
+            expect(result.rpcError).toBeDefined();
+            const err = result.rpcError as { code: number; message: string };
+            expect(err.code).toBe(-32001);
+            expect(err.message.toLowerCase()).toMatch(/unauthorized/);
+        },
+    );
+
+    it.each([
+        ["propose_baseline_update", { source_agent: "claude", experiment_id: "EXP_2B", proposed_baseline: { plain_statement: "X", expected_signature: { primary_metric: "x", expected_value: "y", tolerance: "z", pass_rule: "w" } }, reason: "test" }],
+        ["accept_hypothesis_proposal", { proposal_id: "prop_x", accepted_by: "user:test" }],
+        ["reject_hypothesis_proposal", { proposal_id: "prop_x", rejected_by: "user:test" }],
+    ])(
+        "MCP: %s with wrong bearer token in production returns -32001 Unauthorized",
+        async (toolName, args) => {
+            productionEnv();
+            const result = await callMcp(toolName, args as Record<string, unknown>, { authorization: "Bearer wrong-token" });
+            expect(result.rpcError).toBeDefined();
+            const err = result.rpcError as { code: number };
+            expect(err.code).toBe(-32001);
+        },
+    );
+
+    it("MCP: propose_baseline_update with valid bearer token in production succeeds", async () => {
+        productionEnv();
+        const result = await callMcp(
+            "propose_baseline_update",
+            {
+                source_agent: "claude",
+                experiment_id: "EXP_2B",
+                proposed_baseline: {
+                    plain_statement: "PROD-AUTH-PROBE",
+                    expected_signature: { primary_metric: "x", expected_value: "y", tolerance: "z", pass_rule: "w" },
+                },
+                reason: "production-mode auth test",
+            },
+            { authorization: "Bearer test-secret-token" },
+        );
+        expect(result.rpcError).toBeUndefined();
+        expect(result.ok).toBe(true);
+        const proposal = result.data as { status: string; proposal_id: string; experiment_id: string };
+        expect(proposal.status).toBe("PROPOSED");
+        expect(proposal.experiment_id).toBe("EXP_2B");
+        // Cleanup: reject the proposal so it doesn't leak state into other tests.
+        await callMcp(
+            "reject_hypothesis_proposal",
+            { proposal_id: proposal.proposal_id, rejected_by: "user:test", reason: "cleanup after auth test" },
+            { authorization: "Bearer test-secret-token" },
+        );
+    });
+
+    it("MCP: accept and reject with valid bearer token in production execute end-to-end", async () => {
+        productionEnv();
+        const proposed = await callMcp(
+            "propose_baseline_update",
+            {
+                source_agent: "claude",
+                experiment_id: "EXP_2B",
+                proposed_baseline: {
+                    plain_statement: "PROD-LIFECYCLE-PROBE",
+                    expected_signature: { primary_metric: "x", expected_value: "y", tolerance: "z", pass_rule: "w" },
+                },
+                reason: "lifecycle test",
+            },
+            { authorization: "Bearer test-secret-token" },
+        );
+        const proposalId = (proposed.data as { proposal_id: string }).proposal_id;
+
+        const accepted = await callMcp(
+            "accept_hypothesis_proposal",
+            { proposal_id: proposalId, accepted_by: "user:test", note: "production accept test" },
+            { authorization: "Bearer test-secret-token" },
+        );
+        expect(accepted.rpcError).toBeUndefined();
+        expect(accepted.ok).toBe(true);
+        expect((accepted.data as { status: string }).status).toBe("ACCEPTED");
+
+        const rejected = await callMcp(
+            "reject_hypothesis_proposal",
+            { proposal_id: proposalId, rejected_by: "user:test", reason: "rollback" },
+            { authorization: "Bearer test-secret-token" },
+        );
+        expect(rejected.rpcError).toBeUndefined();
+        expect((rejected.data as { status: string }).status).toBe("REJECTED");
+    });
+
+    it("MCP: read-only takes precedence over auth — read-only deployment returns -32003 even with valid token", async () => {
+        // Even with a valid token, a read-only deployment must block proposal mutations.
+        setEnv("NODE_ENV", "production");
+        setEnv("RESEARCH_RUN_TOKEN", "test-secret-token");
+        setEnv("RESEARCH_ENABLE_HOSTED_RUNS", "");
+        setEnv("VERCEL", "1");
+        setEnv("VERCEL_ENV", "production");
+        const result = await callMcp(
+            "propose_baseline_update",
+            {
+                source_agent: "claude",
+                experiment_id: "EXP_2B",
+                proposed_baseline: { plain_statement: "X", expected_signature: { primary_metric: "x", expected_value: "y", tolerance: "z", pass_rule: "w" } },
+                reason: "y",
+            },
+            { authorization: "Bearer test-secret-token" },
+        );
+        expect(result.rpcError).toBeDefined();
+        const err = result.rpcError as { code: number; data?: { code?: string } };
+        expect(err.code).toBe(-32003);
+        expect(err.data?.code).toBe("READ_ONLY_DEPLOYMENT");
+    });
+
+    it("MCP: read-only tools (list_baseline_hypotheses) are NOT auth-gated even in production", async () => {
+        productionEnv();
+        const result = await callMcp("list_baseline_hypotheses");
+        expect(result.rpcError).toBeUndefined();
+        expect(result.ok).toBe(true);
     });
 });
 

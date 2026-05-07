@@ -26,6 +26,23 @@ def _summary(*passed: str):
     }
 
 
+def _overkill_60k_summary(*passed: str):
+    summary = _summary(*passed)
+    summary["meta"] = {
+        "dps": 80,
+        "zeros": 60000,
+        "zero_source_info": {
+            "source_kind": "generated_cache",
+            "source_path": "data/zeros/nontrivial/zeros.generated.jsonl",
+            "requested_count": 60000,
+            "loaded_count": 60000,
+            "declared_decimals": 75,
+            "valid": True,
+        },
+    }
+    return summary
+
+
 def test_research_dag_recommends_core_after_data_readiness() -> None:
     plan = build_research_plan(READY, _summary(), None)
     assert plan["recommended_next_action"] == "RUN_CORE_1"
@@ -72,3 +89,15 @@ def test_next_action_requires_clean_overkill_60k_run_before_proof_work() -> None
     action = build_next_action(ready_overkill, _summary("EXP_1", "EXP_8", "EXP_6"), cert)
 
     assert action["next_action"] == "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS"
+
+
+def test_next_action_accepts_generated_60k_overkill_baseline() -> None:
+    ready_overkill = {**READY, "preset": "overkill"}
+
+    action = build_next_action(
+        ready_overkill,
+        _overkill_60k_summary("EXP_1", "EXP_8", "EXP_6"),
+        None,
+    )
+
+    assert action["next_action"] == "BUILD_SAME_OBJECT_CERTIFICATE"

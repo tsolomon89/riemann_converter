@@ -141,6 +141,24 @@ def test_overkill_selects_100_dps_generated_zero_asset_over_9_decimal_source(tmp
     assert selected["validation"]["status"] == "PASS"
 
 
+def test_ready_overkill_preflight_uses_generic_next_research_step(tmp_path: Path) -> None:
+    generated_path = "data/zeros/nontrivial/zeros.generated.dps_100.jsonl"
+    reference_path = "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.jsonl"
+    values = ["14.13472514173469379045", "21.02203963877155499262", "25.01085758014568876321"]
+    _write_zero_file(tmp_path, generated_path, values)
+    _write_zero_file(tmp_path, reference_path, ["14.134725142", "21.022039639", "25.010857580"])
+    _write_assets(tmp_path, [
+        _asset("tau", stored_dps=100, usable_dps=100),
+        _asset("nontrivial_zeta_zeros", asset_id="generated_100", source_path=generated_path, generator="python-flint.acb.zeta_zeros", count=3, stored_dps=100, usable_dps=100, strictly_increasing=True),
+        _asset("nontrivial_zeta_zeros", asset_id="reference_9", source_path=reference_path, generator="existing_file_migration", count=3, stored_dps=9, usable_dps=9, strictly_increasing=True),
+    ])
+
+    preflight = run_preflight({"preset": "overkill", "experiments": ["EXP_8"], "requested_zero_count": 3, "n_test": 3}, tmp_path)
+
+    assert preflight["status"] == "READY"
+    assert preflight["next_action"] == "run_next_research_step"
+
+
 def test_overkill_blocks_when_no_zero_asset_satisfies_guard_dps(tmp_path: Path) -> None:
     weak_path = "data/zeros/nontrivial/zeros_100K_three_ten_power_neg_nine.jsonl"
     _write_zero_file(tmp_path, weak_path, ["14.134725142", "21.022039639", "25.010857580"])

@@ -1,12 +1,119 @@
 {
   "certificate_status": "MISSING_FOR_RUN",
   "current_certificate_path": null,
-  "current_experiments_path": "artifacts/runs/run_1777543478730_6gu8mh/experiments.json",
+  "current_experiments_path": "artifacts/runs/run_1778052633325_epw531/experiments.json",
   "data_assets_status": "AVAILABLE",
   "engine_status": "CURRENT_RUN",
   "historical_comparison_enabled": false,
-  "latest_run_id": "run_1777543478730_6gu8mh",
+  "latest_run_id": "run_1778052633325_epw531",
   "next_action": "BUILD_SAME_OBJECT_CERTIFICATE",
   "note": "Historical run comparison is disabled during active development. Current reports reflect only the latest clean run.",
-  "schema_version": "2026.05.current-run.v1"
+  "schema_version": "2026.05.current-run.v1",
+  "selected_data_sources": {
+    "prime": {
+      "asset": {
+        "asset_id": "primes_count_7000000",
+        "count": 7000000,
+        "errors": [],
+        "generator": "existing_file_migration",
+        "guard_dps": null,
+        "kind": "primes",
+        "max_prime": 122949823,
+        "max_value": 122949823,
+        "role": "canonical_static_asset",
+        "source_path": "data/primes/primes.count_7000000.jsonl",
+        "stored_dps": null,
+        "strictly_increasing": true,
+        "usable_dps": null,
+        "valid": true,
+        "warnings": []
+      },
+      "policy": {
+        "require_sufficient_max_prime": true,
+        "selection": "canonical_7m"
+      },
+      "reason": "canonical 7M prime asset"
+    },
+    "tau": {
+      "asset": {
+        "asset_id": "tau_dps_100",
+        "count": null,
+        "errors": [],
+        "generator": "mpmath.pi",
+        "guard_dps": null,
+        "kind": "tau",
+        "max_value": null,
+        "source_path": "data/constants/tau/tau.dps_100.txt",
+        "stored_dps": 100,
+        "strictly_increasing": null,
+        "usable_dps": 100,
+        "valid": true,
+        "warnings": []
+      },
+      "reason": "highest valid tau asset satisfying dps + guard"
+    },
+    "trivial_zeros": {
+      "asset": {
+        "asset_id": "trivial_zeta_zeros_formula",
+        "count": null,
+        "errors": [],
+        "formula": "s = -2n",
+        "generator": "formula",
+        "guard_dps": null,
+        "kind": "trivial_zeta_zeros",
+        "max_value": null,
+        "source_path": null,
+        "stored_dps": null,
+        "strictly_increasing": null,
+        "usable_dps": null,
+        "valid": true,
+        "warnings": []
+      },
+      "reason": "formulaic trivial zeros"
+    },
+    "zero": {
+      "asset": {
+        "asset_id": "nontrivial_zeros_count_100000_dps_100",
+        "count": 100000,
+        "errors": [],
+        "generator": "python-flint.acb.zeta_zeros",
+        "guard_dps": 20,
+        "kind": "nontrivial_zeta_zeros",
+        "max_value": "74920.8274989941867938492009469183466202235552168015540934906315761266125515775842389074547418377755065296065",
+        "reference_asset_id": "nontrivial_zeros_count_2001052_dps_9",
+        "reference_asset_path": "data/zeros/nontrivial/zeros_2M_four_ten_power_neg_nine.gz",
+        "source_path": "data/zeros/nontrivial/zeros.generated.dps_100.jsonl",
+        "stored_dps": 100,
+        "strictly_increasing": true,
+        "usable_dps": 80,
+        "valid": true,
+        "valid_for_overkill": true,
+        "validation_artifact_path": "data/zeros/nontrivial/zeros.generated.dps_100.validation.json",
+        "validation_status": "PASS",
+        "warnings": []
+      },
+      "policy": {
+        "allow_lower_precision_fallback": false,
+        "require_odlyzko_crosscheck": false,
+        "selection": "highest_available"
+      },
+      "reason": "highest valid generated high-dps asset satisfying count + dps + guard",
+      "reference_asset": {
+        "asset_id": "nontrivial_zeros_count_2001052_dps_9",
+        "count": 2001052,
+        "errors": [],
+        "generator": "existing_file_migration",
+        "guard_dps": null,
+        "kind": "nontrivial_zeta_zeros",
+        "max_value": "1132490.658714411",
+        "source_path": "data/zeros/nontrivial/zeros_2M_four_ten_power_neg_nine.gz",
+        "stored_dps": 9,
+        "strictly_increasing": true,
+        "usable_dps": 9,
+        "valid": true,
+        "warnings": []
+      },
+      "validation": null
+    }
+  }
 }

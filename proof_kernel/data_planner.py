@@ -717,8 +717,6 @@ def _block_reason(plan: Dict[str, Any]) -> str:
 
 def _next_action_for_preflight(plan: Dict[str, Any]) -> Optional[str]:
     if plan.get("status") == "READY":
-        if plan.get("preset") == "overkill":
-            return "RERUN_OVERKILL_60K_WITH_VALIDATED_HIGH_DPS_ZEROS"
         return "run_next_research_step"
     selected_zero = ((plan.get("selected_assets") or {}).get("zero") or {}).get("asset") or {}
     required = next(
