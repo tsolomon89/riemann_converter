@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Riemann Converter",
-  description: "Riemann Hypothesis Verification Environment",
+  description: "Proof-discovery research instrument for Riemann Converter experiments",
 };
 
 export default function RootLayout({

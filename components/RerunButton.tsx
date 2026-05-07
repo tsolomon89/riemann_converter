@@ -132,7 +132,7 @@ const MODE_LABELS: Record<Mode, { label: string; icon: React.ReactNode; hint: st
     authoritative: {
         label: "Authoritative",
         icon: <Play size={12} />,
-        hint: "20k zeros, dps=50 (20-40 min). THE evidence run - cite these verdicts.",
+        hint: "20k zeros, dps=50 (20-40 min). Reviewer-grade finite run; cite with inference rails and proof obligations.",
     },
     overkill: {
         label: "Overkill 60K",

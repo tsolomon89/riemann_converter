@@ -7,8 +7,14 @@ import {
   CheckCircle2,
   AlertTriangle,
   Activity,
+  BarChart3,
+  BookMarked,
+  BookOpen,
+  Database,
   GitBranch,
+  PlayCircle,
   Scale,
+  ShieldCheck,
   Lightbulb,
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -36,6 +42,8 @@ import IntroPanel from "../components/IntroPanel";
 import OpenGapsPanel from "../components/OpenGapsPanel";
 import SameObjectCertificatePanel from "../components/SameObjectCertificatePanel";
 import ResearchPathPanel from "../components/ResearchPathPanel";
+import ProofDiscoveryIndexPanel from "../components/ProofDiscoveryIndexPanel";
+import DataReadinessPanel from "../components/DataReadinessPanel";
 import { FunctionOutcomeBadge } from "../components/VerdictBadges";
 import VerdictHistoryPanel from "../components/VerdictHistoryPanel";
 import ExperimentReviewPanel from "../components/ExperimentReviewPanel";
@@ -88,6 +96,7 @@ type TabColor =
   | "indigo";
 type TabProgram = "PROGRAM_1" | "PROGRAM_2";
 type PageViewMode = "PROGRAM_1_OVERVIEW" | "EXPERIMENT";
+type PrimaryNavId = "RUN" | "RESULTS" | "PROOF_DISCOVERY" | "CERTIFICATE" | "DATA" | "ABOUT";
 type DeploymentCapabilities = {
   read_only_deployment: boolean;
   run_controls_enabled: boolean;
@@ -118,6 +127,10 @@ type ExperimentTab = {
   color: TabColor;
   program: TabProgram;
 };
+type PrimaryNavItem = {
+  id: PrimaryNavId;
+  label: string;
+};
 
 const TAB_ACTIVE_CLASS: Record<TabColor, string> = {
   blue: "bg-blue-900/20 border-blue-500/50 text-blue-200 shadow-[0_0_10px_rgba(37,99,235,0.35)]",
@@ -132,6 +145,7 @@ const TAB_ACTIVE_CLASS: Record<TabColor, string> = {
 };
 
 const EXPERIMENT_TABS: ExperimentTab[] = [
+  { id: "EXP0", label: "ZETA-0", sub: "Zeta Trace", color: "cyan", program: "PROGRAM_1" },
   { id: "EXP1", label: "CORE-1", sub: "Harmonic", color: "blue", program: "PROGRAM_1" },
   { id: "EXP1B", label: "CTRL-1", sub: "Operator", color: "purple", program: "PROGRAM_1" },
   { id: "EXP1C", label: "NOTE-1", sub: "Zero-Reuse", color: "emerald", program: "PROGRAM_1" },
@@ -141,9 +155,19 @@ const EXPERIMENT_TABS: ExperimentTab[] = [
   { id: "EXP6", label: "VAL-1", sub: "Beta Stable", color: "yellow", program: "PROGRAM_1" },
   { id: "EXP8", label: "WIT-1", sub: "Zero Scale", color: "emerald", program: "PROGRAM_1" },
   { id: "EXP9", label: "DEMO-1", sub: "Bounded", color: "purple", program: "PROGRAM_1" },
+  { id: "EXP10", label: "TRANS-1", sub: "Zeta Gauge", color: "indigo", program: "PROGRAM_1" },
   { id: "EXP2", label: "P2-1", sub: "Centrifuge", color: "red", program: "PROGRAM_2" },
   { id: "EXP2B", label: "P2-2", sub: "Isolation", color: "emerald", program: "PROGRAM_2" },
   { id: "EXP7", label: "P2-3", sub: "Amplify", color: "indigo", program: "PROGRAM_2" },
+];
+
+const PRIMARY_NAV_ITEMS: PrimaryNavItem[] = [
+  { id: "RUN", label: "Run" },
+  { id: "RESULTS", label: "Results" },
+  { id: "PROOF_DISCOVERY", label: "Proof Discovery" },
+  { id: "CERTIFICATE", label: "Certificate" },
+  { id: "DATA", label: "Data" },
+  { id: "ABOUT", label: "How to Read" },
 ];
 
 const isActiveExperiment = (value: string): value is ActiveExperiment =>
@@ -1120,7 +1144,7 @@ export default function Home() {
               </ResponsiveContainer>
             </div>
              <div className="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded text-sm text-emerald-200">
-                <strong>Rogue Isolation — Program 2 exploratory.</strong> The green line (Residual = Observed / Predicted) stays near 1.0 when the deviation behaves as the single-perturbed-zero model predicts — i.e. the error scales like x<sup>(0.5+δ)</sup>. This is consistent with the rogue-isolation model <em>on this run&apos;s settings</em>.
+                <strong>Rogue Isolation — Program 2 exploratory.</strong> The green line (Residual = Observed / Predicted) stays near 1.0 when the deviation behaves as the single-perturbed-zero baseline predicts — i.e. the error scales like x<sup>(0.5+δ)</sup>. Read this as a scoped baseline comparison for this run&apos;s settings, not as a Program 1 conclusion.
             </div>
         </div>
       );
@@ -1406,6 +1430,73 @@ export default function Home() {
     setPageViewMode("EXPERIMENT");
   };
 
+  const scrollToSection = (id: string, delay = 0) => {
+    window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, delay);
+  };
+
+  const openExperimentReview = (experimentId: string) => {
+    const compact = experimentId.replace("_", "");
+    if (!isActiveExperiment(compact)) return;
+    selectExperiment(compact);
+    scrollToSection("active-experiment-header", 50);
+  };
+
+  const selectPrimaryNav = (section: PrimaryNavId) => {
+    if (section === "RUN") {
+      scrollToSection("experiment-sidebar-section");
+      return;
+    }
+    if (section === "RESULTS") {
+      setPageViewMode("EXPERIMENT");
+      scrollToSection("active-experiment-header", 50);
+      return;
+    }
+
+    setPageViewMode("PROGRAM_1_OVERVIEW");
+    const targetId: Record<Exclude<PrimaryNavId, "RUN" | "RESULTS">, string> = {
+      PROOF_DISCOVERY: "proof-discovery-section",
+      CERTIFICATE: "certificate-section",
+      DATA: "data-section",
+      ABOUT: "intro-panel-section",
+    };
+    scrollToSection(targetId[section], 50);
+  };
+
+  const primaryNavIcon = (section: PrimaryNavId) => {
+    switch (section) {
+      case "RUN":
+        return <PlayCircle size={12} />;
+      case "RESULTS":
+        return <BarChart3 size={12} />;
+      case "PROOF_DISCOVERY":
+        return <BookMarked size={12} />;
+      case "CERTIFICATE":
+        return <ShieldCheck size={12} />;
+      case "DATA":
+        return <Database size={12} />;
+      case "ABOUT":
+        return <BookOpen size={12} />;
+      default:
+        return null;
+    }
+  };
+
+  const renderPrimaryNavButton = (item: PrimaryNavItem) => (
+    <button
+      key={item.id}
+      type="button"
+      id={`top-nav-${item.id.toLowerCase().replace("_", "-")}`}
+      data-nav-section={item.id}
+      onClick={() => selectPrimaryNav(item.id)}
+      className="ui-primary-nav-button flex items-center gap-1.5 rounded border border-white/10 bg-black/25 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-zinc-300 transition-colors hover:border-cyan-500/40 hover:bg-cyan-950/20 hover:text-cyan-100"
+    >
+      {primaryNavIcon(item.id)}
+      <span>{item.label}</span>
+    </button>
+  );
+
   const renderTab = (exp: ExperimentTab) => {
     const isActive = isExperimentView && activeExp === exp.id;
     const activeClass =
@@ -1438,8 +1529,9 @@ export default function Home() {
     <div id="app-shell" className="ui-app-shell flex flex-col h-screen bg-[#020408] text-gray-300 font-sans selection:bg-blue-500/30 selection:text-blue-200 overflow-hidden">
       
       {/* Top Navigation Bar */}
-      <header id="top-header" className="ui-top-header h-16 border-b border-white/5 bg-[#05080f]/80 backdrop-blur-md flex items-center px-6 shrink-0 z-20 justify-between">
-          <div id="header-left-group" className="ui-header-left flex items-center gap-6">
+      <header id="top-header" className="ui-top-header border-b border-white/5 bg-[#05080f]/80 backdrop-blur-md flex flex-col gap-2 px-4 py-2 shrink-0 z-20">
+          <div id="header-primary-row" className="ui-header-primary-row flex w-full items-center justify-between gap-4">
+          <div id="header-left-group" className="ui-header-left flex min-w-0 items-center gap-4">
               <div id="header-brand" className="ui-header-brand shrink-0">
                   <h1 id="header-brand-title" className="font-gauss text-xl italic tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-emerald-200 leading-none">
                       RIEMANN
@@ -1447,10 +1539,25 @@ export default function Home() {
                   </h1>
               </div>
 
-              <div id="header-brand-divider" className="h-8 w-px bg-white/10 mx-2"></div>
+              <nav id="header-primary-nav" className="ui-primary-nav flex min-w-0 items-center gap-1.5 overflow-x-auto scrollbar-none mask-fade-right">
+                  {PRIMARY_NAV_ITEMS.map(renderPrimaryNavButton)}
+              </nav>
+          </div>
+
+           {/* Status Indicators (Right Side of Header) */}
+           <div id="header-right-group" className="ui-header-right flex items-center gap-4">
+              <div id="header-run-status" className="ui-header-run-status flex items-center gap-2 text-[10px] font-mono text-gray-500 bg-black/40 px-3 py-1 rounded-full border border-white/5">
+                  <Activity size={12} className={clsx(runActive ? "text-green-400 animate-pulse" : "text-gray-600")} />
+                  <span id="header-run-status-label">{runActive ? "ENGINE ACTIVE" : "SYSTEM IDLE"}</span>
+              </div>
+          </div>
+          </div>
+
+          <div id="header-experiment-row" className="ui-header-experiment-row flex w-full min-w-0 items-center gap-3">
+              <div id="header-brand-divider" className="h-6 w-px bg-white/10 shrink-0"></div>
 
               {/* Navigation Tabs */}
-              <nav id="header-experiment-nav" className="ui-header-nav flex items-center gap-2 overflow-x-auto scrollbar-none mask-fade-right">
+              <nav id="header-experiment-nav" className="ui-header-nav flex min-w-0 items-center gap-2 overflow-x-auto scrollbar-none mask-fade-right">
                   <div id="header-program-1-group" className="ui-nav-program-group ui-nav-program-1 flex items-center gap-1.5">
                       <button
                           type="button"
@@ -1464,7 +1571,7 @@ export default function Home() {
                                   : "text-blue-300/80 border-blue-500/20 bg-blue-900/10 hover:bg-blue-900/20 hover:text-blue-200"
                           )}
                       >
-                          Program 1
+                          Program 1 Overview
                       </button>
                       {program1Tabs.map(renderTab)}
                   </div>
@@ -1476,14 +1583,6 @@ export default function Home() {
                       {program2Tabs.map(renderTab)}
                   </div>
               </nav>
-          </div>
-
-           {/* Status Indicators (Right Side of Header) */}
-           <div id="header-right-group" className="ui-header-right flex items-center gap-4">
-              <div id="header-run-status" className="ui-header-run-status flex items-center gap-2 text-[10px] font-mono text-gray-500 bg-black/40 px-3 py-1 rounded-full border border-white/5">
-                  <Activity size={12} className={clsx(runActive ? "text-green-400 animate-pulse" : "text-gray-600")} />
-                  <span id="header-run-status-label">{runActive ? "ENGINE ACTIVE" : "SYSTEM IDLE"}</span>
-              </div>
           </div>
       </header>
 
@@ -1589,13 +1688,20 @@ export default function Home() {
                           />
                       </section>
 
+                      <section id="proof-discovery-section" className="ui-section ui-proof-discovery-section scroll-mt-28">
+                          <ProofDiscoveryIndexPanel
+                              id="proof-discovery-index-panel"
+                              onOpenExperiment={openExperimentReview}
+                          />
+                      </section>
+
                       {/* Ontology / role glossary layer. Subordinate to the theorem target above. */}
-                      <section id="intro-panel-section" className="ui-section ui-intro-section">
+                      <section id="intro-panel-section" className="ui-section ui-intro-section scroll-mt-28">
                           <IntroPanel />
                       </section>
 
                       {/* Same-Object Certificate for the current run. */}
-                      <section id="certificate-section" className="ui-section ui-certificate-section">
+                      <section id="certificate-section" className="ui-section ui-certificate-section scroll-mt-28">
                           <SameObjectCertificatePanel
                               id="same-object-certificate-panel"
                               certificate={certificate}
@@ -1606,6 +1712,10 @@ export default function Home() {
                       {/* Named open-gaps surface (PROOF_PROGRAM_SPEC.md §11). */}
                       <section id="research-path-section" className="ui-section ui-research-path-section">
                           <ResearchPathPanel id="research-path-panel" />
+                      </section>
+
+                      <section id="data-section" className="ui-section ui-data-section scroll-mt-28">
+                          <DataReadinessPanel id="data-readiness-panel" />
                       </section>
 
                       <section id="open-gaps-section" className="ui-section ui-open-gaps-section">

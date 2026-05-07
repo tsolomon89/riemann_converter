@@ -44,7 +44,7 @@ export default function Exp7Chart({ data }: Props) {
         </LineChart>
       </ResponsiveContainer>
       <div className="mt-2 text-xs text-gray-400 text-center">
-         Program 2 exploratory. Monotonic growth of A(ε) across the swept perturbations is consistent with the centrifuge being sensitive on this run&apos;s settings.
+         Program 2 exploratory. Monotonic growth of A(ε) across the swept perturbations marks centrifuge sensitivity on this run&apos;s settings; it is a route signal, not a Program 1 conclusion.
       </div>
     </div>
   );

@@ -29,7 +29,7 @@ const FUNCTION_GLOSSARY: Array<{
         label: "Proof-obligation witness",
         icon: <Key size={12} />,
         cls: "text-emerald-300 border-emerald-500/30 bg-emerald-500/10",
-        body: "Empirical witness to a stated proof obligation. Only this class (+ CONSISTENT + AUTHORITATIVE) contributes theorem-directed evidence.",
+        body: "Empirical witness to a stated proof obligation. It feeds the obligation map; it does not prove the theorem.",
     },
     {
         id: "coherence-witness",
@@ -43,21 +43,21 @@ const FUNCTION_GLOSSARY: Array<{
         label: "Control",
         icon: <ShieldAlert size={12} />,
         cls: "text-pink-300 border-pink-500/30 bg-pink-500/10",
-        body: "Must fail on known-bad input. A passing control arms the instrument; it is not evidence for the theory.",
+        body: "Must fail on known-bad input. A passing control means the instrument detected a wrong case.",
     },
     {
         id: "pathfinder",
         label: "Pathfinder",
         icon: <Compass size={12} />,
         cls: "text-cyan-300 border-cyan-500/30 bg-cyan-500/10",
-        body: "Selects a research direction. Its answer is directional, not supporting/refuting.",
+        body: "Selects a research direction. Its answer is a route note, not a theorem vote.",
     },
     {
         id: "regression-check",
         label: "Regression check",
         icon: <Wrench size={12} />,
         cls: "text-gray-300 border-white/20 bg-gray-700/30",
-        body: "Engine-health plumbing. A failure means a bug, not a theory update.",
+        body: "Engine-health plumbing. A failure means a bug, missing data, or stale artifact before it means mathematics.",
     },
     {
         id: "exploratory",
@@ -249,11 +249,55 @@ export default function IntroPanel() {
                     className="ui-intro-panel-content px-5 pb-5 pt-1 space-y-4 border-t border-white/5"
                 >
                     <p id="intro-panel-summary" className="ui-intro-panel-summary text-sm text-gray-200 leading-relaxed">
-                        Riemann Converter is a <strong>research instrument</strong>. The theorem
-                        target and obligation ladder live in the Proof Program panel above; the
-                        role glossary below explains what each experiment&apos;s function label means
-                        and what it does not claim.
+                        This app is a proof-discovery instrument, not a theorem oracle. Its job is
+                        to turn experiments into candidate lemmas, failed baselines, revised
+                        hypotheses, and proof obligations.
                     </p>
+                    <div
+                        id="intro-reading-guide"
+                        className="ui-intro-reading-guide rounded-lg border border-cyan-500/20 bg-cyan-950/10 px-4 py-3 space-y-3"
+                    >
+                        <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-300">
+                            Current reading model
+                        </div>
+                        <p className="text-[12px] leading-relaxed text-gray-200">
+                            The app&apos;s job is not to turn experiments into verdicts. Its job is to
+                            turn experiments into candidate lemmas, failed baselines, revised
+                            hypotheses, and proof obligations.
+                        </p>
+                        <ol className="list-decimal pl-5 space-y-1 text-[12px] leading-relaxed text-gray-200">
+                            <li>What baseline was tested?</li>
+                            <li>What did the raw data show before interpretation?</li>
+                            <li>Did the data confirm, fail, or complicate the baseline?</li>
+                            <li>What candidate lemma or revised hypothesis does this suggest?</li>
+                            <li>What formal proof obligation remains?</li>
+                        </ol>
+                        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <div className="rounded border border-white/10 bg-black/20 p-3 text-[11px] leading-relaxed text-gray-300">
+                                <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-blue-300">
+                                    Program 1
+                                </div>
+                                Tests whether coherent joint gauge covariance is witnessed. The
+                                central targets remain NC3, defining same analytic case / same
+                                object under gauge, and NC4, proving exact predicate transport.
+                            </div>
+                            <div className="rounded border border-white/10 bg-black/20 p-3 text-[11px] leading-relaxed text-gray-300">
+                                <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-purple-300">
+                                    Program 2
+                                </div>
+                                Tests whether an off-line zero could be forced into contradiction
+                                by no-hiding / detectability. A Program 2 failure usually means the
+                                current contradiction route or baseline failed; it does not
+                                automatically close Program 1.
+                            </div>
+                        </div>
+                        <div className="rounded border border-white/10 bg-black/20 p-3 text-[11px] leading-relaxed text-gray-300">
+                            A PASS does not mean the theory is proved. A FAIL does not always mean
+                            the research program failed. A control PASS means the instrument detected
+                            a wrong operator or wrong beta assumption. The Same-Object Certificate
+                            summarizes finite proxy behavior; it does not close NC3 or NC4.
+                        </div>
+                    </div>
                     <div
                         id="intro-doc-sync-section"
                         className="ui-intro-doc-sync-section rounded-lg border border-white/10 bg-[#0b1220]/50 px-4 py-3 space-y-3"
