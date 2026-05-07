@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "MEDIUM",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_PATH_2_ZERO_CORRESPONDENCE",
+  "baseline_prediction": {
+    "expected": "structured signal, not noise",
+    "metric": "nearest_neighbor_correspondence_signal",
+    "pass_rule": "the correspondence metric exhibits structure beyond noise",
+    "tolerance": "experiment-declared structural tolerance"
+  },
+  "display_id": "PATH-2",
+  "experiment_id": "EXP_5",
+  "fit_result": {
+    "baseline_status": "INCOMPLETE",
+    "failed_metrics": [],
+    "reason": "PATHFINDER verdict: lattice-path-negative. Scaled zeros do NOT align with existing zeros at this fidelity \u2014 rules out the naive lattice path and redirects toward the operator/coord-reparam investigation."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 0.2595674195768738
+    }
+  },
+  "run_id": "run_1778052633325_epw531",
+  "schema_version": "2026.05.experiment-review.v1"
+}

@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "LOW",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_P2_3_CALIBRATED_AMPLIFICATION",
+  "baseline_prediction": {
+    "expected": "monotonic or otherwise structurally predicted curve",
+    "metric": "amplification_vs_epsilon_curve",
+    "pass_rule": "the amplification curve fits the predicted structural form",
+    "tolerance": "experiment-declared structural tolerance"
+  },
+  "display_id": "P2-3",
+  "experiment_id": "EXP_7",
+  "fit_result": {
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "reason": "Run outcome consistent with the declared baseline; pass rule satisfied."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 1.0
+    }
+  },
+  "run_id": "run_1777543478730_6gu8mh",
+  "schema_version": "2026.05.experiment-review.v1"
+}

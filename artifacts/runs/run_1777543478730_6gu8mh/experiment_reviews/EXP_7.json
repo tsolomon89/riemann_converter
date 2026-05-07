@@ -1,0 +1,83 @@
+{
+  "actual_run_inference": [
+    "P2-3: the finite/proxy baseline was confirmed on this run's window.",
+    "What was tested: Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep.",
+    "This preserves the route the experiment witnesses; it does not prove the base claim or any necessary condition."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "monotonic or otherwise structurally predicted curve",
+      "pass_rule": "the amplification curve fits the predicted structural form",
+      "primary_metric": "amplification_vs_epsilon_curve",
+      "tolerance": "experiment-declared structural tolerance"
+    },
+    "id": "HYP_P2_3_CALIBRATED_AMPLIFICATION",
+    "object_under_test": "zero_ensemble",
+    "plain_statement": "Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep.",
+    "why_this_matters": "Calibrated amplification is the metrology baseline for Program 2: it gauges whether the detection instrument tracks perturbation size in a predictable way. Without calibration, NC6 cannot be quantified."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Calibrated Amplification Candidate Lemma",
+      "scope": "finite/proxy",
+      "statement": "On this run's window, Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "status": "SUGGESTED_FROM_PASS",
+      "what_it_does_not_prove": [
+        "this proves NC6",
+        "this proves RH",
+        "this refutes Program 1"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this proves NC6",
+    "this proves RH",
+    "this refutes Program 1",
+    "The theorem candidate is supported.",
+    "A non-hiding theorem is established.",
+    "Contradiction closure is established."
+  ],
+  "display_id": "P2-3",
+  "experiment_id": "EXP_7",
+  "intended_inference_if_passed": [
+    "Program 2 metrology is consistent on the tested epsilon range",
+    "the contradiction-track instrument is calibrated for this window",
+    "this is not a proof of NC6"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 1.0
+    }
+  },
+  "next_hypotheses": [
+    "Extend the tested window for P2-3 to confirm robustness.",
+    "Tighten the tolerance on amplification_vs_epsilon_curve and re-run."
+  ],
+  "program": "PROGRAM_2",
+  "raw_observations": {
+    "metrics": {
+      "amps": [
+        0.010626280114383461,
+        0.025573767685128753,
+        0.029083077163801326
+      ],
+      "monotone": true
+    },
+    "theory_fit": "SUPPORTS",
+    "verifier_interpretation": "Sensitivity confirmed. Rogue signal amplifies monotonically with perturbation."
+  },
+  "role": "witness",
+  "run_id": "run_1777543478730_6gu8mh",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "NONE",
+  "verifier_signal": {
+    "epistemic_level": "EMPIRICAL",
+    "function": "EXPLORATORY",
+    "outcome": "CONSISTENT",
+    "scoped_status": "ROUTE_PASS",
+    "status": "PASS"
+  }
+}

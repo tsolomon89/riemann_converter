@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "MEDIUM",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_ZETA_0_POLAR_TRACE",
+  "baseline_prediction": {
+    "expected": "visual coincidence of loaded zeros with crossings of |\u03b6(1/2 + it)|",
+    "metric": "loaded_zeros_align_with_zeta_zero_crossings",
+    "pass_rule": "the polar trace passes through zero at every loaded zero position",
+    "tolerance": "visual / numerical alignment within rendering precision"
+  },
+  "display_id": "ZETA-0",
+  "experiment_id": "EXP_0",
+  "fit_result": {
+    "baseline_status": "NOT_APPLICABLE",
+    "failed_metrics": [],
+    "reason": "Polar trace rendered with 500 samples and 10 zero markers in range. Dual-window overlay rendered with 200 samples per window."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 500.0
+    }
+  },
+  "run_id": "run_1778052633325_epw531",
+  "schema_version": "2026.05.experiment-review.v1"
+}

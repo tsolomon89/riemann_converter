@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "LOW",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_CTRL_1_OPERATOR_ACTION_SEPARATION",
+  "baseline_prediction": {
+    "expected": "drift well outside the reconstruction tolerance, or amplitude explosion at scaled beta",
+    "metric": "wrong_scaling_drift_or_amplitude_explosion",
+    "pass_rule": "wrong scaling produces a clearly out-of-tolerance signature",
+    "tolerance": "experiment-declared control divergence threshold"
+  },
+  "display_id": "CTRL-1",
+  "experiment_id": "EXP_1B",
+  "fit_result": {
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "reason": "Run outcome consistent with the declared baseline; pass rule satisfied."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 15.020266517592646
+    }
+  },
+  "run_id": "run_1777543478730_6gu8mh",
+  "schema_version": "2026.05.experiment-review.v1"
+}

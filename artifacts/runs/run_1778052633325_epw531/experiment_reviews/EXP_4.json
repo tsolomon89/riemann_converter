@@ -1,0 +1,91 @@
+{
+  "actual_run_inference": [
+    "PATH-1: the run was inconclusive against this baseline.",
+    "More precision, a wider window, or a revised metric may be needed to decide."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "directional signal indicating one family preferred",
+      "pass_rule": "the result decisively favors dilation over translation (or vice versa)",
+      "primary_metric": "coherence_advantage_dilation_minus_translation",
+      "tolerance": "experiment-declared decision margin"
+    },
+    "id": "HYP_PATH_1_TRANSLATION_VS_DILATION",
+    "object_under_test": "preferred_gauge_direction",
+    "plain_statement": "A translation-vs-dilation comparison should indicate which transform family is more coherent under the tested reconstruction conditions.",
+    "why_this_matters": "Pathfinders inform which gauge direction to prioritize when allocating proof effort. A decisive PATH-1 result narrows the formalization target."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Preferred Gauge-Direction Note (deferred)",
+      "scope": "deferred",
+      "statement": "This run was inconclusive against the current baseline. No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
+      "status": "DEFERRED",
+      "what_it_does_not_prove": [
+        "this rules out the non-preferred direction in general",
+        "this supports the base claim",
+        "this proves any necessary condition"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this rules out the non-preferred direction in general",
+    "this supports the base claim",
+    "this proves any necessary condition",
+    "The theorem candidate is supported or refuted by this pathfinder.",
+    "The chosen direction is correct at untested scales."
+  ],
+  "display_id": "PATH-1",
+  "experiment_id": "EXP_4",
+  "intended_inference_if_passed": [
+    "one transform family is more coherent on the tested window",
+    "this informs prioritization of formalization effort",
+    "this is a direction note, not a theorem"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "INCONCLUSIVE",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 0.4772727272727273
+    }
+  },
+  "next_hypotheses": [
+    "Increase precision and re-run PATH-1.",
+    "Re-examine the metric coherence_advantage_dilation_minus_translation for sensitivity."
+  ],
+  "program": "NONE",
+  "raw_observations": {
+    "metrics": {
+      "delta_err": 0.4772727272727273,
+      "direction": null,
+      "ratio": 0.9747634993774811,
+      "winner": "DILATION"
+    },
+    "series_refs": [],
+    "theory_fit": "INCONCLUSIVE",
+    "verifier_interpretation": "Cannot resolve Translation vs Dilation at current fidelity (delta_error=0.4772727272727273). Re-run at higher precision or wider K.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "Between log-translation and log-dilation, the data prefers the winning branch at this run's conditions."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported or refuted by this pathfinder.",
+        "The chosen direction is correct at untested scales."
+      ],
+      "inference_scope": "this run, translation-vs-dilation disambiguation"
+    }
+  },
+  "role": "pathfinder",
+  "run_id": "run_1778052633325_epw531",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "NONE",
+  "verifier_signal": {
+    "epistemic_level": "EMPIRICAL",
+    "function": "PATHFINDER",
+    "outcome": "INCONCLUSIVE",
+    "scoped_status": "PATHFINDER_INCONCLUSIVE",
+    "status": "INSUFFICIENT_SEPARATION"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "MEDIUM",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_DEMO_1_BOUNDED_VIEW",
+  "baseline_prediction": {
+    "expected": "all sampled zero heights map into the declared bounded window",
+    "metric": "image_heights_within_declared_window",
+    "pass_rule": "every sampled zero maps inside the declared window",
+    "tolerance": "experiment-declared boundary tolerance"
+  },
+  "display_id": "DEMO-1",
+  "experiment_id": "EXP_9",
+  "fit_result": {
+    "baseline_status": "NOT_APPLICABLE",
+    "failed_metrics": [],
+    "reason": "All 5 sampled zeros admit an integer k that brings the image into [10.0, 1000.0]. The bounded-view corollary's mechanics are demonstrable for the tested heights IF transport holds."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 5.0
+    }
+  },
+  "run_id": "run_1778052633325_epw531",
+  "schema_version": "2026.05.experiment-review.v1"
+}

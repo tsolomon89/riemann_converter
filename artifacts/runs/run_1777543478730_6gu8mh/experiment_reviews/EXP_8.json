@@ -1,0 +1,91 @@
+{
+  "actual_run_inference": [
+    "WIT-1: the finite/proxy baseline was confirmed on this run's window.",
+    "What was tested: Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range.",
+    "This preserves the route the experiment witnesses; it does not prove the base claim or any necessary condition."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "within adaptive tolerance for every tested k",
+      "pass_rule": "scaled-zero correspondence holds for every tested k under tolerance",
+      "primary_metric": "nearest_neighbor_distance_under_scaling",
+      "tolerance": "experiment adaptive tolerance"
+    },
+    "id": "HYP_WIT_1_ZERO_SCALING_CORRESPONDENCE",
+    "object_under_test": "zero_ensemble",
+    "plain_statement": "Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range.",
+    "why_this_matters": "Scaled-zero correspondence is the witness object for NC3 via zero-ensemble equivalence. Without it, the predicate-transport route loses its finite witness."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Finite Zero-Scaling Correspondence Lemma",
+      "scope": "finite/proxy",
+      "statement": "On this run's window, Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "status": "SUGGESTED_FROM_PASS",
+      "what_it_does_not_prove": [
+        "this proves NC3",
+        "this proves predicate transport",
+        "this proves RH"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this proves NC3",
+    "this proves predicate transport",
+    "this proves RH",
+    "The Riemann Hypothesis is true.",
+    "OBL_ZERO_SCALING_EQUIVALENCE is formally proven.",
+    "The RH predicate transports exactly under the gauge.",
+    "The theorem candidate is proved.",
+    "Zero-scaling preserves RH-relevant structure (that requires OBL_EXACT_RH_TRANSPORT)."
+  ],
+  "display_id": "WIT-1",
+  "experiment_id": "EXP_8",
+  "intended_inference_if_passed": [
+    "the zero-ensemble equivalence proxy is consistent on the tested window",
+    "NC3 route via zero-ensemble is preserved",
+    "this is not a proof of NC3"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 5e-09
+    }
+  },
+  "next_hypotheses": [
+    "Extend the tested window for WIT-1 to confirm robustness.",
+    "Tighten the tolerance on nearest_neighbor_distance_under_scaling and re-run."
+  ],
+  "program": "PROGRAM_1",
+  "raw_observations": {
+    "metrics": {
+      "k_values": [
+        "0",
+        "1",
+        "2"
+      ],
+      "tol_residual": 5e-09,
+      "tol_residual_dps": 1e-30,
+      "tol_residual_source": 5e-09,
+      "tol_zero": 5e-09,
+      "worst_p95_residual": 2.1335420197704586e-09,
+      "worst_p99_abs_dev": 1.953858862183209e-08,
+      "worst_p99_abs_dev_normalized": 4.949182314661851e-10
+    },
+    "theory_fit": "SUPPORTS",
+    "verifier_interpretation": "Scaled-zeta zeros align with tau-scaled baseline zeros within adaptive tolerance."
+  },
+  "role": "witness",
+  "run_id": "run_1777543478730_6gu8mh",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "NONE",
+  "verifier_signal": {
+    "epistemic_level": "EMPIRICAL",
+    "function": "PROOF_OBLIGATION_WITNESS",
+    "outcome": "CONSISTENT",
+    "scoped_status": "WITNESS_PASS",
+    "status": "PASS"
+  }
+}

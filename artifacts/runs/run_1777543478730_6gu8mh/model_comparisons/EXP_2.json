@@ -1,0 +1,32 @@
+{
+  "agent_review_priority": "HIGH",
+  "alternative_model_candidates": [
+    "detectability requires a different compression depth",
+    "detectability requires phase-aware metrics rather than amplitude metrics",
+    "detectability holds only for perturbations above a structured floor"
+  ],
+  "baseline_hypothesis_id": "HYP_P2_1_ROGUE_DETECTABILITY",
+  "baseline_prediction": {
+    "expected": "detectable above baseline noise envelope",
+    "metric": "rogue_amplification_signature",
+    "pass_rule": "amplification exceeds threshold for every tested perturbation",
+    "tolerance": "experiment-declared detection threshold"
+  },
+  "display_id": "P2-1",
+  "experiment_id": "EXP_2",
+  "fit_result": {
+    "baseline_status": "FAILED",
+    "failed_metrics": [
+      "rogue_amplification_signature"
+    ],
+    "reason": "No significant signal amplification detected (ratio 0.9997x, below 1% threshold)."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 0.9997352740346337
+    }
+  },
+  "run_id": "run_1777543478730_6gu8mh",
+  "schema_version": "2026.05.experiment-review.v1"
+}

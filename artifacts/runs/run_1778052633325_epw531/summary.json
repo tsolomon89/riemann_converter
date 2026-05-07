@@ -1,0 +1,1277 @@
+{
+  "certificate_fidelity": "BLOCKED",
+  "compute_fidelity": "AUTHORITATIVE",
+  "data_fidelity": "INSUFFICIENT",
+  "engine_status": "OK",
+  "experiments": {
+    "EXP_0": {
+      "cli_aliases": [
+        "zeta-0",
+        "polar",
+        "polar-trace"
+      ],
+      "display_group": "\u03b6-Direct",
+      "display_id": "ZETA-0",
+      "display_name": "Critical Line Polar Trace",
+      "epistemic_level": "DESCRIPTIVE",
+      "function": "VISUALIZATION",
+      "inference": {
+        "allowed_conclusion": [
+          "Visual representation of zeta(1/2 + i*t) on the critical line at the declared t-range and sampling resolution.",
+          "Loaded zero positions are echoed as origin markers; their visual alignment with the trace's near-origin loops is a sanity check on the loaded zero set, not a verification of zero correctness."
+        ],
+        "disallowed_conclusion": [
+          "The Riemann Hypothesis is true.",
+          "The theorem candidate is supported or refuted by this visualization.",
+          "Zero positions are verified to \u03b6(\u03c1)=0 to any specific precision by this experiment.",
+          "Coverage extends beyond the displayed t-range.",
+          "The compressed and uncompressed dual-window curves agree exactly under any non-trivial multiplicative gauge."
+        ],
+        "inference_scope": "this run, t-range and base specified in config; descriptive only"
+      },
+      "interpretation": "Polar trace rendered with 500 samples and 10 zero markers in range. Dual-window overlay rendered with 200 samples per window.",
+      "metrics": {
+        "dual_window_config": {
+          "L": 18.0,
+          "T": 14.0,
+          "base_name": "tau",
+          "base_value": 6.283185307179586,
+          "compressed_t_range": [
+            87.96459430051421,
+            201.06192982974676
+          ],
+          "k": 1,
+          "scale": 6.283185307179586
+        },
+        "dual_window_sample_count": 200,
+        "polar_config": {
+          "dps": 80,
+          "point_count": 500,
+          "t_end": 50.0,
+          "t_start": 2.0
+        },
+        "polar_sample_count": 500,
+        "zero_markers_in_range": 10
+      },
+      "outcome": "INFORMATIONAL",
+      "program": "PROGRAM_1",
+      "role": "DEMONSTRATION",
+      "scoped_status": "PASS",
+      "stable_id": "EXP_0",
+      "stage": "core_visualization",
+      "status": "PASS",
+      "theory_fit": "SUPPORTS",
+      "type": "DEMONSTRATION"
+    },
+    "EXP_1": {
+      "cli_aliases": [
+        "core-1",
+        "harmonic",
+        "harmonic-converter",
+        "converter"
+      ],
+      "display_group": "Core Calculation",
+      "display_id": "CORE-1",
+      "display_name": "Harmonic Converter",
+      "epistemic_level": "EMPIRICAL",
+      "function": "PROOF_OBLIGATION_WITNESS",
+      "inference": {
+        "allowed_conclusion": [
+          "The explicit-formula reconstruction of pi(X/tau^k) using the un-scaled zero set tracks the true prime count covariantly across the tested k-range at AUTHORITATIVE fidelity."
+        ],
+        "disallowed_conclusion": [
+          "The Riemann Hypothesis is true.",
+          "The zero-scaling hypothesis is confirmed.",
+          "OBL_COORD_RECONSTRUCTION_COVARIANCE is formally proven.",
+          "The RH predicate transports exactly under the gauge.",
+          "The theorem candidate is proved.",
+          "Coverage extends beyond Odlyzko's verified range."
+        ],
+        "inference_scope": "this run, tested k-range, AUTHORITATIVE fidelity required"
+      },
+      "interpretation": "Main Riemann Converter curves are invariant under x_eff = X/tau^k on the tested grid. Reconstruction accuracy is reported separately as supporting validation, not as an RH or zero-scaling proof.",
+      "metrics": {
+        "main_metrics": {
+          "comparison_N": 200,
+          "harmonic_curve_key": "harmonic_N_200",
+          "max_harmonic_drift_vs_k0": 0.0,
+          "max_mobius_drift_vs_k0": 0.0,
+          "max_y_true_drift_vs_k0": 0.0,
+          "mobius_curve_key": "mobius_N_200",
+          "per_k": {
+            "-1": {
+              "max_harmonic_drift_vs_k0": 0.0,
+              "max_mobius_drift_vs_k0": 0.0,
+              "max_y_true_drift_vs_k0": 0.0,
+              "points": 501
+            },
+            "-2": {
+              "max_harmonic_drift_vs_k0": 0.0,
+              "max_mobius_drift_vs_k0": 0.0,
+              "max_y_true_drift_vs_k0": 0.0,
+              "points": 501
+            },
+            "0": {
+              "max_harmonic_drift_vs_k0": 0.0,
+              "max_mobius_drift_vs_k0": 0.0,
+              "max_y_true_drift_vs_k0": 0.0,
+              "points": 501
+            },
+            "1": {
+              "max_harmonic_drift_vs_k0": 0.0,
+              "max_mobius_drift_vs_k0": 0.0,
+              "max_y_true_drift_vs_k0": 0.0,
+              "points": 501
+            },
+            "2": {
+              "max_harmonic_drift_vs_k0": 0.0,
+              "max_mobius_drift_vs_k0": 0.0,
+              "max_y_true_drift_vs_k0": 0.0,
+              "points": 501
+            }
+          },
+          "reference_k": "0"
+        },
+        "max_harmonic_drift_vs_k0": 0.0,
+        "max_mobius_drift_vs_k0": 0.0,
+        "max_y_true_drift_vs_k0": 0.0,
+        "scales": [
+          "-2",
+          "-1",
+          "0",
+          "1",
+          "2"
+        ],
+        "support_scaled_coordinate_stress": {
+          "max_abs_truth_error": 0.5135258303018588,
+          "per_k_max_abs_truth_error": {
+            "-1": 0.10052796603145264,
+            "-2": 0.0,
+            "0": 0.426831724697636,
+            "1": 0.09399185747675176,
+            "2": 0.5135258303018588
+          }
+        }
+      },
+      "obligation_id": "OBL_COORD_RECONSTRUCTION_COVARIANCE",
+      "outcome": "CONSISTENT",
+      "program": "PROGRAM_1",
+      "role": "ENABLER",
+      "scoped_status": "WITNESS_PASS",
+      "stable_id": "EXP_1",
+      "stage": "gauge",
+      "status": "PASS",
+      "theory_fit": "SUPPORTS",
+      "type": "CORE_CALCULATION"
+    },
+    "EXP_10": {
+      "cli_aliases": [
+        "trans-1",
+        "transport",
+        "zeta-transport"
+      ],
+      "display_group": "\u03b6-Direct",
+      "display_id": "TRANS-1",
+      "display_name": "Zeta Gauge Transport",
+      "epistemic_level": "EMPIRICAL",
+      "function": "EXPLORATORY",
+      "inference": {
+        "allowed_conclusion": [
+          "At this run's t-window and sampling resolution, |zeta(0.5+it) - zeta(0.5+i*c^k*t)| is non-zero and varies with base c and exponent k. The reported per-base, per-k residual statistics quantify how far zeta is from being multiplicatively gauge-invariant on the tested interval.",
+          "If one base produces systematically smaller residuals than the others, that is information about which gauge candidate the local zeta structure least violates \u2014 not about which is correct.",
+          "The c=1.0001 baseline residual provides a derivative-scale sanity check on the experiment plumbing (residual at small c-1 should be approximately |zeta'(s)| * (c-1) * t)."
+        ],
+        "disallowed_conclusion": [
+          "zeta admits a non-trivial multiplicative gauge automorphism.",
+          "tau (or any other base tested) is uniquely privileged.",
+          "Small residuals at one base imply transport-invariance of the RH predicate.",
+          "The residual decay rate provides a path to a proof.",
+          "The theorem candidate is proved or refuted by this experiment."
+        ],
+        "inference_scope": "this run, declared bases and k-values, t-window in config; Level-4 informational witness operating directly on zeta (not on pi_N)."
+      },
+      "interpretation": "Sampled 500 t-points across 5 bases x 5 k-values. max|residual| at tau, k=1: 6.8303e+00; baseline (c=1.0001): 1.6618e-02; ratio: 2.43e-03. best base per k: {'0': 'all-equivalent-at-k0', '1': 'baseline_1p0001', '2': 'baseline_1p0001', '5': 'baseline_1p0001', '10': 'baseline_1p0001'}. INFORMATIONAL: zeta is not multiplicatively gauge-invariant in general; this run quantifies the deviation, not a proof of any kind.",
+      "metrics": {
+        "L": 48.0,
+        "M": 500,
+        "T0": 2.0,
+        "bases": [
+          "tau",
+          "sqrt2",
+          "e",
+          "phi",
+          "baseline_1p0001"
+        ],
+        "best_base_per_k": {
+          "0": "all-equivalent-at-k0",
+          "1": "baseline_1p0001",
+          "10": "baseline_1p0001",
+          "2": "baseline_1p0001",
+          "5": "baseline_1p0001"
+        },
+        "k_values": [
+          0,
+          1,
+          2,
+          5,
+          10
+        ],
+        "max_residual_per_base": {
+          "baseline_1p0001": 0.1661299328833836,
+          "e": 19.782104766735447,
+          "phi": 10.527696172890023,
+          "sqrt2": 10.192367914324107,
+          "tau": 46.91373915396704
+        },
+        "sanity_baseline_max_k1": 0.016617527005689765,
+        "sanity_baseline_ratio": 0.002432905558657074,
+        "tau_max_k1": 6.830321442835776
+      },
+      "outcome": "CONSISTENT",
+      "program": "PROGRAM_1",
+      "role": "PATHFINDER",
+      "scoped_status": "PASS",
+      "stable_id": "EXP_10",
+      "stage": "transport",
+      "status": "PASS",
+      "theory_fit": "INFORMATIVE",
+      "type": "VALIDATION"
+    },
+    "EXP_1B": {
+      "cli_aliases": [
+        "ctrl-1",
+        "operator-control",
+        "operator-scaling-control"
+      ],
+      "display_group": "Controls",
+      "display_id": "CTRL-1",
+      "display_name": "Operator Scaling Control",
+      "epistemic_level": "INSTRUMENTAL",
+      "function": "CONTROL",
+      "inference": {
+        "allowed_conclusion": [
+          "The engine detects the wrong group action: naive operator scaling breaks the reconstruction as expected, arming the gauge claim's falsifier."
+        ],
+        "disallowed_conclusion": [
+          "The theorem candidate is supported by this control.",
+          "The gauge is correct.",
+          "RH is true."
+        ],
+        "inference_scope": "this run, naive operator-scaling variant"
+      },
+      "interpretation": "Control armed: naive gamma scaling diverges from baseline by 452.9% (max_drift=67.93 vs baseline_amplitude=15).",
+      "metrics": {
+        "baseline_amplitude": 14.99809194731132,
+        "max_drift": 67.9293553585873,
+        "relative_divergence": 4.52919982069885
+      },
+      "outcome": "IMPLEMENTATION_OK",
+      "program": "PROGRAM_1",
+      "role": "FALSIFICATION_CONTROL",
+      "scoped_status": "CONTROL_ARMED",
+      "stable_id": "EXP_1B",
+      "stage": "gauge",
+      "status": "PASS",
+      "theory_fit": "SUPPORTS",
+      "type": "FALSIFICATION_CONTROL"
+    },
+    "EXP_1C": {
+      "cli_aliases": [
+        "note-1",
+        "zero-reuse",
+        "zero-reuse-note"
+      ],
+      "display_group": "Research Notes",
+      "display_id": "NOTE-1",
+      "display_name": "Zero-Reuse Note",
+      "epistemic_level": "INSTRUMENTAL",
+      "function": "RESEARCH_NOTE",
+      "inference": {
+        "allowed_conclusion": [
+          "At this run's tolerances, multiplying pre-computed un-scaled zeros by tau^k {does, does not} produce the same reconstruction as recomputing zeros at the new scale \u2014 i.e., zero-reuse-across-scales is/is-not a viable compute optimization at this fidelity."
+        ],
+        "disallowed_conclusion": [
+          "This experiment is a witness for any proof obligation.",
+          "OBL_ZERO_SCALING_EQUIVALENCE is supported, refuted, or otherwise affected by this result.",
+          "The RH predicate transports exactly under the gauge.",
+          "The theorem candidate is proved or refuted."
+        ],
+        "inference_scope": "this run, tested k-range, at declared fidelity; engineering / optimization question only"
+      },
+      "interpretation": "Zero-scaling hypothesis fails documented tolerances (drift and/or error-ratio).",
+      "metrics": {
+        "drift_threshold": 0.25,
+        "max_drift": 284.9942038984427,
+        "max_ratio_op_over_coord": 667.6847813995761,
+        "ratio_threshold": 1.1,
+        "scales": [
+          "-2",
+          "-1",
+          "0",
+          "1",
+          "2"
+        ]
+      },
+      "outcome": "INFORMATIONAL",
+      "program": "PROGRAM_1",
+      "role": "ENABLER",
+      "scoped_status": "FAIL",
+      "stable_id": "EXP_1C",
+      "stage": "lattice",
+      "status": "FAIL",
+      "theory_fit": "REFUTES",
+      "type": "HYPOTHESIS_TEST"
+    },
+    "EXP_2": {
+      "cli_aliases": [
+        "p2-1",
+        "rogue-centrifuge"
+      ],
+      "display_group": "Contradiction Track",
+      "display_id": "P2-1",
+      "display_name": "Rogue Centrifuge",
+      "epistemic_level": "EMPIRICAL",
+      "function": "EXPLORATORY",
+      "inference": {
+        "allowed_conclusion": [
+          "Under deep zoom, a planted off-line zero produces visible error amplification relative to the clean baseline at this run's settings."
+        ],
+        "disallowed_conclusion": [
+          "The theorem candidate is supported.",
+          "No off-line zero exists at arbitrary height.",
+          "The Contradiction Track's non-hiding theorem is established.",
+          "Contradiction closure is established."
+        ],
+        "inference_scope": "this run, Contradiction Track formalization; planted rogue zero"
+      },
+      "interpretation": "No significant signal amplification detected (ratio 0.9997x, below 1% threshold).",
+      "metrics": {
+        "amp": 0.999735736883681,
+        "max_clean": 23831642.38994454,
+        "max_rogue": 23825344.56585957
+      },
+      "outcome": "INCONSISTENT",
+      "program": "PROGRAM_2",
+      "related_obligation_ids": [
+        "OBL_ROGUE_DETECTABILITY"
+      ],
+      "role": "DETECTOR",
+      "scoped_status": "ROUTE_NEGATIVE",
+      "stable_id": "EXP_2",
+      "stage": "brittleness",
+      "status": "FAIL",
+      "theory_fit": "REFUTES",
+      "type": "VALIDATION"
+    },
+    "EXP_2B": {
+      "cli_aliases": [
+        "p2-2",
+        "rogue-isolation"
+      ],
+      "display_group": "Contradiction Track",
+      "display_id": "P2-2",
+      "display_name": "Rogue Isolation",
+      "epistemic_level": "EMPIRICAL",
+      "function": "EXPLORATORY",
+      "inference": {
+        "allowed_conclusion": [
+          "The residual error scales as x^(0.5+delta) as the single-perturbed-zero model predicts at this run's settings."
+        ],
+        "disallowed_conclusion": [
+          "The theorem candidate is supported.",
+          "All off-line zeros are isolable in general.",
+          "No-hiding under compression is proved."
+        ],
+        "inference_scope": "this run, Contradiction Track formalization; residual isolation"
+      },
+      "interpretation": "Residual deviation exceeds tolerance; rogue isolation not supported at this fidelity.",
+      "metrics": {
+        "count": 501,
+        "max_abs_residual_dev": 9.68867496086273,
+        "threshold": 0.5
+      },
+      "outcome": "INCONSISTENT",
+      "program": "PROGRAM_2",
+      "related_obligation_ids": [
+        "OBL_ROGUE_DETECTABILITY",
+        "OBL_NO_HIDING_UNDER_COMPRESSION"
+      ],
+      "role": "DETECTOR",
+      "scoped_status": "ROUTE_NEGATIVE",
+      "stable_id": "EXP_2B",
+      "stage": "brittleness",
+      "status": "FAIL",
+      "theory_fit": "REFUTES",
+      "type": "VALIDATION"
+    },
+    "EXP_3": {
+      "cli_aliases": [
+        "ctrl-2",
+        "beta-control",
+        "beta-counterfactual"
+      ],
+      "display_group": "Controls",
+      "display_id": "CTRL-2",
+      "display_name": "Beta Counterfactual Control",
+      "epistemic_level": "INSTRUMENTAL",
+      "function": "CONTROL",
+      "inference": {
+        "allowed_conclusion": [
+          "The engine detects the counterfactual: beta=pi reconstruction diverges as expected, arming the beta-invariance claim's falsifier."
+        ],
+        "disallowed_conclusion": [
+          "The theorem candidate is supported by this control.",
+          "beta is invariant."
+        ],
+        "inference_scope": "this run, beta=pi counterfactual control"
+      },
+      "interpretation": "Control armed: beta=pi reconstruction diverges from true by 1138.8x baseline amplitude (pi_err=1.708e+04).",
+      "metrics": {
+        "baseline_amplitude": 15.0,
+        "max_error": 17082.167369673043,
+        "relative_divergence": 1138.8111579782028
+      },
+      "outcome": "IMPLEMENTATION_OK",
+      "program": "PROGRAM_1",
+      "role": "FALSIFICATION_CONTROL",
+      "scoped_status": "CONTROL_ARMED",
+      "stable_id": "EXP_3",
+      "stage": "control",
+      "status": "PASS",
+      "theory_fit": "SUPPORTS",
+      "type": "FALSIFICATION_CONTROL"
+    },
+    "EXP_4": {
+      "cli_aliases": [
+        "path-1",
+        "translation-dilation"
+      ],
+      "display_group": "Pathfinders",
+      "display_id": "PATH-1",
+      "display_name": "Translation vs Dilation",
+      "epistemic_level": "EMPIRICAL",
+      "function": "PATHFINDER",
+      "inference": {
+        "allowed_conclusion": [
+          "Between log-translation and log-dilation, the data prefers the winning branch at this run's conditions."
+        ],
+        "disallowed_conclusion": [
+          "The theorem candidate is supported or refuted by this pathfinder.",
+          "The chosen direction is correct at untested scales."
+        ],
+        "inference_scope": "this run, translation-vs-dilation disambiguation"
+      },
+      "interpretation": "Cannot resolve Translation vs Dilation at current fidelity (delta_error=0.4772727272727273). Re-run at higher precision or wider K.",
+      "metrics": {
+        "delta_err": 0.4772727272727273,
+        "direction": null,
+        "ratio": 0.9747634993774811,
+        "winner": "DILATION"
+      },
+      "outcome": "INCONCLUSIVE",
+      "program": "PROGRAM_1",
+      "role": "PATHFINDER",
+      "scoped_status": "PATHFINDER_INCONCLUSIVE",
+      "stable_id": "EXP_4",
+      "stage": "lattice",
+      "status": "INSUFFICIENT_SEPARATION",
+      "theory_fit": "INCONCLUSIVE",
+      "type": "HYPOTHESIS_TEST"
+    },
+    "EXP_5": {
+      "cli_aliases": [
+        "path-2",
+        "zero-correspondence"
+      ],
+      "direction": "lattice-path-negative",
+      "display_group": "Pathfinders",
+      "display_id": "PATH-2",
+      "display_name": "Zero Correspondence",
+      "epistemic_level": "EMPIRICAL",
+      "function": "PATHFINDER",
+      "inference": {
+        "allowed_conclusion": [
+          "Scaled zeros {lattice-hit, lattice-weak, lattice-path-negative} under this run's median_z thresholds."
+        ],
+        "disallowed_conclusion": [
+          "The theorem candidate is supported or refuted by this pathfinder.",
+          "The zero-scaling hypothesis is universally confirmed or ruled out."
+        ],
+        "inference_scope": "this run, nearest-neighbor zero correspondence"
+      },
+      "interpretation": "PATHFINDER verdict: lattice-path-negative. Scaled zeros do NOT align with existing zeros at this fidelity \u2014 rules out the naive lattice path and redirects toward the operator/coord-reparam investigation.",
+      "metrics": {
+        "direction": "lattice-path-negative",
+        "median_z": 0.2595674195768738
+      },
+      "outcome": "DIRECTIONAL",
+      "program": "PROGRAM_1",
+      "role": "PATHFINDER",
+      "scoped_status": "PATHFINDER_RESULT",
+      "stable_id": "EXP_5",
+      "stage": "lattice",
+      "status": "NOTEWORTHY",
+      "theory_fit": "INFORMATIVE",
+      "type": "HYPOTHESIS_TEST"
+    },
+    "EXP_6": {
+      "cli_aliases": [
+        "val-1",
+        "beta-stability",
+        "beta-validation"
+      ],
+      "display_group": "Validation",
+      "display_id": "VAL-1",
+      "display_name": "Beta Stability",
+      "epistemic_level": "EMPIRICAL",
+      "function": "PROOF_OBLIGATION_WITNESS",
+      "inference": {
+        "allowed_conclusion": [
+          "beta_hat(k) = 1/2 to within optimizer tolerance on the tested k-range at AUTHORITATIVE fidelity."
+        ],
+        "disallowed_conclusion": [
+          "beta is invariant at untested k.",
+          "The RH predicate transports exactly under the gauge.",
+          "OBL_BETA_INVARIANCE is formally proven.",
+          "The theorem candidate is proved."
+        ],
+        "inference_scope": "this run, tested k-range, AUTHORITATIVE fidelity required"
+      },
+      "interpretation": "beta_hat=0.500000 within tolerance of 0.5 (drift=0.00e+00, tol=1.00e-10 via dps-derived (dps=80.0)).",
+      "metrics": {
+        "beta_hat": 0.5,
+        "drift": 0.0,
+        "tolerance": 1e-10,
+        "tolerance_source": "dps-derived (dps=80.0)"
+      },
+      "obligation_id": "OBL_BETA_INVARIANCE",
+      "outcome": "CONSISTENT",
+      "program": "PROGRAM_1",
+      "role": "ENABLER",
+      "scoped_status": "WITNESS_PASS",
+      "stable_id": "EXP_6",
+      "stage": "gauge",
+      "status": "PASS",
+      "theory_fit": "SUPPORTS",
+      "type": "HYPOTHESIS_TEST"
+    },
+    "EXP_7": {
+      "cli_aliases": [
+        "p2-3",
+        "calibrated-amplification"
+      ],
+      "display_group": "Contradiction Track",
+      "display_id": "P2-3",
+      "display_name": "Calibrated Amplification",
+      "epistemic_level": "EMPIRICAL",
+      "function": "EXPLORATORY",
+      "inference": {
+        "allowed_conclusion": [
+          "The rogue-amplification function A(epsilon) is monotone across the swept epsilon range at this run's settings."
+        ],
+        "disallowed_conclusion": [
+          "The theorem candidate is supported.",
+          "A non-hiding theorem is established.",
+          "Contradiction closure is established."
+        ],
+        "inference_scope": "this run, Contradiction Track formalization; epsilon-sweep"
+      },
+      "interpretation": "Sensitivity confirmed. Rogue signal amplifies monotonically with perturbation.",
+      "metrics": {
+        "amps": [
+          0.010175678926573117,
+          0.02525888513609044,
+          0.028807958234240618
+        ],
+        "monotone": true
+      },
+      "outcome": "CONSISTENT",
+      "program": "PROGRAM_2",
+      "related_obligation_ids": [
+        "OBL_ROGUE_DETECTABILITY",
+        "OBL_NO_HIDING_UNDER_COMPRESSION"
+      ],
+      "role": "DETECTOR",
+      "scoped_status": "ROUTE_PASS",
+      "stable_id": "EXP_7",
+      "stage": "brittleness",
+      "status": "PASS",
+      "theory_fit": "SUPPORTS",
+      "type": "VALIDATION"
+    },
+    "EXP_8": {
+      "cli_aliases": [
+        "wit-1",
+        "zero-scaling-witness",
+        "reg-1",
+        "scaled-zeta-regression"
+      ],
+      "display_group": "Witnesses",
+      "display_id": "WIT-1",
+      "display_name": "Zero Scaling Witness",
+      "epistemic_level": "EMPIRICAL",
+      "function": "PROOF_OBLIGATION_WITNESS",
+      "inference": {
+        "allowed_conclusion": [
+          "Scaling zeros rho by tau^k produces the same scaled-zeta values as scaling the prime lattice by tau^k, within adaptive tolerance at AUTHORITATIVE fidelity on the tested k-range."
+        ],
+        "disallowed_conclusion": [
+          "The Riemann Hypothesis is true.",
+          "OBL_ZERO_SCALING_EQUIVALENCE is formally proven.",
+          "The RH predicate transports exactly under the gauge.",
+          "The theorem candidate is proved.",
+          "Zero-scaling preserves RH-relevant structure (that requires OBL_EXACT_RH_TRANSPORT)."
+        ],
+        "inference_scope": "this run, tested k-range, AUTHORITATIVE fidelity required"
+      },
+      "interpretation": "Scaled-zeta zeros align with tau-scaled baseline zeros within adaptive tolerance.",
+      "metrics": {
+        "k_values": [
+          "0",
+          "1",
+          "2"
+        ],
+        "tol_residual": 1e-30,
+        "tol_residual_dps": 1e-30,
+        "tol_residual_source": 5e-75,
+        "tol_zero": 1e-20,
+        "worst_p95_residual": 2.312085325362657e-77,
+        "worst_p99_abs_dev": 3.0775471784850645e-76,
+        "worst_p99_abs_dev_normalized": 7.884431231804151e-78
+      },
+      "obligation_id": "OBL_ZERO_SCALING_EQUIVALENCE",
+      "outcome": "CONSISTENT",
+      "program": "PROGRAM_1",
+      "role": "ENABLER",
+      "scoped_status": "WITNESS_PASS",
+      "stable_id": "EXP_8",
+      "stage": "lattice",
+      "status": "PASS",
+      "theory_fit": "SUPPORTS",
+      "type": "HYPOTHESIS_TEST"
+    },
+    "EXP_9": {
+      "cli_aliases": [
+        "demo-1",
+        "bounded-view"
+      ],
+      "display_group": "Demonstrations",
+      "display_id": "DEMO-1",
+      "display_name": "Bounded View",
+      "epistemic_level": "INSTRUMENTAL",
+      "function": "DEMONSTRATION",
+      "inference": {
+        "allowed_conclusion": [
+          "For each sampled zero, the integer k that brings |gamma * tau^k| into the target bounded window is computed; this exhibits the mechanical content of the bounded-view corollary IF transport holds."
+        ],
+        "disallowed_conclusion": [
+          "Transport is established by this experiment.",
+          "The bounded-view corollary is proved.",
+          "The theorem candidate is proved or refuted.",
+          "Anything about whether the gauge actually preserves RH-relevant structure."
+        ],
+        "inference_scope": "this run, sample of zero heights, bounded-view demonstration"
+      },
+      "interpretation": "All 5 sampled zeros admit an integer k that brings the image into [10.0, 1000.0]. The bounded-view corollary's mechanics are demonstrable for the tested heights IF transport holds.",
+      "metrics": {
+        "in_window_count": 5,
+        "k_required_per_sample": [
+          1,
+          -1,
+          -2,
+          -3,
+          -3
+        ],
+        "total_count": 5,
+        "window_hi": 1000.0,
+        "window_lo": 10.0
+      },
+      "outcome": "INFORMATIONAL",
+      "program": "PROGRAM_1",
+      "role": "DEMONSTRATION",
+      "scoped_status": "PASS",
+      "stable_id": "EXP_9",
+      "stage": "demonstration",
+      "status": "PASS",
+      "theory_fit": "SUPPORTS",
+      "type": "DEMONSTRATION"
+    }
+  },
+  "fidelity": {
+    "certificate_fidelity": "BLOCKED",
+    "compute_fidelity": "AUTHORITATIVE",
+    "data_fidelity": "INSUFFICIENT",
+    "requested_dps": 80,
+    "requested_zero_count": 60000,
+    "required_stored_dps": 100,
+    "warnings": [
+      "Data fidelity warning: zero source precision below certificate policy."
+    ],
+    "zero_source_declared_decimals": 75
+  },
+  "fidelity_dps": 80,
+  "fidelity_tier": "AUTHORITATIVE",
+  "fidelity_zeros": 60000,
+  "implementation_health": {
+    "brittleness": {
+      "members": [
+        "EXP_2",
+        "EXP_2B",
+        "EXP_7"
+      ],
+      "reason": "mixed outcomes: ['CONSISTENT', 'INCONSISTENT']",
+      "status": "MIXED"
+    },
+    "control": {
+      "members": [
+        "EXP_3"
+      ],
+      "reason": "all 1 members healthy or inconclusive",
+      "status": "IMPLEMENTATION_OK"
+    },
+    "demonstration": {
+      "members": [
+        "EXP_9"
+      ],
+      "reason": "all 1 members healthy or inconclusive",
+      "status": "IMPLEMENTATION_OK"
+    },
+    "gauge": {
+      "members": [
+        "EXP_1",
+        "EXP_1B",
+        "EXP_6"
+      ],
+      "reason": "all 3 members healthy or inconclusive",
+      "status": "IMPLEMENTATION_OK"
+    },
+    "lattice": {
+      "members": [
+        "EXP_1C",
+        "EXP_4",
+        "EXP_5",
+        "EXP_8"
+      ],
+      "reason": "all 4 members healthy or inconclusive",
+      "status": "IMPLEMENTATION_OK"
+    }
+  },
+  "overall": "PASS",
+  "overall_semantics": "implementation_health",
+  "program_2_summary": {
+    "brittleness": {
+      "members": [
+        "EXP_2",
+        "EXP_2B",
+        "EXP_7"
+      ],
+      "note": "Contradiction Track experiments are excluded from theorem verdict until rogue detectability, no-hiding under compression, and contradiction closure are formalized. Outcomes shown for informational use only.",
+      "outcomes": {
+        "EXP_2": "INCONSISTENT",
+        "EXP_2B": "INCONSISTENT",
+        "EXP_7": "CONSISTENT"
+      }
+    }
+  },
+  "proof_assembly": {
+    "approach": "CLAIM_DOWN",
+    "certificate_status": null,
+    "conditions": {
+      "NC1": {
+        "description": "Well-defined mathematical object O exists.",
+        "evidence": [
+          {
+            "exp_id": "EXP_1",
+            "function": "PROOF_OBLIGATION_WITNESS",
+            "outcome": "CONSISTENT",
+            "status": "PASS"
+          },
+          {
+            "exp_id": "EXP_8",
+            "function": "PROOF_OBLIGATION_WITNESS",
+            "outcome": "CONSISTENT",
+            "status": "PASS"
+          }
+        ],
+        "failure_scope": "KILL_FORMALIZATION",
+        "name": "Object definition",
+        "nc_id": "NC1",
+        "status": "WITNESSED"
+      },
+      "NC2": {
+        "description": "The gauge T_c is a well-defined group action.",
+        "evidence": [
+          {
+            "exp_id": "EXP_1B",
+            "function": "CONTROL",
+            "outcome": "IMPLEMENTATION_OK",
+            "status": "PASS"
+          }
+        ],
+        "failure_scope": "KILL_FORMALIZATION",
+        "name": "Gauge definition",
+        "nc_id": "NC2",
+        "status": "INSTRUMENT_ARMED"
+      },
+      "NC3": {
+        "description": "A criterion C exists s.t. C(O, T_c(O)) = true defines 'same analytic case'.",
+        "evidence": [],
+        "failure_scope": "KILL_FORMALIZATION",
+        "name": "Same-case criterion",
+        "nc_id": "NC3",
+        "status": "UNFORMALIZED"
+      },
+      "NC4": {
+        "description": "Re(rho) = 1/2 iff Re(T_c(rho)) = 1/2. THE theory-killing condition.",
+        "evidence": [
+          {
+            "exp_id": "EXP_6",
+            "function": "PROOF_OBLIGATION_WITNESS",
+            "outcome": "CONSISTENT",
+            "status": "PASS"
+          }
+        ],
+        "failure_scope": "KILL_THEORY",
+        "name": "Predicate transport",
+        "nc_id": "NC4",
+        "status": "WITNESSED"
+      },
+      "NC5": {
+        "description": "Iteration maps any ordinate into a computable bounded window.",
+        "evidence": [
+          {
+            "exp_id": "EXP_9",
+            "function": "DEMONSTRATION",
+            "outcome": "INFORMATIONAL",
+            "status": "PASS"
+          }
+        ],
+        "failure_scope": "KILL_ROUTE",
+        "name": "Bounded-view reduction",
+        "nc_id": "NC5",
+        "status": "NOT_TESTED"
+      },
+      "NC6": {
+        "description": "Off-line zeros produce detectable signatures after compression.",
+        "evidence": [
+          {
+            "exp_id": "EXP_2",
+            "function": "EXPLORATORY",
+            "outcome": "INCONSISTENT",
+            "status": "FAIL"
+          },
+          {
+            "exp_id": "EXP_2B",
+            "function": "EXPLORATORY",
+            "outcome": "INCONSISTENT",
+            "status": "FAIL"
+          },
+          {
+            "exp_id": "EXP_7",
+            "function": "EXPLORATORY",
+            "outcome": "CONSISTENT",
+            "status": "PASS"
+          }
+        ],
+        "failure_scope": "KILL_ROUTE",
+        "name": "No hiding under compression",
+        "nc_id": "NC6",
+        "status": "FAILED"
+      },
+      "NC7": {
+        "description": "NC5 + NC6 + Odlyzko verification \u2192 off-line zero \u2192 contradiction.",
+        "evidence": [],
+        "failure_scope": "KILL_ROUTE",
+        "name": "Contradiction closure",
+        "nc_id": "NC7",
+        "status": "UNFORMALIZED"
+      }
+    },
+    "contradiction_route_alive": false,
+    "description": "Proof assembly evaluates each necessary condition against available evidence. Only NC4 (predicate transport) can kill the theory; all others kill the formalization or the route.",
+    "direct_route_alive": true,
+    "failure_events": [
+      {
+        "evidence": [
+          {
+            "exp_id": "EXP_2",
+            "function": "EXPLORATORY",
+            "outcome": "INCONSISTENT",
+            "status": "FAIL"
+          },
+          {
+            "exp_id": "EXP_2B",
+            "function": "EXPLORATORY",
+            "outcome": "INCONSISTENT",
+            "status": "FAIL"
+          },
+          {
+            "exp_id": "EXP_7",
+            "function": "EXPLORATORY",
+            "outcome": "CONSISTENT",
+            "status": "PASS"
+          }
+        ],
+        "name": "No hiding under compression",
+        "nc_id": "NC6",
+        "scope": "KILL_ROUTE"
+      }
+    ],
+    "formalization_alive": true,
+    "overall_status": "CANDIDATE",
+    "remaining_steps": [
+      {
+        "name": "Same-case criterion",
+        "nc_id": "NC3",
+        "scope": "KILL_FORMALIZATION",
+        "what_is_needed": "Formal proof or formalization"
+      },
+      {
+        "name": "Bounded-view reduction",
+        "nc_id": "NC5",
+        "scope": "KILL_ROUTE",
+        "what_is_needed": "Formal proof or formalization"
+      },
+      {
+        "name": "Contradiction closure",
+        "nc_id": "NC7",
+        "scope": "KILL_ROUTE",
+        "what_is_needed": "Formal proof or formalization"
+      }
+    ],
+    "theory_alive": true
+  },
+  "proof_program": {
+    "obligations": [
+      {
+        "blocked_by": [],
+        "depends_on": [],
+        "id": "OBL_COORD_RECONSTRUCTION_COVARIANCE",
+        "inference": {
+          "allowed_conclusion": [
+            "When witnessed, the reconstruction machinery is coherent with a covariant coordinate gauge."
+          ],
+          "disallowed_conclusion": [
+            "This obligation alone proves the theorem candidate.",
+            "Covariance of reconstructions implies covariance of the RH predicate."
+          ],
+          "inference_scope": "Program 1, obligation-level"
+        },
+        "program": "PROGRAM_1",
+        "statement": "Under X -> X/tau^k, the explicit-formula reconstruction of psi transforms covariantly (modulo subdominant corrections).",
+        "status": "WITNESSED",
+        "title": "Coordinate reconstruction covariance",
+        "witnesses": [
+          "EXP_1"
+        ]
+      },
+      {
+        "blocked_by": [],
+        "depends_on": [
+          "OBL_COORD_RECONSTRUCTION_COVARIANCE"
+        ],
+        "id": "OBL_ZERO_SCALING_EQUIVALENCE",
+        "inference": {
+          "allowed_conclusion": [
+            "When witnessed, the zero-scaling identity holds numerically within the tested drift/ratio tolerances."
+          ],
+          "disallowed_conclusion": [
+            "This obligation alone proves the theorem candidate.",
+            "Numerical isometry implies exact analytic transport."
+          ],
+          "inference_scope": "Program 1, obligation-level"
+        },
+        "program": "PROGRAM_1",
+        "statement": "Scaling zeros rho by tau^k is isometric to scaling the prime lattice by tau^k in the reconstruction.",
+        "status": "WITNESSED",
+        "title": "Zero scaling equivalence",
+        "witnesses": [
+          "EXP_8"
+        ]
+      },
+      {
+        "blocked_by": [],
+        "depends_on": [
+          "OBL_ZERO_SCALING_EQUIVALENCE"
+        ],
+        "id": "OBL_BETA_INVARIANCE",
+        "inference": {
+          "allowed_conclusion": [
+            "When witnessed at AUTHORITATIVE fidelity, the recovered critical-line parameter is empirically invariant on the tested k-range."
+          ],
+          "disallowed_conclusion": [
+            "This obligation alone proves the theorem candidate.",
+            "beta is invariant at untested k.",
+            "The RH predicate transports exactly."
+          ],
+          "inference_scope": "Program 1, obligation-level"
+        },
+        "program": "PROGRAM_1",
+        "statement": "The best-fit critical-line parameter beta_hat(k) equals 1/2 across the tested k-family, to within optimizer tolerance.",
+        "status": "WITNESSED",
+        "title": "Beta invariance under the gauge",
+        "witnesses": [
+          "EXP_6"
+        ]
+      },
+      {
+        "blocked_by": [
+          "GAP_RH_PREDICATE_TRANSPORT"
+        ],
+        "depends_on": [
+          "OBL_COORD_RECONSTRUCTION_COVARIANCE",
+          "OBL_ZERO_SCALING_EQUIVALENCE",
+          "OBL_BETA_INVARIANCE"
+        ],
+        "id": "OBL_EXACT_RH_TRANSPORT",
+        "inference": {
+          "allowed_conclusion": [
+            "This obligation has no empirical witness; it is a theorem-level claim awaiting a proof artifact."
+          ],
+          "disallowed_conclusion": [
+            "Numerical witnesses of other obligations suffice to establish this one."
+          ],
+          "inference_scope": "Program 1, the load-bearing obligation"
+        },
+        "program": "PROGRAM_1",
+        "statement": "The RH predicate itself (not merely the reconstruction, not merely the zeros, not merely the beta fit) transports exactly under T_c.",
+        "status": "BLOCKED",
+        "title": "Exact transport of the RH predicate",
+        "witnesses": []
+      },
+      {
+        "blocked_by": [
+          "GAP_PROGRAM2_FORMALIZATION"
+        ],
+        "depends_on": [],
+        "id": "OBL_ROGUE_DETECTABILITY",
+        "inference": {
+          "allowed_conclusion": [
+            "When formalized, rogue/off-line zeros produce an amplifying signature that the detector can expose at finite k."
+          ],
+          "disallowed_conclusion": [
+            "This obligation alone proves the theorem candidate.",
+            "A non-hiding theorem is established by these witnesses.",
+            "The Contradiction Track is closed."
+          ],
+          "inference_scope": "Contradiction Track, obligation-level; formalization required"
+        },
+        "program": "PROGRAM_2",
+        "statement": "Any off-line zero within the covered ordinate range produces an amplification signature that is finite-k-detectable under the gauge.",
+        "status": "BLOCKED",
+        "title": "Rogue-zero detectability (Contradiction Track)",
+        "witnesses": []
+      },
+      {
+        "blocked_by": [
+          "OBL_ROGUE_DETECTABILITY",
+          "GAP_NO_HIDING_UNDER_COMPRESSION"
+        ],
+        "depends_on": [
+          "OBL_ROGUE_DETECTABILITY"
+        ],
+        "id": "OBL_NO_HIDING_UNDER_COMPRESSION",
+        "inference": {
+          "allowed_conclusion": [
+            "When formalized, a rogue zero cannot evade the compressed bounded view by moving to an untested scale or window."
+          ],
+          "disallowed_conclusion": [
+            "Finite numerical sweeps prove no-hiding at arbitrary height.",
+            "The theorem candidate is proved."
+          ],
+          "inference_scope": "Contradiction Track, non-hiding theorem"
+        },
+        "program": "PROGRAM_2",
+        "statement": "Compression by tau^k cannot move an off-line zero outside every bounded/verified view needed by the contradiction argument.",
+        "status": "BLOCKED",
+        "title": "No hiding under compression (Contradiction Track)",
+        "witnesses": []
+      },
+      {
+        "blocked_by": [
+          "OBL_ROGUE_DETECTABILITY",
+          "OBL_NO_HIDING_UNDER_COMPRESSION",
+          "GAP_CONTRADICTION_CLOSURE"
+        ],
+        "depends_on": [
+          "OBL_ROGUE_DETECTABILITY",
+          "OBL_NO_HIDING_UNDER_COMPRESSION"
+        ],
+        "id": "OBL_CONTRADICTION_CLOSURE",
+        "inference": {
+          "allowed_conclusion": [
+            "When formalized, the contradiction route has a closed logical bridge from detectable rogue behavior to the theorem target."
+          ],
+          "disallowed_conclusion": [
+            "Detectability experiments alone close the proof.",
+            "Exact RH transport is proved by contradiction-track numerics.",
+            "The theorem candidate is proved without a formal closure artifact."
+          ],
+          "inference_scope": "Contradiction Track closure"
+        },
+        "program": "PROGRAM_2",
+        "statement": "Rogue detectability plus no-hiding under compression plus a verified bounded view yields the contradiction needed to close the alternative proof route.",
+        "status": "BLOCKED",
+        "title": "Contradiction closure",
+        "witnesses": []
+      }
+    ],
+    "open_gaps": [
+      {
+        "blocker_for": [
+          "OBL_EXACT_RH_TRANSPORT"
+        ],
+        "description": "Exact transport of the RH predicate under the gauge is not proved, only witnessed.",
+        "id": "GAP_RH_PREDICATE_TRANSPORT",
+        "title": "Exact transport of the RH predicate"
+      },
+      {
+        "description": "Whether tau is structurally singled out, or whether any c > 1 would serve. Not a proof obligation \u2014 a parked research question outside the critical path.",
+        "id": "GAP_TAU_UNIQUENESS",
+        "title": "Uniqueness of tau as the gauge base"
+      },
+      {
+        "blocker_for": [
+          "OBL_NO_HIDING_UNDER_COMPRESSION"
+        ],
+        "description": "Heuristic argument that a rogue zero at ordinate ~10^9999 cannot hide under compression; no formal non-hiding theorem.",
+        "id": "GAP_NO_HIDING_UNDER_COMPRESSION",
+        "title": "No hiding under compression"
+      },
+      {
+        "blocker_for": [
+          "OBL_ROGUE_DETECTABILITY"
+        ],
+        "description": "The contradiction-by-detectability route lacks a formal amplification theorem.",
+        "id": "GAP_PROGRAM2_FORMALIZATION",
+        "title": "Formal detectability theorem for the Contradiction Track"
+      },
+      {
+        "blocker_for": [
+          "OBL_CONTRADICTION_CLOSURE"
+        ],
+        "description": "The contradiction route lacks a formal closure artifact showing that detectability plus no-hiding plus a verified bounded view forces the intended contradiction.",
+        "id": "GAP_CONTRADICTION_CLOSURE",
+        "title": "Contradiction closure proof"
+      },
+      {
+        "description": "The mapping of experiments to obligations (PROOF_PROGRAM_SPEC \u00a77) is provisional. Sprint 3b.0 witness-map review must be signed off before API/schema contracts treat witness mappings as authoritative.",
+        "id": "GAP_WITNESS_MAP_REVIEW",
+        "title": "Provisional witness map"
+      }
+    ],
+    "theorem_candidate": {
+      "bounded_view_corollary": "If exact transport holds, then for any off-line zero rho at arbitrarily large height, some T_c^k(rho) lands in a bounded window computable in advance. Checking RH on that window suffices; unbounded search is logically redundant rather than mathematically necessary.",
+      "formal_statement": "Under the working gauge T_c(s) = s * c^k with c = tau = 2*pi, the RH predicate is transport-invariant: zeta has a non-trivial zero rho with Re(rho) != 1/2 iff its image T_c(rho) is likewise off the critical line. No off-line zero can exist on one side of the gauge without existing on the other.",
+      "non_claims": [
+        "A formal proof of RH.",
+        "Extension of verified ordinate coverage beyond Odlyzko's range.",
+        "That numerical equivariance of reconstructions is itself a transport theorem for the RH predicate.",
+        "That tau is the unique multiplicative base for which the invariance can hold.",
+        "That detecting a rogue zero under deep scaling is equivalent to proving RH before the Contradiction Track's non-hiding and closure obligations are formalized."
+      ],
+      "plain_language": "If the relevant zeta/prime structure can be transported into a compressed scale without changing the RH-relevant behavior, then searching arbitrarily further in the uncompressed scale becomes logically redundant rather than mathematically necessary.",
+      "working_gauge": {
+        "base": "tau = 2*pi",
+        "unique": false
+      }
+    },
+    "witness_map_review": {
+      "api_contract_ready": true,
+      "frozen_mapping": {
+        "experiment_to_obligation": {
+          "EXP_1": "OBL_COORD_RECONSTRUCTION_COVARIANCE",
+          "EXP_6": "OBL_BETA_INVARIANCE",
+          "EXP_8": "OBL_ZERO_SCALING_EQUIVALENCE"
+        }
+      },
+      "gate_id": "SPRINT_3B_0_WITNESS_MAP_REVIEW",
+      "notes": [
+        "Witness map signed off 2026-04-28. Mapping frozen and authoritative.",
+        "EXP_6 -> OBL_BETA_INVARIANCE is the sole direct witness.",
+        "All other experiments classified as coherence/control/pathfinder/exploratory.",
+        "Reviewed against project_alignment.md; all 7 alignment criteria met."
+      ],
+      "provisional_experiments": [
+        "EXP_1",
+        "EXP_6",
+        "EXP_8"
+      ],
+      "status": "SIGNED_OFF"
+    }
+  },
+  "schema_version": "2026.05.0",
+  "stage_verdicts": {
+    "control": {
+      "excluded_from_verdict": [],
+      "member_fits": {
+        "EXP_3": "SUPPORTS"
+      },
+      "members": [
+        "EXP_3"
+      ],
+      "reason": "all decisive experiments support the theory (1/1)",
+      "role_breakdown": {
+        "FALSIFICATION_CONTROL": 1
+      },
+      "status": "SUPPORTS",
+      "voting_member_fits": {
+        "EXP_3": "SUPPORTS"
+      }
+    },
+    "gauge": {
+      "excluded_from_verdict": [],
+      "member_fits": {
+        "EXP_1": "SUPPORTS",
+        "EXP_1B": "SUPPORTS",
+        "EXP_6": "SUPPORTS"
+      },
+      "members": [
+        "EXP_1",
+        "EXP_1B",
+        "EXP_6"
+      ],
+      "reason": "all decisive experiments support the theory (3/3)",
+      "role_breakdown": {
+        "ENABLER": 2,
+        "FALSIFICATION_CONTROL": 1
+      },
+      "status": "SUPPORTS",
+      "voting_member_fits": {
+        "EXP_1": "SUPPORTS",
+        "EXP_1B": "SUPPORTS",
+        "EXP_6": "SUPPORTS"
+      }
+    },
+    "lattice": {
+      "excluded_from_verdict": [
+        "EXP_1C"
+      ],
+      "member_fits": {
+        "EXP_1C": "REFUTES",
+        "EXP_4": "INCONCLUSIVE",
+        "EXP_5": "INFORMATIVE",
+        "EXP_8": "SUPPORTS"
+      },
+      "members": [
+        "EXP_1C",
+        "EXP_4",
+        "EXP_5",
+        "EXP_8"
+      ],
+      "reason": "pathfinders informed direction (['EXP_5']) + confirming evidence (supports: ['EXP_8'], candidates: [])",
+      "role_breakdown": {
+        "ENABLER": 2,
+        "PATHFINDER": 2
+      },
+      "status": "CANDIDATE",
+      "voting_member_fits": {
+        "EXP_4": "INCONCLUSIVE",
+        "EXP_5": "INFORMATIVE",
+        "EXP_8": "SUPPORTS"
+      }
+    }
+  },
+  "zero_path_decision": "SCALE_AD_HOC",
+  "zero_path_reason": "EXP_8 passed adaptive tolerance checks."
+}

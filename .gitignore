@@ -67,8 +67,22 @@ yarn-error.log*
 # local runtime artifacts (run logs/events/checkpoints/baselines)
 .runtime/
 
-# generated research run archives; keep lightweight manifests in git instead
-artifacts/runs/
+# generated research run archives; keep lightweight proof-discovery manifests in git
+artifacts/runs/**
+!artifacts/runs/**/
+!artifacts/runs/**/analysis.json
+!artifacts/runs/**/analysis.md
+!artifacts/runs/**/certificate.json
+!artifacts/runs/**/data_sufficiency.json
+!artifacts/runs/**/proof_discovery.md
+!artifacts/runs/**/proof_discovery_index.json
+!artifacts/runs/**/research_plan.json
+!artifacts/runs/**/summary.json
+!artifacts/runs/**/experiment_reviews/**
+!artifacts/runs/**/lemmas/**
+!artifacts/runs/**/model_comparisons/**
+artifacts/runs/**/experiments.json
+artifacts/runs/**/raw.json
 artifacts/legacy-pre-pathfinding-*/
 _archive/dev_runs_pre_current_model/
 

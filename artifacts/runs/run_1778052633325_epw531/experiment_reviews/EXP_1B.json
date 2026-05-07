@@ -1,0 +1,92 @@
+{
+  "actual_run_inference": [
+    "CTRL-1: the falsifier described by this control is armed in this run.",
+    "This is a statement about instrument health, not theory support."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "drift well outside the reconstruction tolerance, or amplitude explosion at scaled beta",
+      "pass_rule": "wrong scaling produces a clearly out-of-tolerance signature",
+      "primary_metric": "wrong_scaling_drift_or_amplitude_explosion",
+      "tolerance": "experiment-declared control divergence threshold"
+    },
+    "id": "HYP_CTRL_1_OPERATOR_ACTION_SEPARATION",
+    "object_under_test": "gauge_action_under_wrong_scaling",
+    "plain_statement": "Naive / wrong operator scaling of the gauge action should fail or visibly diverge under the reconstruction metric.",
+    "why_this_matters": "If wrong scaling does not fail, the reconstruction metric cannot distinguish correct from incorrect gauge action \u2014 meaning every other Program 1 result is unreliable."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Operator-Action Separation Lemma (instrument health)",
+      "scope": "finite/proxy",
+      "statement": "On this run's window, Naive / wrong operator scaling of the gauge action should fail or visibly diverge under the reconstruction metric held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "status": "SUGGESTED_FROM_PASS",
+      "what_it_does_not_prove": [
+        "this supports RH",
+        "this supports Program 1's positive witnesses directly",
+        "this proves NC2 in any formal sense"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this supports RH",
+    "this supports Program 1's positive witnesses directly",
+    "this proves NC2 in any formal sense",
+    "The theorem candidate is supported by this control.",
+    "The gauge is correct.",
+    "RH is true."
+  ],
+  "display_id": "CTRL-1",
+  "experiment_id": "EXP_1B",
+  "intended_inference_if_passed": [
+    "the reconstruction metric distinguishes the correct gauge action from a wrong scaling",
+    "the falsifier is armed in this window",
+    "this does not, by itself, support the base claim"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 67.9293553585873
+    }
+  },
+  "next_hypotheses": [
+    "Extend the tested window for CTRL-1 to confirm robustness.",
+    "Tighten the tolerance on wrong_scaling_drift_or_amplitude_explosion and re-run."
+  ],
+  "program": "NONE",
+  "raw_observations": {
+    "metrics": {
+      "baseline_amplitude": 14.99809194731132,
+      "max_drift": 67.9293553585873,
+      "relative_divergence": 4.52919982069885
+    },
+    "series_refs": [],
+    "theory_fit": "SUPPORTS",
+    "verifier_interpretation": "Control armed: naive gamma scaling diverges from baseline by 452.9% (max_drift=67.93 vs baseline_amplitude=15).",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "The engine detects the wrong group action: naive operator scaling breaks the reconstruction as expected, arming the gauge claim's falsifier."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported by this control.",
+        "The gauge is correct.",
+        "RH is true."
+      ],
+      "inference_scope": "this run, naive operator-scaling variant"
+    }
+  },
+  "role": "control",
+  "run_id": "run_1778052633325_epw531",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "NONE",
+  "verifier_signal": {
+    "epistemic_level": "INSTRUMENTAL",
+    "function": "CONTROL",
+    "outcome": "IMPLEMENTATION_OK",
+    "scoped_status": "CONTROL_ARMED",
+    "status": "PASS"
+  }
+}

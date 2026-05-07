@@ -1,0 +1,82 @@
+{
+  "actual_run_inference": [
+    "VAL-1: the finite/proxy baseline was confirmed on this run's window.",
+    "What was tested: The recovered beta parameter remains pinned at 1/2 across the tested gauge scales.",
+    "This preserves the route the experiment witnesses; it does not prove the base claim or any necessary condition."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "0.5",
+      "pass_rule": "|recovered_beta - 0.5| within declared tolerance for every tested k",
+      "primary_metric": "recovered_beta",
+      "tolerance": "adaptive precision tolerance for this run"
+    },
+    "id": "HYP_VAL_1_BETA_STABILITY",
+    "object_under_test": "rh_predicate",
+    "plain_statement": "The recovered beta parameter remains pinned at 1/2 across the tested gauge scales.",
+    "why_this_matters": "Beta stability is the finite-precision proxy for predicate-preservation under the gauge. It is the closest experiment to NC4 (predicate transport)."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Finite Beta-Stability Lemma",
+      "scope": "finite/proxy",
+      "statement": "On this run's window, The recovered beta parameter remains pinned at 1/2 across the tested gauge scales held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "status": "SUGGESTED_FROM_PASS",
+      "what_it_does_not_prove": [
+        "this proves NC4",
+        "this proves RH",
+        "this establishes pointwise predicate transport"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this proves NC4",
+    "this proves RH",
+    "this establishes pointwise predicate transport",
+    "beta is invariant at untested k.",
+    "The RH predicate transports exactly under the gauge.",
+    "OBL_BETA_INVARIANCE is formally proven.",
+    "The theorem candidate is proved."
+  ],
+  "display_id": "VAL-1",
+  "experiment_id": "EXP_6",
+  "intended_inference_if_passed": [
+    "predicate-preservation proxy is consistent on the tested window",
+    "the route to NC4 via beta stability is preserved",
+    "this is not a proof of NC4"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 0.5
+    }
+  },
+  "next_hypotheses": [
+    "Extend the tested window for VAL-1 to confirm robustness.",
+    "Tighten the tolerance on recovered_beta and re-run."
+  ],
+  "program": "PROGRAM_1",
+  "raw_observations": {
+    "metrics": {
+      "beta_hat": 0.5,
+      "drift": 0.0,
+      "tolerance": 1e-10,
+      "tolerance_source": "dps-derived (dps=80.0)"
+    },
+    "theory_fit": "SUPPORTS",
+    "verifier_interpretation": "beta_hat=0.500000 within tolerance of 0.5 (drift=0.00e+00, tol=1.00e-10 via dps-derived (dps=80.0))."
+  },
+  "role": "witness",
+  "run_id": "run_1777543478730_6gu8mh",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "NONE",
+  "verifier_signal": {
+    "epistemic_level": "EMPIRICAL",
+    "function": "PROOF_OBLIGATION_WITNESS",
+    "outcome": "CONSISTENT",
+    "scoped_status": "WITNESS_PASS",
+    "status": "PASS"
+  }
+}

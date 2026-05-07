@@ -1,0 +1,94 @@
+{
+  "actual_run_inference": [
+    "P2-1: the current baseline was not confirmed on this run.",
+    "Baseline tested: A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings.",
+    "The raw data may still contain structured behavior \u2014 see candidate lemma and alternative-hypothesis suggestions.",
+    "This run does not, by itself, refute the base claim."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "detectable above baseline noise envelope",
+      "pass_rule": "amplification exceeds threshold for every tested perturbation",
+      "primary_metric": "rogue_amplification_signature",
+      "tolerance": "experiment-declared detection threshold"
+    },
+    "id": "HYP_P2_1_ROGUE_DETECTABILITY",
+    "object_under_test": "zero_ensemble",
+    "plain_statement": "A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings.",
+    "why_this_matters": "If a planted rogue cannot be detected, NC6 (no hiding under compression) is threatened \u2014 but only with respect to the chosen detection metric. The Program 2 contradiction route depends on detectability."
+  },
+  "candidate_lemmas": [
+    {
+      "alternative_directions": [
+        "detectability requires a different compression depth",
+        "detectability requires phase-aware metrics rather than amplitude metrics",
+        "detectability holds only for perturbations above a structured floor"
+      ],
+      "name": "Rogue Detectability Candidate Lemma (failure-direction)",
+      "scope": "baseline-revision",
+      "statement": "The current baseline (A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
+      "status": "SUGGESTED_FROM_FAILURE",
+      "what_it_does_not_prove": [
+        "this proves NC6",
+        "this proves RH",
+        "this contradicts Program 1"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this proves NC6",
+    "this proves RH",
+    "this contradicts Program 1",
+    "The theorem candidate is supported.",
+    "No off-line zero exists at arbitrary height.",
+    "The Contradiction Track's non-hiding theorem is established.",
+    "Contradiction closure is established."
+  ],
+  "display_id": "P2-1",
+  "experiment_id": "EXP_2",
+  "intended_inference_if_passed": [
+    "structured rogue zeros produce a detectable signature on the tested window",
+    "the Program 2 contradiction route remains armed in this window",
+    "this is not a proof of NC6"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [
+      "detectability requires a different compression depth",
+      "detectability requires phase-aware metrics rather than amplitude metrics",
+      "detectability holds only for perturbations above a structured floor"
+    ],
+    "baseline_status": "FAILED",
+    "failed_metrics": [
+      "rogue_amplification_signature"
+    ],
+    "fit_metrics": {
+      "summary_metric": 0.9997352740346337
+    }
+  },
+  "next_hypotheses": [
+    "detectability requires a different compression depth",
+    "detectability requires phase-aware metrics rather than amplitude metrics",
+    "detectability holds only for perturbations above a structured floor"
+  ],
+  "program": "PROGRAM_2",
+  "raw_observations": {
+    "metrics": {
+      "amp": 0.9997352740346337,
+      "max_clean": 23789975.203929055,
+      "max_rogue": 23783677.379777156
+    },
+    "theory_fit": "REFUTES",
+    "verifier_interpretation": "No significant signal amplification detected (ratio 0.9997x, below 1% threshold)."
+  },
+  "role": "witness",
+  "run_id": "run_1777543478730_6gu8mh",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "ROUTE",
+  "verifier_signal": {
+    "epistemic_level": "EMPIRICAL",
+    "function": "EXPLORATORY",
+    "outcome": "INCONSISTENT",
+    "scoped_status": "ROUTE_NEGATIVE",
+    "status": "FAIL"
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "actual_run_inference": [
+    "CORE-1: the finite/proxy baseline was confirmed on this run's window.",
+    "What was tested: The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k.",
+    "This preserves the route the experiment witnesses; it does not prove the base claim or any necessary condition."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "near zero (within reconstruction tolerance)",
+      "pass_rule": "drift remains within tolerance for every tested k",
+      "primary_metric": "max_drift_between_k_zero_and_other_k",
+      "tolerance": "experiment-declared reconstruction tolerance"
+    },
+    "id": "HYP_CORE_1_RECONSTRUCTION_COVARIANCE",
+    "object_under_test": "explicit_formula_reconstruction",
+    "plain_statement": "The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k.",
+    "why_this_matters": "Reconstruction covariance is the finite-precision proxy for the same-object behavior the gauge claims. Without it, NC3 (same-case criterion) cannot be witnessed by reconstruction agreement."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Finite Reconstruction Covariance Lemma",
+      "scope": "finite/proxy",
+      "statement": "On this run's window, The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "status": "SUGGESTED_FROM_PASS",
+      "what_it_does_not_prove": [
+        "this proves RH",
+        "this proves predicate transport",
+        "this turns the proxy into a formal proof"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this proves RH",
+    "this proves predicate transport",
+    "this turns the proxy into a formal proof",
+    "The Riemann Hypothesis is true.",
+    "The zero-scaling hypothesis is confirmed.",
+    "OBL_COORD_RECONSTRUCTION_COVARIANCE is formally proven.",
+    "The RH predicate transports exactly under the gauge.",
+    "The theorem candidate is proved.",
+    "Coverage extends beyond Odlyzko's verified range."
+  ],
+  "display_id": "CORE-1",
+  "experiment_id": "EXP_1",
+  "intended_inference_if_passed": [
+    "the finite reconstruction-covariance proxy is consistent with same-object behavior on the tested window",
+    "this preserves the candidate route to NC3 via reconstruction agreement",
+    "no formal claim about same-object equality is established"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 200.0
+    }
+  },
+  "next_hypotheses": [
+    "Extend the tested window for CORE-1 to confirm robustness.",
+    "Tighten the tolerance on max_drift_between_k_zero_and_other_k and re-run."
+  ],
+  "program": "PROGRAM_1",
+  "raw_observations": {
+    "metrics": {
+      "main_metrics": {
+        "comparison_N": 200,
+        "harmonic_curve_key": "harmonic_N_200",
+        "max_harmonic_drift_vs_k0": 0.0,
+        "max_mobius_drift_vs_k0": 0.0,
+        "max_y_true_drift_vs_k0": 0.0,
+        "mobius_curve_key": "mobius_N_200",
+        "per_k": {
+          "-1": {
+            "max_harmonic_drift_vs_k0": 0.0,
+            "max_mobius_drift_vs_k0": 0.0,
+            "max_y_true_drift_vs_k0": 0.0,
+            "points": 501
+          },
+          "-2": {
+            "max_harmonic_drift_vs_k0": 0.0,
+            "max_mobius_drift_vs_k0": 0.0,
+            "max_y_true_drift_vs_k0": 0.0,
+            "points": 501
+          },
+          "0": {
+            "max_harmonic_drift_vs_k0": 0.0,
+            "max_mobius_drift_vs_k0": 0.0,
+            "max_y_true_drift_vs_k0": 0.0,
+            "points": 501
+          },
+          "1": {
+            "max_harmonic_drift_vs_k0": 0.0,
+            "max_mobius_drift_vs_k0": 0.0,
+            "max_y_true_drift_vs_k0": 0.0,
+            "points": 501
+          },
+          "2": {
+            "max_harmonic_drift_vs_k0": 0.0,
+            "max_mobius_drift_vs_k0": 0.0,
+            "max_y_true_drift_vs_k0": 0.0,
+            "points": 501
+          }
+        },
+        "reference_k": "0"
+      },
+      "max_harmonic_drift_vs_k0": 0.0,
+      "max_mobius_drift_vs_k0": 0.0,
+      "max_y_true_drift_vs_k0": 0.0,
+      "scales": [
+        "-2",
+        "-1",
+        "0",
+        "1",
+        "2"
+      ],
+      "support_scaled_coordinate_stress": {
+        "max_abs_truth_error": 0.5104566911440855,
+        "per_k_max_abs_truth_error": {
+          "-1": 0.07166091183797718,
+          "-2": 0.0,
+          "0": 0.42637515071653453,
+          "1": 0.17434629953480396,
+          "2": 0.5104566911440855
+        }
+      }
+    },
+    "theory_fit": "SUPPORTS",
+    "verifier_interpretation": "Main Riemann Converter curves are invariant under x_eff = X/tau^k on the tested grid. Reconstruction accuracy is reported separately as supporting validation, not as an RH or zero-scaling proof."
+  },
+  "role": "witness",
+  "run_id": "run_1777543478730_6gu8mh",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "NONE",
+  "verifier_signal": {
+    "epistemic_level": "EMPIRICAL",
+    "function": "PROOF_OBLIGATION_WITNESS",
+    "outcome": "CONSISTENT",
+    "scoped_status": "WITNESS_PASS",
+    "status": "PASS"
+  }
+}

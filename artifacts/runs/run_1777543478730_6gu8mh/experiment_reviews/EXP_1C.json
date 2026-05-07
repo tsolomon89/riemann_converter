@@ -1,0 +1,85 @@
+{
+  "actual_run_inference": [
+    "NOTE-1: status not determinable from this run.",
+    "This is an instrument / coverage gap, not a theory result."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "within declared engineering tolerance",
+      "pass_rule": "scaled-zero reconstruction agrees with baseline within tolerance",
+      "primary_metric": "scaled_zero_reconstruction_drift_vs_baseline",
+      "tolerance": "experiment-declared engineering tolerance"
+    },
+    "id": "HYP_NOTE_1_ZERO_REUSE",
+    "object_under_test": "explicit_formula_reconstruction_with_zero_reuse",
+    "plain_statement": "Zero-reuse / zero-handling optimization (scaled-zero reconstruction at physical coordinates) behaves consistently with the baseline reconstruction under the declared tolerance.",
+    "why_this_matters": "Zero-reuse is a research-engineering optimization. If it disagrees with the baseline reconstruction, then either the optimization is wrong or the baseline depends on a hidden detail of zero-handling."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Zero-Reuse Engineering Note (no-lemma)",
+      "scope": "pathfinder",
+      "statement": "This experiment is pathfinder-typed; no candidate lemma is suggested from this run.",
+      "status": "NO_LEMMA_SUGGESTED",
+      "what_it_does_not_prove": [
+        "this supports the base claim",
+        "this supports Program 1 witnesses directly",
+        "this proves any necessary condition"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this supports the base claim",
+    "this supports Program 1 witnesses directly",
+    "this proves any necessary condition",
+    "This experiment is a witness for any proof obligation.",
+    "OBL_ZERO_SCALING_EQUIVALENCE is supported, refuted, or otherwise affected by this result.",
+    "The RH predicate transports exactly under the gauge.",
+    "The theorem candidate is proved or refuted."
+  ],
+  "display_id": "NOTE-1",
+  "experiment_id": "EXP_1C",
+  "intended_inference_if_passed": [
+    "the zero-reuse engineering optimization is consistent with the baseline on this window",
+    "it is safe to reuse zeros under the tested settings",
+    "no theoretical claim is added"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "NOT_APPLICABLE",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 0.25
+    }
+  },
+  "next_hypotheses": [],
+  "program": "PROGRAM_1",
+  "raw_observations": {
+    "metrics": {
+      "drift_threshold": 0.25,
+      "max_drift": 284.99230619569215,
+      "max_ratio_op_over_coord": 668.396281914722,
+      "ratio_threshold": 1.1,
+      "scales": [
+        "-2",
+        "-1",
+        "0",
+        "1",
+        "2"
+      ]
+    },
+    "theory_fit": "REFUTES",
+    "verifier_interpretation": "Zero-scaling hypothesis fails documented tolerances (drift and/or error-ratio)."
+  },
+  "role": "pathfinder",
+  "run_id": "run_1777543478730_6gu8mh",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "NONE",
+  "verifier_signal": {
+    "epistemic_level": "INSTRUMENTAL",
+    "function": "RESEARCH_NOTE",
+    "outcome": "INFORMATIONAL",
+    "scoped_status": "FAIL",
+    "status": "FAIL"
+  }
+}
