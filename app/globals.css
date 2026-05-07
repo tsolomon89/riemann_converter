@@ -45,57 +45,57 @@ body {
    panels. Keep the change scoped to the app shell so docs/tests and framework
    chrome are unaffected. */
 #app-shell .text-\[8px\] {
-  font-size: 12px;
+  font-size: 10px;
   line-height: 1.25;
 }
 
 #app-shell .text-\[9px\] {
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1.25;
 }
 
 #app-shell .text-\[10px\] {
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.3;
 }
 
 #app-shell .text-\[11px\] {
-  font-size: 15px;
+  font-size: 13px;
   line-height: 1.35;
 }
 
 #app-shell .text-\[12px\] {
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.4;
 }
 
 #app-shell .text-xs {
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.4;
 }
 
 #app-shell .text-sm {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.45;
 }
 
 #app-shell .text-base {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.5;
 }
 
 #app-shell .text-lg {
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.35;
 }
 
 #app-shell .text-xl {
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1.25;
 }
 
 #app-shell .text-2xl {
-  font-size: 28px;
+  font-size: 26px;
   line-height: 1.2;
 }
 
