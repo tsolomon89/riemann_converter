@@ -19,8 +19,12 @@
   "candidate_lemmas": [
     {
       "name": "Finite Reconstruction Covariance Lemma",
+      "observed_metric": {
+        "primary_metric": "max_drift_between_k_zero_and_other_k",
+        "value": 200.0
+      },
       "scope": "finite/proxy",
-      "statement": "On this run's window, The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k held within tolerance (primary metric max_drift_between_k_zero_and_other_k: observed \u2248 200). Formalizing this as a finite/proxy lemma is the next research step.",
       "status": "SUGGESTED_FROM_PASS",
       "what_it_does_not_prove": [
         "this proves RH",
@@ -124,8 +128,27 @@
         }
       }
     },
+    "series_refs": [
+      "harmonic_N_200",
+      "mobius_N_200"
+    ],
     "theory_fit": "SUPPORTS",
-    "verifier_interpretation": "Main Riemann Converter curves are invariant under x_eff = X/tau^k on the tested grid. Reconstruction accuracy is reported separately as supporting validation, not as an RH or zero-scaling proof."
+    "verifier_interpretation": "Main Riemann Converter curves are invariant under x_eff = X/tau^k on the tested grid. Reconstruction accuracy is reported separately as supporting validation, not as an RH or zero-scaling proof.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "The explicit-formula reconstruction of pi(X/tau^k) using the un-scaled zero set tracks the true prime count covariantly across the tested k-range at AUTHORITATIVE fidelity."
+      ],
+      "disallowed_conclusion": [
+        "The Riemann Hypothesis is true.",
+        "The zero-scaling hypothesis is confirmed.",
+        "OBL_COORD_RECONSTRUCTION_COVARIANCE is formally proven.",
+        "The RH predicate transports exactly under the gauge.",
+        "The theorem candidate is proved.",
+        "Coverage extends beyond Odlyzko's verified range."
+      ],
+      "inference_scope": "this run, tested k-range, AUTHORITATIVE fidelity required"
+    }
   },
   "role": "witness",
   "run_id": "run_1777543478730_6gu8mh",

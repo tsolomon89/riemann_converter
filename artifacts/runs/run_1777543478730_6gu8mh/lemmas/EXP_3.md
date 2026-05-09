@@ -26,7 +26,7 @@ Metric summary:
 CONFIRMED
 
 ## Candidate Lemma or Research Note
-On this run's window, A counterfactual beta (off the critical line) should diverge from the true / reconstructed prime count under the same gauge scales held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
+On this run's window, A counterfactual beta (off the critical line) should diverge from the true / reconstructed prime count under the same gauge scales held within tolerance (primary metric counterfactual_beta_divergence: observed ≈ 15). Formalizing this as a finite/proxy lemma is the next research step.
 
 ## Why It Matters
 Without this control, beta-stability would be uninformative: any value of beta could appear to pass. The beta falsifier must be armed for VAL-1 to be epistemically meaningful.

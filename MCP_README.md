@@ -104,15 +104,38 @@ Tools that accept an experiment identifier should accept either the stable ID or
 - **`cancel_run`**: Request cancellation for an active run.
 - **`resume_run`**: Resume a canonical run from a compatible checkpoint.
 
+### Proof-Discovery Layer (Read-Only)
+
+Each tool returns a uniform envelope `{ok, schema_version, run_id, data, warnings, errors, plain_language_summary}`. `run_id` defaults to the latest run from `public/current.json` when omitted. Experiment lookup tools accept stable IDs (`EXP_2B`), display IDs (`P2-2`), or aliases (`rogue-isolation`, lowercase forms). All read-only tools below have a local-filesystem fallback that serves directly from per-run artifacts when the HTTP MCP endpoint is unreachable.
+
+- **`list_experiment_reviews`**: Per-experiment reviews (baseline hypothesis, model comparison, intended-vs-actual inference) for a run. (Inputs: optional `run_id`).
+- **`get_experiment_review`**: A single review. (Inputs: `id`, optional `run_id`).
+- **`get_experiment_raw_data`**: Raw observations + verifier signal + bucketed observed/predicted/residual series + `chart_series` metadata (k values, columns, row counts, endpoint URLs to fetch full series). Lets agents inspect data **without relying on verdict labels**.
+- **`get_experiment_model_comparison`**: Observed-vs-predicted with `agent_review_priority` (HIGH for failed witness baselines).
+- **`list_candidate_lemmas`** / **`get_candidate_lemma`**: Candidate-lemma payloads (status: `SUGGESTED_FROM_PASS` / `SUGGESTED_FROM_FAILURE` / `DEFERRED` / `NO_LEMMA_SUGGESTED`), with markdown rendering, alternative directions, and `what_it_does_not_prove`.
+- **`list_baseline_hypotheses`** / **`get_baseline_hypothesis`**: Canonical registry, overlay-aware (accepted-proposal overlays merged at load time).
+- **`get_proof_discovery_index`**: Aggregated lemmas, formalization targets, alternative hypotheses, recommended next experiments, `coverage` metadata (registered / run / not-run / coverage_complete / all_confirmed).
+- **`list_hypothesis_proposals`** / **`get_hypothesis_proposal`**: Read-only views over the proposal lifecycle and audit trail. (Inputs: `proposal_id`, optional `status` filter, optional `run_id`).
+
+### Proof-Discovery Mutations (Authentication Required)
+
+Mutation tools share the same gate as run-control: blocked in read-only deployments, bearer-token enforced in production-mode environments. They cannot be served from the local-filesystem fallback — they require the HTTP MCP endpoint with a valid `RESEARCH_RUN_TOKEN`.
+
+- **`propose_baseline_update`**: Create a new `PROPOSED` proposal. Inputs: `source_agent`, `experiment_id`, `proposed_baseline` (must include `plain_statement` + `expected_signature`), `reason`, optional `evidence`, `recommended_next_experiment`, `run_id`. Canonical hypotheses do **not** mutate from this call.
+- **`accept_hypothesis_proposal`**: Move `PROPOSED → ACCEPTED`. Writes an audit record (old/new baseline hash, `accepted_by`, timestamp, affected experiments, baseline snapshots) and applies an overlay so the registry reflects the revision immediately. Inputs: `proposal_id`, `accepted_by` (required, non-empty), optional `note`, `run_id`.
+- **`reject_hypothesis_proposal`**: Move `PROPOSED → REJECTED` (or `ACCEPTED → REJECTED` to roll back). Writes an audit record and removes any active overlay for the rejected proposal. Inputs: `proposal_id`, `rejected_by` (required, non-empty), optional `reason`, `run_id`.
+
 ---
 
 ## 5. Security & Authentication
 
 Read operations on the research domain (like fetching theorems or experiment results) are generally unprotected at the MCP layer so agents can freely explore the state.
 
-However, state-mutating or live run-management tools—`start_run`, `start_custom_run`, `get_run_status`, `get_run_logs`, `get_run_events`, `cancel_run`, and `resume_run`—require authorization.
+However, state-mutating or live run-management tools—`start_run`, `start_custom_run`, `get_run_status`, `get_run_logs`, `get_run_events`, `cancel_run`, `resume_run`, `propose_baseline_update`, `accept_hypothesis_proposal`, and `reject_hypothesis_proposal`—require authorization.
 
 The `app/mcp/route.ts` enforces this via the `assertRunAuth` function. If the `RESEARCH_RUN_TOKEN` environment variable is not provided to the bridge script, or if the token is invalid, the Next.js API will reject the JSON-RPC request with a `-32001 Unauthorized` error.
+
+Read-only deployments (e.g. hosted Vercel without `RESEARCH_ENABLE_HOSTED_RUNS`) block the same set of mutation tools with a `-32003 READ_ONLY_DEPLOYMENT` error — even when a valid token is presented. Read-only deployment takes precedence over auth.
 
 ---
 

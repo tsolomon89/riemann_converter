@@ -26,7 +26,7 @@ Metric summary:
 CONFIRMED
 
 ## Candidate Lemma or Research Note
-On this run's window, Naive / wrong operator scaling of the gauge action should fail or visibly diverge under the reconstruction metric held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
+On this run's window, Naive / wrong operator scaling of the gauge action should fail or visibly diverge under the reconstruction metric held within tolerance (primary metric wrong_scaling_drift_or_amplitude_explosion: observed ≈ 15.0203). Formalizing this as a finite/proxy lemma is the next research step.
 
 ## Why It Matters
 If wrong scaling does not fail, the reconstruction metric cannot distinguish correct from incorrect gauge action — meaning every other Program 1 result is unreliable.

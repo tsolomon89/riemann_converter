@@ -26,7 +26,7 @@ Metric summary:
 INCONCLUSIVE
 
 ## Candidate Lemma or Research Note
-This run was inconclusive against the current baseline. No candidate lemma is suggested until the baseline is confirmed or definitively failed.
+This run was inconclusive against the current baseline (primary metric coherence_advantage_dilation_minus_translation: observed ≈ 0.477273). No candidate lemma is suggested until the baseline is confirmed or definitively failed.
 
 ## Why It Matters
 Pathfinders inform which gauge direction to prioritize when allocating proof effort. A decisive PATH-1 result narrows the formalization target.

@@ -26,7 +26,7 @@ Metric summary:
 CONFIRMED
 
 ## Candidate Lemma or Research Note
-On this run's window, Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
+On this run's window, Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep held within tolerance (primary metric amplification_vs_epsilon_curve: observed ≈ 1). Formalizing this as a finite/proxy lemma is the next research step.
 
 ## Why It Matters
 Calibrated amplification is the metrology baseline for Program 2: it gauges whether the detection instrument tracks perturbation size in a predictable way. Without calibration, NC6 cannot be quantified.

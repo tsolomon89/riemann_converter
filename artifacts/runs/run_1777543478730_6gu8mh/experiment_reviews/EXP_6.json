@@ -19,8 +19,12 @@
   "candidate_lemmas": [
     {
       "name": "Finite Beta-Stability Lemma",
+      "observed_metric": {
+        "primary_metric": "recovered_beta",
+        "value": 0.5
+      },
       "scope": "finite/proxy",
-      "statement": "On this run's window, The recovered beta parameter remains pinned at 1/2 across the tested gauge scales held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, The recovered beta parameter remains pinned at 1/2 across the tested gauge scales held within tolerance (primary metric recovered_beta: observed \u2248 0.5). Formalizing this as a finite/proxy lemma is the next research step.",
       "status": "SUGGESTED_FROM_PASS",
       "what_it_does_not_prove": [
         "this proves NC4",
@@ -65,8 +69,22 @@
       "tolerance": 1e-10,
       "tolerance_source": "dps-derived (dps=80.0)"
     },
+    "series_refs": [],
     "theory_fit": "SUPPORTS",
-    "verifier_interpretation": "beta_hat=0.500000 within tolerance of 0.5 (drift=0.00e+00, tol=1.00e-10 via dps-derived (dps=80.0))."
+    "verifier_interpretation": "beta_hat=0.500000 within tolerance of 0.5 (drift=0.00e+00, tol=1.00e-10 via dps-derived (dps=80.0)).",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "beta_hat(k) = 1/2 to within optimizer tolerance on the tested k-range at AUTHORITATIVE fidelity."
+      ],
+      "disallowed_conclusion": [
+        "beta is invariant at untested k.",
+        "The RH predicate transports exactly under the gauge.",
+        "OBL_BETA_INVARIANCE is formally proven.",
+        "The theorem candidate is proved."
+      ],
+      "inference_scope": "this run, tested k-range, AUTHORITATIVE fidelity required"
+    }
   },
   "role": "witness",
   "run_id": "run_1777543478730_6gu8mh",

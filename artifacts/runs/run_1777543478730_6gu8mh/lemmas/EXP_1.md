@@ -26,7 +26,7 @@ Metric summary:
 CONFIRMED
 
 ## Candidate Lemma or Research Note
-On this run's window, The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
+On this run's window, The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k held within tolerance (primary metric max_drift_between_k_zero_and_other_k: observed ≈ 200). Formalizing this as a finite/proxy lemma is the next research step.
 
 ## Why It Matters
 Reconstruction covariance is the finite-precision proxy for the same-object behavior the gauge claims. Without it, NC3 (same-case criterion) cannot be witnessed by reconstruction agreement.
@@ -47,7 +47,7 @@ Reconstruction covariance is the finite-precision proxy for the same-object beha
 - Tighten the tolerance on max_drift_between_k_zero_and_other_k and re-run.
 
 ## Formalization Target
-Lift this finite/proxy result to a formal lemma in the proof program. See PROOF_PROGRAM_SPEC.md for the obligation index.
+Lift this finite/proxy result to a formal lemma in the proof program. A Lean 4 statement skeleton already exists at `proof_kernel/lean/FiniteReconstructionCovariance.lean` — close its `TODO-` catalog and discharge the `sorry`. See PROOF_PROGRAM_SPEC.md for the obligation index.
 
 ## Scoped Consequence
 NONE

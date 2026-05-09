@@ -18,8 +18,12 @@
   "candidate_lemmas": [
     {
       "name": "Direct-Zeta-Transport Guardrail Note",
+      "observed_metric": {
+        "primary_metric": "pointwise_zeta_transport_residual",
+        "value": 48.0
+      },
       "scope": "finite/proxy",
-      "statement": "On this run's window, Direct pointwise transport of zeta \u2014 i.e. \u03b6(t) = \u03b6(c^k t) \u2014 is not expected to be invariant under arbitrary multiplicative scaling. Residuals should quantify and bound this guardrail held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, Direct pointwise transport of zeta \u2014 i.e. \u03b6(t) = \u03b6(c^k t) \u2014 is not expected to be invariant under arbitrary multiplicative scaling. Residuals should quantify and bound this guardrail held within tolerance (primary metric pointwise_zeta_transport_residual: observed \u2248 48). Formalizing this as a finite/proxy lemma is the next research step.",
       "status": "SUGGESTED_FROM_PASS",
       "what_it_does_not_prove": [
         "the gauge-coordinate theory fails",
@@ -95,8 +99,25 @@
       "sanity_baseline_ratio": 0.002432905558657074,
       "tau_max_k1": 6.830321442835776
     },
+    "series_refs": [],
     "theory_fit": "INFORMATIVE",
-    "verifier_interpretation": "Sampled 500 t-points across 5 bases x 5 k-values. max|residual| at tau, k=1: 6.8303e+00; baseline (c=1.0001): 1.6618e-02; ratio: 2.43e-03. best base per k: {'0': 'all-equivalent-at-k0', '1': 'baseline_1p0001', '2': 'baseline_1p0001', '5': 'baseline_1p0001', '10': 'baseline_1p0001'}. INFORMATIONAL: zeta is not multiplicatively gauge-invariant in general; this run quantifies the deviation, not a proof of any kind."
+    "verifier_interpretation": "Sampled 500 t-points across 5 bases x 5 k-values. max|residual| at tau, k=1: 6.8303e+00; baseline (c=1.0001): 1.6618e-02; ratio: 2.43e-03. best base per k: {'0': 'all-equivalent-at-k0', '1': 'baseline_1p0001', '2': 'baseline_1p0001', '5': 'baseline_1p0001', '10': 'baseline_1p0001'}. INFORMATIONAL: zeta is not multiplicatively gauge-invariant in general; this run quantifies the deviation, not a proof of any kind.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "At this run's t-window and sampling resolution, |zeta(0.5+it) - zeta(0.5+i*c^k*t)| is non-zero and varies with base c and exponent k. The reported per-base, per-k residual statistics quantify how far zeta is from being multiplicatively gauge-invariant on the tested interval.",
+        "If one base produces systematically smaller residuals than the others, that is information about which gauge candidate the local zeta structure least violates \u2014 not about which is correct.",
+        "The c=1.0001 baseline residual provides a derivative-scale sanity check on the experiment plumbing (residual at small c-1 should be approximately |zeta'(s)| * (c-1) * t)."
+      ],
+      "disallowed_conclusion": [
+        "zeta admits a non-trivial multiplicative gauge automorphism.",
+        "tau (or any other base tested) is uniquely privileged.",
+        "Small residuals at one base imply transport-invariance of the RH predicate.",
+        "The residual decay rate provides a path to a proof.",
+        "The theorem candidate is proved or refuted by this experiment."
+      ],
+      "inference_scope": "this run, declared bases and k-values, t-window in config; Level-4 informational witness operating directly on zeta (not on pi_N)."
+    }
   },
   "role": "exploratory",
   "run_id": "run_1777543478730_6gu8mh",

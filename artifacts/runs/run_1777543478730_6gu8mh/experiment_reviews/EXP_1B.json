@@ -18,8 +18,12 @@
   "candidate_lemmas": [
     {
       "name": "Operator-Action Separation Lemma (instrument health)",
+      "observed_metric": {
+        "primary_metric": "wrong_scaling_drift_or_amplitude_explosion",
+        "value": 15.020266517592646
+      },
       "scope": "finite/proxy",
-      "statement": "On this run's window, Naive / wrong operator scaling of the gauge action should fail or visibly diverge under the reconstruction metric held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, Naive / wrong operator scaling of the gauge action should fail or visibly diverge under the reconstruction metric held within tolerance (primary metric wrong_scaling_drift_or_amplitude_explosion: observed \u2248 15.0203). Formalizing this as a finite/proxy lemma is the next research step.",
       "status": "SUGGESTED_FROM_PASS",
       "what_it_does_not_prove": [
         "this supports RH",
@@ -62,8 +66,21 @@
       "max_drift": 68.63076860136259,
       "relative_divergence": 4.569211106938621
     },
+    "series_refs": [],
     "theory_fit": "SUPPORTS",
-    "verifier_interpretation": "Control armed: naive gamma scaling diverges from baseline by 456.9% (max_drift=68.63 vs baseline_amplitude=15.02)."
+    "verifier_interpretation": "Control armed: naive gamma scaling diverges from baseline by 456.9% (max_drift=68.63 vs baseline_amplitude=15.02).",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "The engine detects the wrong group action: naive operator scaling breaks the reconstruction as expected, arming the gauge claim's falsifier."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported by this control.",
+        "The gauge is correct.",
+        "RH is true."
+      ],
+      "inference_scope": "this run, naive operator-scaling variant"
+    }
   },
   "role": "control",
   "run_id": "run_1777543478730_6gu8mh",

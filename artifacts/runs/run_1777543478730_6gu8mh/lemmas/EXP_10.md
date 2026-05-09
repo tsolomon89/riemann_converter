@@ -26,7 +26,7 @@ Metric summary:
 CONFIRMED
 
 ## Candidate Lemma or Research Note
-On this run's window, Direct pointwise transport of zeta — i.e. ζ(t) = ζ(c^k t) — is not expected to be invariant under arbitrary multiplicative scaling. Residuals should quantify and bound this guardrail held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
+On this run's window, Direct pointwise transport of zeta — i.e. ζ(t) = ζ(c^k t) — is not expected to be invariant under arbitrary multiplicative scaling. Residuals should quantify and bound this guardrail held within tolerance (primary metric pointwise_zeta_transport_residual: observed ≈ 48). Formalizing this as a finite/proxy lemma is the next research step.
 
 ## Why It Matters
 TRANS-1 protects against the misreading that the gauge claim requires literal pointwise zeta equality. The base claim is about same-object behavior under the gauge, not pointwise function equality.

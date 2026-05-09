@@ -25,7 +25,6 @@ lemmas, alternative-hypothesis suggestions, and baseline-revision proposals.
 
 from __future__ import annotations
 
-import datetime
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -47,12 +46,29 @@ def _baseline_status_from_outcome(
 ) -> str:
     """Map a run's outcome to a baseline-aware status.
 
-    Roles invert some conventions:
-      - controls: a CONSISTENT outcome means the falsifier is *armed*, not that
-        the theory is supported. We still call that CONFIRMED for the control
-        baseline, but downstream consumers must see role=control.
+    Role-aware: certain (outcome, role) pairs are expected and others are
+    ambiguous. The mapping table:
+
+      CONSISTENT / IMPLEMENTATION_OK → CONFIRMED for every role. (For controls
+        this means "falsifier armed"; downstream consumers must read role to
+        get the right interpretation.)
+      INCONSISTENT / IMPLEMENTATION_BROKEN → FAILED for every role.
+      INCONCLUSIVE → INCONCLUSIVE.
+      DIRECTIONAL → INCOMPLETE for pathfinder/exploratory (the expected case);
+        INCONCLUSIVE for any other role (DIRECTIONAL is not a meaningful signal
+        for a witness or control).
+      INFORMATIONAL → NOT_APPLICABLE for visualization/demonstration (the
+        expected case — these roles produce descriptive output only); FAILED
+        if the verifier flagged a hard failure via status/scoped_status;
+        INCONCLUSIVE for any other role (INFORMATIONAL on a witness/control
+        means "we have no theoretical signal to read", which is ambiguous).
+      Empty / unrecognized → INCOMPLETE.
     """
     o = (outcome or "").upper()
+    s = (status or "").upper()
+    scoped = (scoped_status or "").upper()
+    role_l = (role or "").lower()
+
     if o in ("CONSISTENT", "IMPLEMENTATION_OK"):
         return "CONFIRMED"
     if o in ("INCONSISTENT", "IMPLEMENTATION_BROKEN"):
@@ -60,13 +76,15 @@ def _baseline_status_from_outcome(
     if o == "INCONCLUSIVE":
         return "INCONCLUSIVE"
     if o == "DIRECTIONAL":
-        return "INCOMPLETE"
+        if role_l in ("pathfinder", "exploratory"):
+            return "INCOMPLETE"
+        return "INCONCLUSIVE"
     if o == "INFORMATIONAL":
-        s = (status or "").upper()
-        scoped = (scoped_status or "").upper()
         if s == "FAIL" or scoped == "FAIL":
             return "FAILED"
-        return "NOT_APPLICABLE"
+        if role_l in ("visualization", "demonstration"):
+            return "NOT_APPLICABLE"
+        return "INCONCLUSIVE"
     if not o:
         return "INCOMPLETE"
     return "INCONCLUSIVE"
@@ -258,12 +276,28 @@ def _build_actual_run_inference(
 # Candidate-lemma generation
 # ---------------------------------------------------------------------------
 
+def _format_metric(value: Optional[float]) -> str:
+    """Render a numeric summary metric concisely for embedding in lemma text."""
+    if value is None:
+        return ""
+    if abs(value) >= 1e6 or (value != 0 and abs(value) < 1e-3):
+        return f"{value:.4g}"
+    return f"{value:g}"
+
+
 def _build_candidate_lemmas(
     baseline: Dict[str, Any],
     baseline_status: str,
     summary_metric: Optional[float],
 ) -> List[Dict[str, Any]]:
     name = baseline.get("candidate_lemma_name") or f"{baseline['display_id']} Candidate Note"
+    primary_metric = baseline.get("expected_signature", {}).get("primary_metric") or ""
+    metric_str = _format_metric(summary_metric)
+    metric_clause = (
+        f" (primary metric {primary_metric}: observed ≈ {metric_str})"
+        if metric_str and primary_metric
+        else f" (observed summary value ≈ {metric_str})" if metric_str else ""
+    )
     lemmas: List[Dict[str, Any]] = []
 
     if baseline_status == "CONFIRMED":
@@ -271,10 +305,14 @@ def _build_candidate_lemmas(
             "name": name,
             "status": "SUGGESTED_FROM_PASS",
             "statement": (
-                f"On this run's window, {baseline['plain_statement'].rstrip('.')} held within tolerance. "
+                f"On this run's window, {baseline['plain_statement'].rstrip('.')} held within tolerance{metric_clause}. "
                 "Formalizing this as a finite/proxy lemma is the next research step."
             ),
             "scope": "finite/proxy",
+            "observed_metric": {
+                "primary_metric": primary_metric or None,
+                "value": summary_metric,
+            } if summary_metric is not None else None,
             "what_it_does_not_prove": baseline.get("disallowed_conclusions", []),
         })
         return lemmas
@@ -284,10 +322,14 @@ def _build_candidate_lemmas(
             "name": name + " (failure-direction)",
             "status": "SUGGESTED_FROM_FAILURE",
             "statement": (
-                f"The current baseline ({baseline['plain_statement'].rstrip('.')}) was not confirmed on this run. "
+                f"The current baseline ({baseline['plain_statement'].rstrip('.')}) was not confirmed on this run{metric_clause}. "
                 "A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below."
             ),
             "scope": "baseline-revision",
+            "observed_metric": {
+                "primary_metric": primary_metric or None,
+                "value": summary_metric,
+            } if summary_metric is not None else None,
             "alternative_directions": baseline.get("possible_alternative_hypotheses", []),
             "what_it_does_not_prove": baseline.get("disallowed_conclusions", []),
         })
@@ -298,10 +340,14 @@ def _build_candidate_lemmas(
             "name": name + " (deferred)",
             "status": "DEFERRED",
             "statement": (
-                f"This run was {baseline_status.lower()} against the current baseline. "
+                f"This run was {baseline_status.lower()} against the current baseline{metric_clause}. "
                 "No candidate lemma is suggested until the baseline is confirmed or definitively failed."
             ),
             "scope": "deferred",
+            "observed_metric": {
+                "primary_metric": primary_metric or None,
+                "value": summary_metric,
+            } if summary_metric is not None else None,
             "what_it_does_not_prove": baseline.get("disallowed_conclusions", []),
         })
         return lemmas
@@ -589,10 +635,25 @@ def render_lemma_markdown(review: Dict[str, Any]) -> str:
     return "\n".join(sections)
 
 
+_LEAN_SCAFFOLD_BY_EXP = {
+    "EXP_1": "proof_kernel/lean/FiniteReconstructionCovariance.lean",
+    "EXP_6": "proof_kernel/lean/FiniteBetaStability.lean",
+    "EXP_8": "proof_kernel/lean/FiniteZeroScalingCorrespondence.lean",
+}
+
+
 def _formalization_target_text(review: Dict[str, Any]) -> str:
     role = review["role"]
     status = review["model_comparison"]["baseline_status"]
     if role == "witness" and status == "CONFIRMED":
+        scaffold = _LEAN_SCAFFOLD_BY_EXP.get(review["experiment_id"])
+        if scaffold:
+            return (
+                f"Lift this finite/proxy result to a formal lemma in the proof program. "
+                f"A Lean 4 statement skeleton already exists at `{scaffold}` — close its "
+                f"`TODO-` catalog and discharge the `sorry`. "
+                f"See PROOF_PROGRAM_SPEC.md for the obligation index."
+            )
         return (
             "Lift this finite/proxy result to a formal lemma in the proof program. "
             "See PROOF_PROGRAM_SPEC.md for the obligation index."

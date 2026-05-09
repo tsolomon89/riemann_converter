@@ -33,6 +33,10 @@ export interface CandidateLemma {
     status: CandidateLemmaStatus;
     statement: string;
     scope: string;
+    /** Observed primary-metric value on this run, when one was available.
+     *  Threaded into `statement` and exposed structurally for agents that
+     *  want to reason about the magnitude of the deviation. */
+    observed_metric?: { primary_metric: string | null; value: number | null } | null;
     alternative_directions?: string[];
     what_it_does_not_prove?: string[];
 }
@@ -174,6 +178,12 @@ export interface ProofDiscoveryLemmaEntry {
     display_id: string;
     lemma_name: string | null;
     lemma_status: CandidateLemmaStatus | null;
+    /** Role of the experiment that produced the lemma. Added by the Python
+     *  generator's lemma_entries() so consumers can group/filter without a
+     *  separate registry lookup. */
+    role: BaselineHypothesis["role"];
+    /** Program of the experiment (PROGRAM_1 / PROGRAM_2 / NONE). */
+    program: BaselineHypothesis["program"];
     baseline_status: BaselineStatus;
     scoped_consequence: ScopedConsequence;
     statement: string | null;

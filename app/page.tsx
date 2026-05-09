@@ -1114,7 +1114,7 @@ export default function Home() {
           </ResponsiveContainer>
         </div>
         <div className="bg-red-900/10 border border-red-500/20 p-4 rounded text-sm text-red-200">
-           <strong>Centrifuge — Program 2 exploratory.</strong> At k=-20 (effective scale ~10<sup>16</sup>), a planted β=0.5001 perturbation produces visible error amplification relative to the clean control. Retained as diagnostic tooling for the Program 2 contradiction-by-detectability route, which lacks a formal non-hiding theorem (see <code>GAP_PROGRAM2_FORMALIZATION</code>).
+           <strong>Centrifuge — Program 2 exploratory.</strong> At k=-20 (effective scale ~10<sup>16</sup>), a planted β=0.5001 perturbation is <em>expected</em> to produce visible error amplification relative to the clean control under the rogue-detectability baseline. Retained as diagnostic tooling for the Program 2 contradiction-by-detectability route, which lacks a formal non-hiding theorem (see <code>GAP_PROGRAM2_FORMALIZATION</code>). Whether the current run actually shows the expected amplification — and what the data suggests if not — is reported by the <span className="font-mono">ExperimentReviewPanel</span> below.
         </div>
       </div>
     );
@@ -1144,7 +1144,7 @@ export default function Home() {
               </ResponsiveContainer>
             </div>
              <div className="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded text-sm text-emerald-200">
-                <strong>Rogue Isolation — Program 2 exploratory.</strong> The green line (Residual = Observed / Predicted) stays near 1.0 when the deviation behaves as the single-perturbed-zero baseline predicts — i.e. the error scales like x<sup>(0.5+δ)</sup>. Read this as a scoped baseline comparison for this run&apos;s settings, not as a Program 1 conclusion.
+                <strong>Rogue Isolation — Program 2 exploratory.</strong> Chart axes: the green line plots the residual ratio (Observed / Predicted) under the single-perturbed-zero baseline; the dashed line is the predicted ratio. <em>If the baseline holds</em>, the green line would track near 1.0 (the residual scaling like x<sup>(0.5+δ)</sup>); whether it does on this run is a question the data answers, not the chart caption. See <span className="font-mono">ExperimentReviewPanel</span> below for the actual run inference, scoped consequence, and any candidate-lemma / alternative-hypothesis suggestions.
             </div>
         </div>
       );
@@ -1185,7 +1185,7 @@ export default function Home() {
           </ResponsiveContainer>
         </div>
         <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded text-sm text-purple-200">
-           <strong>β=π counterfactual — Control.</strong> Known-bad input: the pink line substitutes β=π for the critical-line value. Visible divergence from the true π(X) steps means the engine detects the counterfactual — i.e. the control passes, arming <code>OBL_BETA_INVARIANCE</code>&apos;s falsifier.
+           <strong>β=π counterfactual — Control.</strong> Known-bad input: the pink line substitutes β=π for the critical-line value. <em>If the control is healthy</em>, the pink line should diverge visibly from the true π(X) steps, arming <code>OBL_BETA_INVARIANCE</code>&apos;s falsifier. Whether divergence actually shows on this run, and what that means for instrument health (not theory support), is reported by the <span className="font-mono">ExperimentReviewPanel</span> below.
         </div>
       </div>
     );

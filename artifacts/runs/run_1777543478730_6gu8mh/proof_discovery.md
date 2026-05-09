@@ -2,23 +2,114 @@
 
 _schema 2026.05.experiment-review.v1_
 
+## Coverage
+```json
+{
+  "all_confirmed": false,
+  "coverage_complete": true,
+  "experiments_not_run": [],
+  "experiments_run": [
+    "EXP_0",
+    "EXP_1",
+    "EXP_10",
+    "EXP_1B",
+    "EXP_1C",
+    "EXP_2",
+    "EXP_2B",
+    "EXP_3",
+    "EXP_4",
+    "EXP_5",
+    "EXP_6",
+    "EXP_7",
+    "EXP_8",
+    "EXP_9"
+  ],
+  "lemmas_generated": [
+    "EXP_0",
+    "EXP_1",
+    "EXP_10",
+    "EXP_1B",
+    "EXP_1C",
+    "EXP_2",
+    "EXP_2B",
+    "EXP_3",
+    "EXP_4",
+    "EXP_5",
+    "EXP_6",
+    "EXP_7",
+    "EXP_8",
+    "EXP_9"
+  ],
+  "model_comparisons_generated": [
+    "EXP_0",
+    "EXP_1",
+    "EXP_10",
+    "EXP_1B",
+    "EXP_1C",
+    "EXP_2",
+    "EXP_2B",
+    "EXP_3",
+    "EXP_4",
+    "EXP_5",
+    "EXP_6",
+    "EXP_7",
+    "EXP_8",
+    "EXP_9"
+  ],
+  "registered_experiments": [
+    "EXP_0",
+    "EXP_1",
+    "EXP_1B",
+    "EXP_1C",
+    "EXP_2",
+    "EXP_2B",
+    "EXP_3",
+    "EXP_4",
+    "EXP_5",
+    "EXP_6",
+    "EXP_7",
+    "EXP_8",
+    "EXP_9",
+    "EXP_10"
+  ],
+  "reviews_generated": [
+    "EXP_0",
+    "EXP_1",
+    "EXP_10",
+    "EXP_1B",
+    "EXP_1C",
+    "EXP_2",
+    "EXP_2B",
+    "EXP_3",
+    "EXP_4",
+    "EXP_5",
+    "EXP_6",
+    "EXP_7",
+    "EXP_8",
+    "EXP_9"
+  ]
+}
+```
+
 ## Totals
 ```json
 {
   "controls": 2,
   "demonstrations": 2,
   "experiments_reviewed": 14,
-  "failed_or_incomplete": 4,
+  "failed_or_incomplete": 5,
   "pathfinders": 4,
+  "program_1_total": 4,
   "program_1_witnesses": 3,
+  "program_2_total": 3,
   "program_2_witnesses": 3
 }
 ```
 
 ## Program 1 Candidate Lemmas
-- **CORE-1** — Finite Reconstruction Covariance Lemma: On this run's window, The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
-- **VAL-1** — Finite Beta-Stability Lemma: On this run's window, The recovered beta parameter remains pinned at 1/2 across the tested gauge scales held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
-- **WIT-1** — Finite Zero-Scaling Correspondence Lemma: On this run's window, Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
+- **CORE-1** — Finite Reconstruction Covariance Lemma: On this run's window, The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k held within tolerance (primary metric max_drift_between_k_zero_and_other_k: observed ≈ 200). Formalizing this as a finite/proxy lemma is the next research step.
+- **VAL-1** — Finite Beta-Stability Lemma: On this run's window, The recovered beta parameter remains pinned at 1/2 across the tested gauge scales held within tolerance (primary metric recovered_beta: observed ≈ 0.5). Formalizing this as a finite/proxy lemma is the next research step.
+- **WIT-1** — Finite Zero-Scaling Correspondence Lemma: On this run's window, Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range held within tolerance (primary metric nearest_neighbor_distance_under_scaling: observed ≈ 5e-09). Formalizing this as a finite/proxy lemma is the next research step.
 
 ## Program 1 Witnesses
 - CORE-1: CONFIRMED
@@ -30,7 +121,7 @@ _schema 2026.05.experiment-review.v1_
 - CTRL-2: Beta-Counterfactual Detection Lemma (instrument health) (CONFIRMED)
 
 ## Pathfinding Notes
-- NOTE-1: Zero-Reuse Engineering Note (no-lemma) (NOT_APPLICABLE)
+- NOTE-1: Zero-Reuse Engineering Note (failure-direction) (FAILED)
 - PATH-1: Preferred Gauge-Direction Note (deferred) (INCONCLUSIVE)
 - PATH-2: Zero-Correspondence Pathfinding Note (deferred) (INCOMPLETE)
 - TRANS-1: Direct-Zeta-Transport Guardrail Note (CONFIRMED)
@@ -41,6 +132,10 @@ _schema 2026.05.experiment-review.v1_
 - P2-3: Calibrated Amplification Candidate Lemma (CONFIRMED)
 
 ## Failed or Incomplete Baselines
+- **NOTE-1** — FAILED (scoped: BASELINE_MODEL)
+  - NOTE-1: the partial-transport / zero-reuse baseline was not confirmed on this run.
+  - Raw data show the scaled-zero reconstruction at physical coordinates diverged from the coordinate-baseline beyond the documented drift / ratio tolerances.
+  - Read this as a zero-reuse engineering failure for the current baseline, not as a Program 1 same-object failure or theory verdict.
 - **P2-1** — FAILED (scoped: ROUTE)
   - P2-1: the current baseline was not confirmed on this run.
   - Baseline tested: A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings.
@@ -59,6 +154,10 @@ _schema 2026.05.experiment-review.v1_
   - Strengthening the metric or extending the window is the natural next step.
 
 ## Alternative Hypotheses
+- **NOTE-1**:
+  - zero-reuse is valid only at low |k|
+  - zero-reuse requires a specific normalization to match the baseline
+  - the baseline implicitly does something the optimization skips
 - **P2-1**:
   - detectability requires a different compression depth
   - detectability requires phase-aware metrics rather than amplitude metrics
@@ -81,6 +180,10 @@ _schema 2026.05.experiment-review.v1_
 - Formalize Finite Zero-Scaling Correspondence Lemma as a finite/proxy lemma.
 
 ## Recommended Next Experiments
+- **NOTE-1**:
+  - zero-reuse is valid only at low |k|
+  - zero-reuse requires a specific normalization to match the baseline
+  - the baseline implicitly does something the optimization skips
 - **P2-1**:
   - detectability requires a different compression depth
   - detectability requires phase-aware metrics rather than amplitude metrics

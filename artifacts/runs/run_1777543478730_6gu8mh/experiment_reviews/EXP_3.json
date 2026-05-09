@@ -18,8 +18,12 @@
   "candidate_lemmas": [
     {
       "name": "Beta-Counterfactual Detection Lemma (instrument health)",
+      "observed_metric": {
+        "primary_metric": "counterfactual_beta_divergence",
+        "value": 15.0
+      },
       "scope": "finite/proxy",
-      "statement": "On this run's window, A counterfactual beta (off the critical line) should diverge from the true / reconstructed prime count under the same gauge scales held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, A counterfactual beta (off the critical line) should diverge from the true / reconstructed prime count under the same gauge scales held within tolerance (primary metric counterfactual_beta_divergence: observed \u2248 15). Formalizing this as a finite/proxy lemma is the next research step.",
       "status": "SUGGESTED_FROM_PASS",
       "what_it_does_not_prove": [
         "this proves RH",
@@ -61,8 +65,20 @@
       "max_error": 17294.073448397852,
       "relative_divergence": 1152.93822989319
     },
+    "series_refs": [],
     "theory_fit": "SUPPORTS",
-    "verifier_interpretation": "Control armed: beta=pi reconstruction diverges from true by 1152.9x baseline amplitude (pi_err=1.729e+04)."
+    "verifier_interpretation": "Control armed: beta=pi reconstruction diverges from true by 1152.9x baseline amplitude (pi_err=1.729e+04).",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "The engine detects the counterfactual: beta=pi reconstruction diverges as expected, arming the beta-invariance claim's falsifier."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported by this control.",
+        "beta is invariant."
+      ],
+      "inference_scope": "this run, beta=pi counterfactual control"
+    }
   },
   "role": "control",
   "run_id": "run_1777543478730_6gu8mh",

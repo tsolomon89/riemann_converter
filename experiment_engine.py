@@ -19,7 +19,7 @@ from riemann_math import (
     save_results,
 )
 from verifier import run_verification
-from proof_kernel.data_planner import run_preflight
+from proof_kernel.data_planner import check_data_sufficiency, run_preflight
 from proof_kernel.run_artifacts import write_run_artifacts
 from proof_kernel.run_presets import is_run_preset, resolve_run_preset
 
@@ -96,6 +96,56 @@ def compat_number(value):
     if out.is_integer():
         return int(out)
     return out
+
+
+def resolve_no_preset_zero_source(
+    *,
+    dps,
+    zero_count,
+    run_arg,
+    explicit_zero_source,
+    env_override,
+):
+    """Resolve the zero-source path for a no-preset run via the data planner.
+
+    Precedence (highest first):
+      1. explicit --zero-source on the CLI       → planner is skipped
+      2. RIEMANN_ZEROS_FILE env var              → planner is skipped
+      3. data planner's selected zero asset      → returned as `file:<path>`
+      4. default (caller falls back to "generated", which reads ZEROS_FILE)
+
+    Returns a tuple `(selected_assets_dict | None, zero_source_override | None)`:
+
+      • `selected_assets_dict` — the full planner `selected_assets` block, to be
+        stamped into `meta.selected_data_sources` for auditability. None when
+        the planner was not consulted or returned nothing.
+      • `zero_source_override` — a string like `"file:<path>"` to assign to
+        `args.zero_source`, or None if the engine should keep its current value.
+
+    The planner is exercised even when no preset is given so the engine
+    consistently prefers the highest-dps registered generated asset rather
+    than silently loading the default-named file. Planner failures are
+    swallowed with a printed warning — they must not crash the engine.
+    """
+    if explicit_zero_source or env_override:
+        return None, None
+    try:
+        experiments_arg = None if run_arg == "all" else run_arg
+        plan = check_data_sufficiency({
+            "dps": dps,
+            "zero_count": zero_count,
+            "experiments": experiments_arg,
+        })
+    except Exception as exc:  # noqa: BLE001 — planner failure must not crash the engine
+        print(f"[WARN] data planner unavailable; using default zero source ({exc})")
+        return None, None
+
+    selected = plan.get("selected_assets")
+    zero_asset = ((selected or {}).get("zero") or {}).get("asset") or {}
+    planner_path = zero_asset.get("source_path")
+    if planner_path and os.path.exists(planner_path):
+        return selected, f"file:{planner_path}"
+    return selected, None
 
 
 def load_checkpoint(path):
@@ -201,6 +251,22 @@ def main():
                 )
         elif selected_path and not explicit_zero_source:
             args.zero_source = f"file:{selected_path}"
+
+    # No preset: still consult the data planner so we pick the highest-fidelity
+    # generated zero asset on disk (e.g. zeros.generated.dps_100.jsonl over the
+    # default-named zeros.generated.jsonl when both are registered).
+    no_preset_planner_assets: dict | None = None
+    if not preset_name:
+        no_preset_planner_assets, planner_zero_source = resolve_no_preset_zero_source(
+            dps=args.dps,
+            zero_count=args.zero_count,
+            run_arg=args.run,
+            explicit_zero_source=explicit_zero_source,
+            env_override=os.environ.get("RIEMANN_ZEROS_FILE"),
+        )
+        if planner_zero_source:
+            args.zero_source = planner_zero_source
+            print(f"[planner] selected zero asset: {planner_zero_source}")
 
     cpu_count = multiprocessing.cpu_count() if multiprocessing.cpu_count() else 1
     auto_workers = max(1, int(cpu_count) - 1)
@@ -348,6 +414,14 @@ def main():
     if preflight:
         data["meta"]["preflight"] = preflight
         data["meta"]["selected_data_sources"] = preflight.get("selected_assets")
+    elif no_preset_planner_assets is not None:
+        # No preset was passed, but we still consulted the planner above and
+        # used its zero-asset selection. Record that decision in meta so the
+        # artifact carries the source choice for auditability and so downstream
+        # verifier checks (`zero_source_declared_decimals`, certificate
+        # fidelity) can compare what was actually loaded against what the
+        # planner selected.
+        data["meta"]["selected_data_sources"] = no_preset_planner_assets
     data["meta"]["run_config"] = {
         "workers": int(effective_workers),
         "prime_min_count": int(args.prime_min_count),

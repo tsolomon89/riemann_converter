@@ -599,6 +599,62 @@ describe("patch 5: get_experiment_raw_data exposes observation_series + series_r
         expect(data.verifier_static_inference?._label).toMatch(/do not read as run conclusion/i);
         expect(data.verifier_static_inference?.allowed_conclusion).toEqual(["IF passed: reconstruction covariant"]);
     });
+
+    it("chart_series exposes endpoints even when experiments.json is absent (graceful degradation)", async () => {
+        // Default test fixture does NOT write experiments.json into tmpRoot, so
+        // available=false but the endpoints + curve_keys are still surfaced.
+        const result = await callMcp("get_experiment_raw_data", { id: "EXP_1" });
+        const data = result.data as { chart_series: { available: boolean; series_endpoint: string; compare_scales_endpoint: string; available_keys: string[] } };
+        expect(data.chart_series.series_endpoint).toBe("/api/research/experiments/EXP_1/series");
+        expect(data.chart_series.compare_scales_endpoint).toBe("/api/research/compare-scales/EXP_1");
+        // curve_keys from metrics still come through.
+        expect(data.chart_series.available_keys).toEqual(expect.arrayContaining(["harmonic_N_200"]));
+        // Without experiments.json on disk, available=false.
+        expect(data.chart_series.available).toBe(false);
+    });
+
+    it("chart_series resolves real data when experiments.json IS on disk", async () => {
+        // Drop a synthetic experiments.json into the tmpRoot's run dir to
+        // exercise the resolver. Use the real shape: experiment_2b.main.by_k.
+        const expArtifactPath = path.join(tmpRoot, "artifacts", "runs", RUN_ID, "experiments.json");
+        const expArtifact = {
+            experiment_2b: {
+                main: {
+                    by_k: {
+                        "0": [
+                            { X: 1, observed_residual: 0.1, predicted_residual: 0.0 },
+                            { X: 2, observed_residual: 0.2, predicted_residual: 0.0 },
+                            { X: 3, observed_residual: 9.7, predicted_residual: 0.0 },
+                        ],
+                        "1": [
+                            { X: 10, observed_residual: 0.5, predicted_residual: 0.0 },
+                            { X: 20, observed_residual: 1.2, predicted_residual: 0.0 },
+                        ],
+                    },
+                },
+            },
+        };
+        fs.writeFileSync(expArtifactPath, JSON.stringify(expArtifact));
+        try {
+            const result = await callMcp("get_experiment_raw_data", { id: "EXP_2B" });
+            const data = result.data as {
+                chart_series: {
+                    available: boolean;
+                    available_k_values: string[];
+                    available_columns: string[];
+                    row_counts_by_k: Record<string, number>;
+                };
+            };
+            expect(data.chart_series.available).toBe(true);
+            expect(data.chart_series.available_k_values.sort()).toEqual(["0", "1"]);
+            expect(data.chart_series.available_columns).toEqual(
+                expect.arrayContaining(["X", "observed_residual", "predicted_residual"]),
+            );
+            expect(data.chart_series.row_counts_by_k).toEqual({ "0": 3, "1": 2 });
+        } finally {
+            fs.unlinkSync(expArtifactPath);
+        }
+    });
 });
 
 // =============================================================================

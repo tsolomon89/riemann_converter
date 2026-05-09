@@ -19,8 +19,12 @@
   "candidate_lemmas": [
     {
       "name": "Finite Zero-Scaling Correspondence Lemma",
+      "observed_metric": {
+        "primary_metric": "nearest_neighbor_distance_under_scaling",
+        "value": 5e-09
+      },
       "scope": "finite/proxy",
-      "statement": "On this run's window, Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range held within tolerance (primary metric nearest_neighbor_distance_under_scaling: observed \u2248 5e-09). Formalizing this as a finite/proxy lemma is the next research step.",
       "status": "SUGGESTED_FROM_PASS",
       "what_it_does_not_prove": [
         "this proves NC3",
@@ -74,8 +78,23 @@
       "worst_p99_abs_dev": 1.953858862183209e-08,
       "worst_p99_abs_dev_normalized": 4.949182314661851e-10
     },
+    "series_refs": [],
     "theory_fit": "SUPPORTS",
-    "verifier_interpretation": "Scaled-zeta zeros align with tau-scaled baseline zeros within adaptive tolerance."
+    "verifier_interpretation": "Scaled-zeta zeros align with tau-scaled baseline zeros within adaptive tolerance.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "Scaling zeros rho by tau^k produces the same scaled-zeta values as scaling the prime lattice by tau^k, within adaptive tolerance at AUTHORITATIVE fidelity on the tested k-range."
+      ],
+      "disallowed_conclusion": [
+        "The Riemann Hypothesis is true.",
+        "OBL_ZERO_SCALING_EQUIVALENCE is formally proven.",
+        "The RH predicate transports exactly under the gauge.",
+        "The theorem candidate is proved.",
+        "Zero-scaling preserves RH-relevant structure (that requires OBL_EXACT_RH_TRANSPORT)."
+      ],
+      "inference_scope": "this run, tested k-range, AUTHORITATIVE fidelity required"
+    }
   },
   "role": "witness",
   "run_id": "run_1777543478730_6gu8mh",

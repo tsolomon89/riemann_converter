@@ -79,8 +79,24 @@
       "polar_sample_count": 500,
       "zero_markers_in_range": 10
     },
+    "series_refs": [],
     "theory_fit": "SUPPORTS",
-    "verifier_interpretation": "Polar trace rendered with 500 samples and 10 zero markers in range. Dual-window overlay rendered with 200 samples per window."
+    "verifier_interpretation": "Polar trace rendered with 500 samples and 10 zero markers in range. Dual-window overlay rendered with 200 samples per window.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "Visual representation of zeta(1/2 + i*t) on the critical line at the declared t-range and sampling resolution.",
+        "Loaded zero positions are echoed as origin markers; their visual alignment with the trace's near-origin loops is a sanity check on the loaded zero set, not a verification of zero correctness."
+      ],
+      "disallowed_conclusion": [
+        "The Riemann Hypothesis is true.",
+        "The theorem candidate is supported or refuted by this visualization.",
+        "Zero positions are verified to \u03b6(\u03c1)=0 to any specific precision by this experiment.",
+        "Coverage extends beyond the displayed t-range.",
+        "The compressed and uncompressed dual-window curves agree exactly under any non-trivial multiplicative gauge."
+      ],
+      "inference_scope": "this run, t-range and base specified in config; descriptive only"
+    }
   },
   "role": "visualization",
   "run_id": "run_1777543478730_6gu8mh",

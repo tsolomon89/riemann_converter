@@ -2,6 +2,15 @@
   "alternative_hypotheses": [
     {
       "alternatives": [
+        "zero-reuse is valid only at low |k|",
+        "zero-reuse requires a specific normalization to match the baseline",
+        "the baseline implicitly does something the optimization skips"
+      ],
+      "display_id": "NOTE-1",
+      "experiment_id": "EXP_1C"
+    },
+    {
+      "alternatives": [
         "detectability requires a different compression depth",
         "detectability requires phase-aware metrics rather than amplitude metrics",
         "detectability holds only for perturbations above a structured floor"
@@ -21,6 +30,127 @@
       "experiment_id": "EXP_2B"
     }
   ],
+  "by_program": {
+    "NONE": [
+      {
+        "baseline_status": "NOT_APPLICABLE",
+        "display_id": "ZETA-0",
+        "experiment_id": "EXP_0",
+        "role": "visualization",
+        "scoped_consequence": "NONE"
+      },
+      {
+        "baseline_status": "CONFIRMED",
+        "display_id": "TRANS-1",
+        "experiment_id": "EXP_10",
+        "role": "exploratory",
+        "scoped_consequence": "NONE"
+      },
+      {
+        "baseline_status": "CONFIRMED",
+        "display_id": "CTRL-1",
+        "experiment_id": "EXP_1B",
+        "role": "control",
+        "scoped_consequence": "NONE"
+      },
+      {
+        "baseline_status": "CONFIRMED",
+        "display_id": "CTRL-2",
+        "experiment_id": "EXP_3",
+        "role": "control",
+        "scoped_consequence": "NONE"
+      },
+      {
+        "baseline_status": "INCONCLUSIVE",
+        "display_id": "PATH-1",
+        "experiment_id": "EXP_4",
+        "role": "pathfinder",
+        "scoped_consequence": "NONE"
+      },
+      {
+        "baseline_status": "INCOMPLETE",
+        "display_id": "PATH-2",
+        "experiment_id": "EXP_5",
+        "role": "pathfinder",
+        "scoped_consequence": "BASELINE_MODEL"
+      },
+      {
+        "baseline_status": "NOT_APPLICABLE",
+        "display_id": "DEMO-1",
+        "experiment_id": "EXP_9",
+        "role": "demonstration",
+        "scoped_consequence": "NONE"
+      }
+    ],
+    "PROGRAM_1": {
+      "controls": [],
+      "demonstrations": [],
+      "exploratory": [],
+      "pathfinders": [
+        {
+          "baseline_status": "FAILED",
+          "display_id": "NOTE-1",
+          "experiment_id": "EXP_1C",
+          "role": "pathfinder",
+          "scoped_consequence": "BASELINE_MODEL"
+        }
+      ],
+      "visualizations": [],
+      "witnesses": [
+        {
+          "baseline_status": "CONFIRMED",
+          "display_id": "CORE-1",
+          "experiment_id": "EXP_1",
+          "role": "witness",
+          "scoped_consequence": "NONE"
+        },
+        {
+          "baseline_status": "CONFIRMED",
+          "display_id": "VAL-1",
+          "experiment_id": "EXP_6",
+          "role": "witness",
+          "scoped_consequence": "NONE"
+        },
+        {
+          "baseline_status": "CONFIRMED",
+          "display_id": "WIT-1",
+          "experiment_id": "EXP_8",
+          "role": "witness",
+          "scoped_consequence": "NONE"
+        }
+      ]
+    },
+    "PROGRAM_2": {
+      "controls": [],
+      "demonstrations": [],
+      "exploratory": [],
+      "pathfinders": [],
+      "visualizations": [],
+      "witnesses": [
+        {
+          "baseline_status": "FAILED",
+          "display_id": "P2-1",
+          "experiment_id": "EXP_2",
+          "role": "witness",
+          "scoped_consequence": "ROUTE"
+        },
+        {
+          "baseline_status": "FAILED",
+          "display_id": "P2-2",
+          "experiment_id": "EXP_2B",
+          "role": "witness",
+          "scoped_consequence": "ROUTE"
+        },
+        {
+          "baseline_status": "CONFIRMED",
+          "display_id": "P2-3",
+          "experiment_id": "EXP_7",
+          "role": "witness",
+          "scoped_consequence": "NONE"
+        }
+      ]
+    }
+  },
   "controls_and_instrument_lemmas": [
     {
       "baseline_status": "CONFIRMED",
@@ -28,8 +158,10 @@
       "experiment_id": "EXP_1B",
       "lemma_name": "Operator-Action Separation Lemma (instrument health)",
       "lemma_status": "SUGGESTED_FROM_PASS",
+      "program": "NONE",
+      "role": "control",
       "scoped_consequence": "NONE",
-      "statement": "On this run's window, Naive / wrong operator scaling of the gauge action should fail or visibly diverge under the reconstruction metric held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, Naive / wrong operator scaling of the gauge action should fail or visibly diverge under the reconstruction metric held within tolerance (primary metric wrong_scaling_drift_or_amplitude_explosion: observed \u2248 15.0203). Formalizing this as a finite/proxy lemma is the next research step.",
       "what_it_does_not_prove": [
         "this supports RH",
         "this supports Program 1's positive witnesses directly",
@@ -42,8 +174,10 @@
       "experiment_id": "EXP_3",
       "lemma_name": "Beta-Counterfactual Detection Lemma (instrument health)",
       "lemma_status": "SUGGESTED_FROM_PASS",
+      "program": "NONE",
+      "role": "control",
       "scoped_consequence": "NONE",
-      "statement": "On this run's window, A counterfactual beta (off the critical line) should diverge from the true / reconstructed prime count under the same gauge scales held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, A counterfactual beta (off the critical line) should diverge from the true / reconstructed prime count under the same gauge scales held within tolerance (primary metric counterfactual_beta_divergence: observed \u2248 15). Formalizing this as a finite/proxy lemma is the next research step.",
       "what_it_does_not_prove": [
         "this proves RH",
         "this proves predicate transport",
@@ -51,6 +185,91 @@
       ]
     }
   ],
+  "coverage": {
+    "all_confirmed": false,
+    "coverage_complete": true,
+    "experiments_not_run": [],
+    "experiments_run": [
+      "EXP_0",
+      "EXP_1",
+      "EXP_10",
+      "EXP_1B",
+      "EXP_1C",
+      "EXP_2",
+      "EXP_2B",
+      "EXP_3",
+      "EXP_4",
+      "EXP_5",
+      "EXP_6",
+      "EXP_7",
+      "EXP_8",
+      "EXP_9"
+    ],
+    "lemmas_generated": [
+      "EXP_0",
+      "EXP_1",
+      "EXP_10",
+      "EXP_1B",
+      "EXP_1C",
+      "EXP_2",
+      "EXP_2B",
+      "EXP_3",
+      "EXP_4",
+      "EXP_5",
+      "EXP_6",
+      "EXP_7",
+      "EXP_8",
+      "EXP_9"
+    ],
+    "model_comparisons_generated": [
+      "EXP_0",
+      "EXP_1",
+      "EXP_10",
+      "EXP_1B",
+      "EXP_1C",
+      "EXP_2",
+      "EXP_2B",
+      "EXP_3",
+      "EXP_4",
+      "EXP_5",
+      "EXP_6",
+      "EXP_7",
+      "EXP_8",
+      "EXP_9"
+    ],
+    "registered_experiments": [
+      "EXP_0",
+      "EXP_1",
+      "EXP_1B",
+      "EXP_1C",
+      "EXP_2",
+      "EXP_2B",
+      "EXP_3",
+      "EXP_4",
+      "EXP_5",
+      "EXP_6",
+      "EXP_7",
+      "EXP_8",
+      "EXP_9",
+      "EXP_10"
+    ],
+    "reviews_generated": [
+      "EXP_0",
+      "EXP_1",
+      "EXP_10",
+      "EXP_1B",
+      "EXP_1C",
+      "EXP_2",
+      "EXP_2B",
+      "EXP_3",
+      "EXP_4",
+      "EXP_5",
+      "EXP_6",
+      "EXP_7",
+      "EXP_8",
+      "EXP_9"
+    ]
+  },
   "demonstrations": [
     {
       "baseline_status": "NOT_APPLICABLE",
@@ -58,6 +277,8 @@
       "experiment_id": "EXP_9",
       "lemma_name": "Bounded-Window Demonstration Lemma (no-lemma)",
       "lemma_status": "NO_LEMMA_SUGGESTED",
+      "program": "NONE",
+      "role": "demonstration",
       "scoped_consequence": "NONE",
       "statement": "This experiment is demonstration-typed; no candidate lemma is suggested from this run.",
       "what_it_does_not_prove": [
@@ -72,6 +293,8 @@
       "experiment_id": "EXP_0",
       "lemma_name": "Polar-Trace Demonstration Note (no-lemma)",
       "lemma_status": "NO_LEMMA_SUGGESTED",
+      "program": "NONE",
+      "role": "visualization",
       "scoped_consequence": "NONE",
       "statement": "This experiment is visualization-typed; no candidate lemma is suggested from this run.",
       "what_it_does_not_prove": [
@@ -82,6 +305,17 @@
     }
   ],
   "failed_or_incomplete_baselines": [
+    {
+      "actual_run_inference": [
+        "NOTE-1: the partial-transport / zero-reuse baseline was not confirmed on this run.",
+        "Raw data show the scaled-zero reconstruction at physical coordinates diverged from the coordinate-baseline beyond the documented drift / ratio tolerances.",
+        "Read this as a zero-reuse engineering failure for the current baseline, not as a Program 1 same-object failure or theory verdict."
+      ],
+      "baseline_status": "FAILED",
+      "display_id": "NOTE-1",
+      "experiment_id": "EXP_1C",
+      "scoped_consequence": "BASELINE_MODEL"
+    },
     {
       "actual_run_inference": [
         "P2-1: the current baseline was not confirmed on this run.",
@@ -149,13 +383,15 @@
   ],
   "pathfinding_notes": [
     {
-      "baseline_status": "NOT_APPLICABLE",
+      "baseline_status": "FAILED",
       "display_id": "NOTE-1",
       "experiment_id": "EXP_1C",
-      "lemma_name": "Zero-Reuse Engineering Note (no-lemma)",
-      "lemma_status": "NO_LEMMA_SUGGESTED",
-      "scoped_consequence": "NONE",
-      "statement": "This experiment is pathfinder-typed; no candidate lemma is suggested from this run.",
+      "lemma_name": "Zero-Reuse Engineering Note (failure-direction)",
+      "lemma_status": "SUGGESTED_FROM_FAILURE",
+      "program": "PROGRAM_1",
+      "role": "pathfinder",
+      "scoped_consequence": "BASELINE_MODEL",
+      "statement": "The current baseline (Zero-reuse / zero-handling optimization (scaled-zero reconstruction at physical coordinates) behaves consistently with the baseline reconstruction under the declared tolerance) was not confirmed on this run (primary metric scaled_zero_reconstruction_drift_vs_baseline: observed \u2248 0.25). A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
       "what_it_does_not_prove": [
         "this supports the base claim",
         "this supports Program 1 witnesses directly",
@@ -168,8 +404,10 @@
       "experiment_id": "EXP_4",
       "lemma_name": "Preferred Gauge-Direction Note (deferred)",
       "lemma_status": "DEFERRED",
+      "program": "NONE",
+      "role": "pathfinder",
       "scoped_consequence": "NONE",
-      "statement": "This run was inconclusive against the current baseline. No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
+      "statement": "This run was inconclusive against the current baseline (primary metric coherence_advantage_dilation_minus_translation: observed \u2248 0.477273). No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
       "what_it_does_not_prove": [
         "this rules out the non-preferred direction in general",
         "this supports the base claim",
@@ -182,8 +420,10 @@
       "experiment_id": "EXP_5",
       "lemma_name": "Zero-Correspondence Pathfinding Note (deferred)",
       "lemma_status": "DEFERRED",
+      "program": "NONE",
+      "role": "pathfinder",
       "scoped_consequence": "BASELINE_MODEL",
-      "statement": "This run was incomplete against the current baseline. No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
+      "statement": "This run was incomplete against the current baseline (primary metric nearest_neighbor_correspondence_signal: observed \u2248 0.256497). No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
       "what_it_does_not_prove": [
         "this proves predicate transport",
         "this supports the base claim",
@@ -196,8 +436,10 @@
       "experiment_id": "EXP_10",
       "lemma_name": "Direct-Zeta-Transport Guardrail Note",
       "lemma_status": "SUGGESTED_FROM_PASS",
+      "program": "NONE",
+      "role": "exploratory",
       "scoped_consequence": "NONE",
-      "statement": "On this run's window, Direct pointwise transport of zeta \u2014 i.e. \u03b6(t) = \u03b6(c^k t) \u2014 is not expected to be invariant under arbitrary multiplicative scaling. Residuals should quantify and bound this guardrail held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, Direct pointwise transport of zeta \u2014 i.e. \u03b6(t) = \u03b6(c^k t) \u2014 is not expected to be invariant under arbitrary multiplicative scaling. Residuals should quantify and bound this guardrail held within tolerance (primary metric pointwise_zeta_transport_residual: observed \u2248 48). Formalizing this as a finite/proxy lemma is the next research step.",
       "what_it_does_not_prove": [
         "the gauge-coordinate theory fails",
         "Program 1 fails",
@@ -212,8 +454,10 @@
       "experiment_id": "EXP_1",
       "lemma_name": "Finite Reconstruction Covariance Lemma",
       "lemma_status": "SUGGESTED_FROM_PASS",
+      "program": "PROGRAM_1",
+      "role": "witness",
       "scoped_consequence": "NONE",
-      "statement": "On this run's window, The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, The harmonic converter / explicit-formula reconstruction behaves covariantly across the tested gauge scales k held within tolerance (primary metric max_drift_between_k_zero_and_other_k: observed \u2248 200). Formalizing this as a finite/proxy lemma is the next research step.",
       "what_it_does_not_prove": [
         "this proves RH",
         "this proves predicate transport",
@@ -226,8 +470,10 @@
       "experiment_id": "EXP_6",
       "lemma_name": "Finite Beta-Stability Lemma",
       "lemma_status": "SUGGESTED_FROM_PASS",
+      "program": "PROGRAM_1",
+      "role": "witness",
       "scoped_consequence": "NONE",
-      "statement": "On this run's window, The recovered beta parameter remains pinned at 1/2 across the tested gauge scales held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, The recovered beta parameter remains pinned at 1/2 across the tested gauge scales held within tolerance (primary metric recovered_beta: observed \u2248 0.5). Formalizing this as a finite/proxy lemma is the next research step.",
       "what_it_does_not_prove": [
         "this proves NC4",
         "this proves RH",
@@ -240,8 +486,10 @@
       "experiment_id": "EXP_8",
       "lemma_name": "Finite Zero-Scaling Correspondence Lemma",
       "lemma_status": "SUGGESTED_FROM_PASS",
+      "program": "PROGRAM_1",
+      "role": "witness",
       "scoped_consequence": "NONE",
-      "statement": "On this run's window, Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range held within tolerance (primary metric nearest_neighbor_distance_under_scaling: observed \u2248 5e-09). Formalizing this as a finite/proxy lemma is the next research step.",
       "what_it_does_not_prove": [
         "this proves NC3",
         "this proves predicate transport",
@@ -273,8 +521,10 @@
       "experiment_id": "EXP_2",
       "lemma_name": "Rogue Detectability Candidate Lemma (failure-direction)",
       "lemma_status": "SUGGESTED_FROM_FAILURE",
+      "program": "PROGRAM_2",
+      "role": "witness",
       "scoped_consequence": "ROUTE",
-      "statement": "The current baseline (A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
+      "statement": "The current baseline (A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings) was not confirmed on this run (primary metric rogue_amplification_signature: observed \u2248 0.999735). A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
       "what_it_does_not_prove": [
         "this proves NC6",
         "this proves RH",
@@ -287,8 +537,10 @@
       "experiment_id": "EXP_2B",
       "lemma_name": "Residual Isolation / Residual Envelope Candidate Lemma (failure-direction)",
       "lemma_status": "SUGGESTED_FROM_FAILURE",
+      "program": "PROGRAM_2",
+      "role": "witness",
       "scoped_consequence": "ROUTE",
-      "statement": "The current baseline (A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope)) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
+      "statement": "The current baseline (A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope)) was not confirmed on this run (primary metric observed_over_predicted_residual_ratio: observed \u2248 501). A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
       "what_it_does_not_prove": [
         "this proves NC6",
         "this proves the rogue-isolation theorem",
@@ -301,8 +553,10 @@
       "experiment_id": "EXP_7",
       "lemma_name": "Calibrated Amplification Candidate Lemma",
       "lemma_status": "SUGGESTED_FROM_PASS",
+      "program": "PROGRAM_2",
+      "role": "witness",
       "scoped_consequence": "NONE",
-      "statement": "On this run's window, Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep held within tolerance (primary metric amplification_vs_epsilon_curve: observed \u2248 1). Formalizing this as a finite/proxy lemma is the next research step.",
       "what_it_does_not_prove": [
         "this proves NC6",
         "this proves RH",
@@ -311,6 +565,15 @@
     }
   ],
   "recommended_next_experiments": [
+    {
+      "display_id": "NOTE-1",
+      "experiment_id": "EXP_1C",
+      "next_hypotheses": [
+        "zero-reuse is valid only at low |k|",
+        "zero-reuse requires a specific normalization to match the baseline",
+        "the baseline implicitly does something the optimization skips"
+      ]
+    },
     {
       "display_id": "P2-1",
       "experiment_id": "EXP_2",
@@ -354,9 +617,11 @@
     "controls": 2,
     "demonstrations": 2,
     "experiments_reviewed": 14,
-    "failed_or_incomplete": 4,
+    "failed_or_incomplete": 5,
     "pathfinders": 4,
+    "program_1_total": 4,
     "program_1_witnesses": 3,
+    "program_2_total": 3,
     "program_2_witnesses": 3
   },
   "what_must_not_be_concluded": [

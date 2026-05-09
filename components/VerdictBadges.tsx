@@ -18,13 +18,14 @@ import type {
     ExperimentFunction,
     ExperimentOutcome,
     ExperimentVerdict,
-    InferenceRails,
 } from "../lib/types";
 
-// Per-experiment badge + inference-rails callout. Replaces the legacy
-// SUPPORTS/REFUTES/CANDIDATE vocabulary. Renders `function` + `outcome` and
-// surfaces at least one of allowed/disallowed_conclusion near the badge
-// (mandatory under PROOF_PROGRAM_SPEC.md §5/§8).
+// Per-experiment badge. Renders `function` + `outcome`. The legacy
+// InferenceRailsCallout was removed in favor of <ExperimentReviewPanel/>,
+// which keeps `intended_inference_if_passed` and `actual_run_inference`
+// visibly separate. Do NOT reintroduce a single "may infer" panel that
+// reads from verdict.inference — that source mixes static-if-passed text
+// with run state and was the bug that motivated the proof-discovery layer.
 
 // ---------------------------------------------------------------------------
 // FunctionOutcomeBadge — the primary verdict badge
@@ -187,77 +188,3 @@ export function FunctionOutcomeBadge({
     );
 }
 
-// ---------------------------------------------------------------------------
-// InferenceRailsCallout — mandatory surface alongside every verdict
-// ---------------------------------------------------------------------------
-
-export function InferenceRailsCallout({
-    rails,
-    className,
-    dense = false,
-}: {
-    rails: InferenceRails | undefined;
-    className?: string;
-    dense?: boolean;
-}) {
-    if (!rails) {
-        return (
-            <div
-                className={clsx(
-                    "rounded border border-white/10 bg-black/30 p-3 text-[10px] font-mono text-gray-500 italic",
-                    className,
-                )}
-            >
-                No inference rails attached. Re-run verifier to populate.
-            </div>
-        );
-    }
-
-    const padding = dense ? "p-2" : "p-3";
-    const textSize = dense ? "text-[10px]" : "text-[11px]";
-
-    return (
-        <div
-            className={clsx(
-                "rounded border border-white/10 bg-black/30",
-                padding,
-                "space-y-2",
-                className,
-            )}
-        >
-            <div className="flex items-center justify-between text-[9px] font-mono uppercase tracking-widest">
-                <span className="text-gray-500">Inference rails</span>
-                <span
-                    className="text-gray-600 normal-case tracking-normal italic truncate max-w-[60%]"
-                    title={rails.inference_scope}
-                >
-                    scope: {rails.inference_scope}
-                </span>
-            </div>
-            {rails.allowed_conclusion.length > 0 && (
-                <div className="space-y-1">
-                    <div className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/80">
-                        ✓ may infer
-                    </div>
-                    <ul className={clsx("list-disc pl-5 space-y-0.5", textSize, "text-emerald-100/90")}>
-                        {rails.allowed_conclusion.map((c, i) => (
-                            <li key={i}>{c}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-            {rails.disallowed_conclusion.length > 0 && (
-                <div className="space-y-1">
-                    <div className="text-[9px] font-mono uppercase tracking-wider text-red-400/80">
-                        ✗ must not infer
-                    </div>
-                    <ul className={clsx("list-disc pl-5 space-y-0.5", textSize, "text-red-100/90")}>
-                        {rails.disallowed_conclusion.map((c, i) => (
-                            <li key={i}>{c}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-        </div>
-    );
-}

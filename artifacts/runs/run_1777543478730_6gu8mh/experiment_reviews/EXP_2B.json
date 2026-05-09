@@ -27,8 +27,12 @@
         "wrong normalization of the observed/predicted ratio"
       ],
       "name": "Residual Isolation / Residual Envelope Candidate Lemma (failure-direction)",
+      "observed_metric": {
+        "primary_metric": "observed_over_predicted_residual_ratio",
+        "value": 501.0
+      },
       "scope": "baseline-revision",
-      "statement": "The current baseline (A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope)) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
+      "statement": "The current baseline (A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope)) was not confirmed on this run (primary metric observed_over_predicted_residual_ratio: observed \u2248 501). A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
       "status": "SUGGESTED_FROM_FAILURE",
       "what_it_does_not_prove": [
         "this proves NC6",
@@ -82,8 +86,21 @@
       "max_abs_residual_dev": 9.68867404274149,
       "threshold": 0.5
     },
+    "series_refs": [],
     "theory_fit": "REFUTES",
-    "verifier_interpretation": "Residual deviation exceeds tolerance; rogue isolation not supported at this fidelity."
+    "verifier_interpretation": "Residual deviation exceeds tolerance; rogue isolation not supported at this fidelity.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "The residual error scales as x^(0.5+delta) as the single-perturbed-zero model predicts at this run's settings."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported.",
+        "All off-line zeros are isolable in general.",
+        "No-hiding under compression is proved."
+      ],
+      "inference_scope": "this run, Contradiction Track formalization; residual isolation"
+    }
   },
   "role": "witness",
   "run_id": "run_1777543478730_6gu8mh",

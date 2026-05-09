@@ -26,7 +26,7 @@ Metric summary:
 FAILED
 
 ## Candidate Lemma or Research Note
-The current baseline (A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope)) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.
+The current baseline (A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope)) was not confirmed on this run (primary metric observed_over_predicted_residual_ratio: observed ≈ 501). A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.
 
 ## Why It Matters
 Residual isolation is the finite-precision baseline for NC6 via single-perturbation modeling. The current ratio model is one specific baseline among several plausible models.

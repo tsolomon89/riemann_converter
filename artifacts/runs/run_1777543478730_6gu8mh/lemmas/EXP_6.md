@@ -26,7 +26,7 @@ Metric summary:
 CONFIRMED
 
 ## Candidate Lemma or Research Note
-On this run's window, The recovered beta parameter remains pinned at 1/2 across the tested gauge scales held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
+On this run's window, The recovered beta parameter remains pinned at 1/2 across the tested gauge scales held within tolerance (primary metric recovered_beta: observed ≈ 0.5). Formalizing this as a finite/proxy lemma is the next research step.
 
 ## Why It Matters
 Beta stability is the finite-precision proxy for predicate-preservation under the gauge. It is the closest experiment to NC4 (predicate transport).
@@ -45,7 +45,7 @@ Beta stability is the finite-precision proxy for predicate-preservation under th
 - Tighten the tolerance on recovered_beta and re-run.
 
 ## Formalization Target
-Lift this finite/proxy result to a formal lemma in the proof program. See PROOF_PROGRAM_SPEC.md for the obligation index.
+Lift this finite/proxy result to a formal lemma in the proof program. A Lean 4 statement skeleton already exists at `proof_kernel/lean/FiniteBetaStability.lean` — close its `TODO-` catalog and discharge the `sorry`. See PROOF_PROGRAM_SPEC.md for the obligation index.
 
 ## Scoped Consequence
 NONE

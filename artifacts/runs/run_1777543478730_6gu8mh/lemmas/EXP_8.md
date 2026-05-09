@@ -26,7 +26,7 @@ Metric summary:
 CONFIRMED
 
 ## Candidate Lemma or Research Note
-On this run's window, Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.
+On this run's window, Scaled-zero / scaled-lattice equivalence holds within adaptive tolerance over the tested k-range held within tolerance (primary metric nearest_neighbor_distance_under_scaling: observed ≈ 5e-09). Formalizing this as a finite/proxy lemma is the next research step.
 
 ## Why It Matters
 Scaled-zero correspondence is the witness object for NC3 via zero-ensemble equivalence. Without it, the predicate-transport route loses its finite witness.
@@ -46,7 +46,7 @@ Scaled-zero correspondence is the witness object for NC3 via zero-ensemble equiv
 - Tighten the tolerance on nearest_neighbor_distance_under_scaling and re-run.
 
 ## Formalization Target
-Lift this finite/proxy result to a formal lemma in the proof program. See PROOF_PROGRAM_SPEC.md for the obligation index.
+Lift this finite/proxy result to a formal lemma in the proof program. A Lean 4 statement skeleton already exists at `proof_kernel/lean/FiniteZeroScalingCorrespondence.lean` — close its `TODO-` catalog and discharge the `sorry`. See PROOF_PROGRAM_SPEC.md for the obligation index.
 
 ## Scoped Consequence
 NONE

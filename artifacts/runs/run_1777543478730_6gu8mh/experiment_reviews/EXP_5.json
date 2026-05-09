@@ -18,8 +18,12 @@
   "candidate_lemmas": [
     {
       "name": "Zero-Correspondence Pathfinding Note (deferred)",
+      "observed_metric": {
+        "primary_metric": "nearest_neighbor_correspondence_signal",
+        "value": 0.25649663672829054
+      },
       "scope": "deferred",
-      "statement": "This run was incomplete against the current baseline. No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
+      "statement": "This run was incomplete against the current baseline (primary metric nearest_neighbor_correspondence_signal: observed \u2248 0.256497). No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
       "status": "DEFERRED",
       "what_it_does_not_prove": [
         "this proves predicate transport",
@@ -60,8 +64,20 @@
       "direction": "lattice-path-negative",
       "median_z": 0.25649663672829054
     },
+    "series_refs": [],
     "theory_fit": "INFORMATIVE",
-    "verifier_interpretation": "PATHFINDER verdict: lattice-path-negative. Scaled zeros do NOT align with existing zeros at this fidelity \u2014 rules out the naive lattice path and redirects toward the operator/coord-reparam investigation."
+    "verifier_interpretation": "PATHFINDER verdict: lattice-path-negative. Scaled zeros do NOT align with existing zeros at this fidelity \u2014 rules out the naive lattice path and redirects toward the operator/coord-reparam investigation.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "Scaled zeros {lattice-hit, lattice-weak, lattice-path-negative} under this run's median_z thresholds."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported or refuted by this pathfinder.",
+        "The zero-scaling hypothesis is universally confirmed or ruled out."
+      ],
+      "inference_scope": "this run, nearest-neighbor zero correspondence"
+    }
   },
   "role": "pathfinder",
   "run_id": "run_1777543478730_6gu8mh",

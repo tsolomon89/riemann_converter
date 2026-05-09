@@ -237,6 +237,46 @@ def _analysis_markdown(payload: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _proof_discovery_pointers(repo: Path, run_id: str) -> Dict[str, Any]:
+    """Per-run proof-discovery artifact paths exposed in public/current.json so
+    agents and the UI can locate reviews / model comparisons / lemmas /
+    proposals / proof-discovery index without hard-coding the layout."""
+    run_dir = repo / "artifacts" / "runs" / run_id
+    index_path = run_dir / "proof_discovery_index.json"
+    md_path = run_dir / "proof_discovery.md"
+    pointers: Dict[str, Any] = {
+        "run_dir": _path_for_public(repo, run_dir),
+        "experiment_reviews_dir": _path_for_public(repo, run_dir / "experiment_reviews"),
+        "model_comparisons_dir": _path_for_public(repo, run_dir / "model_comparisons"),
+        "lemmas_dir": _path_for_public(repo, run_dir / "lemmas"),
+        "hypothesis_proposals_dir": _path_for_public(repo, run_dir / "hypothesis_proposals"),
+        "proof_discovery_index_path": _path_for_public(repo, index_path) if index_path.exists() else None,
+        "proof_discovery_markdown_path": _path_for_public(repo, md_path) if md_path.exists() else None,
+        "api_endpoints": {
+            "experiment_reviews": "/api/research/experiment-reviews",
+            "model_comparisons": "/api/research/model-comparisons",
+            "candidate_lemmas": "/api/research/candidate-lemmas",
+            "baseline_hypotheses": "/api/research/baseline-hypotheses",
+            "proof_discovery": "/api/research/proof-discovery",
+            "hypothesis_proposals": "/api/research/hypothesis-proposals",
+        },
+    }
+    # Surface a quick coverage signal directly in current.json so consumers
+    # can decide whether to display "all baselines confirmed" without parsing
+    # the full index.
+    if index_path.exists():
+        try:
+            index = json.loads(index_path.read_text(encoding="utf-8"))
+            cov = index.get("coverage") if isinstance(index, dict) else None
+            if isinstance(cov, dict):
+                pointers["coverage_complete"] = bool(cov.get("coverage_complete"))
+                pointers["all_baselines_confirmed"] = bool(cov.get("all_confirmed"))
+                pointers["experiments_not_run"] = list(cov.get("experiments_not_run") or [])
+        except Exception:
+            pass
+    return pointers
+
+
 def _write_current_state(
     repo: Path,
     *,
@@ -257,6 +297,7 @@ def _write_current_state(
         "historical_comparison_enabled": False,
         "next_action": next_action or "run clean Program 1 critical suite",
         "selected_data_sources": selected_data_sources,
+        "proof_discovery": _proof_discovery_pointers(repo, run_id),
         "note": RESET_NOTE,
         "schema_version": CURRENT_SCHEMA_VERSION,
     }

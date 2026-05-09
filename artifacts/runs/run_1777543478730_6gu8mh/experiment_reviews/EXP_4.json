@@ -18,8 +18,12 @@
   "candidate_lemmas": [
     {
       "name": "Preferred Gauge-Direction Note (deferred)",
+      "observed_metric": {
+        "primary_metric": "coherence_advantage_dilation_minus_translation",
+        "value": 0.4772727272727273
+      },
       "scope": "deferred",
-      "statement": "This run was inconclusive against the current baseline. No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
+      "statement": "This run was inconclusive against the current baseline (primary metric coherence_advantage_dilation_minus_translation: observed \u2248 0.477273). No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
       "status": "DEFERRED",
       "what_it_does_not_prove": [
         "this rules out the non-preferred direction in general",
@@ -62,8 +66,20 @@
       "ratio": 0.9755675959602371,
       "winner": "DILATION"
     },
+    "series_refs": [],
     "theory_fit": "INCONCLUSIVE",
-    "verifier_interpretation": "Cannot resolve Translation vs Dilation at current fidelity (delta_error=0.4772727272727273). Re-run at higher precision or wider K."
+    "verifier_interpretation": "Cannot resolve Translation vs Dilation at current fidelity (delta_error=0.4772727272727273). Re-run at higher precision or wider K.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "Between log-translation and log-dilation, the data prefers the winning branch at this run's conditions."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported or refuted by this pathfinder.",
+        "The chosen direction is correct at untested scales."
+      ],
+      "inference_scope": "this run, translation-vs-dilation disambiguation"
+    }
   },
   "role": "pathfinder",
   "run_id": "run_1777543478730_6gu8mh",

@@ -26,7 +26,7 @@ Metric summary:
 FAILED
 
 ## Candidate Lemma or Research Note
-The current baseline (A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.
+The current baseline (A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings) was not confirmed on this run (primary metric rogue_amplification_signature: observed ≈ 0.999735). A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.
 
 ## Why It Matters
 If a planted rogue cannot be detected, NC6 (no hiding under compression) is threatened — but only with respect to the chosen detection metric. The Program 2 contradiction route depends on detectability.

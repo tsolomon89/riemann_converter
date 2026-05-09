@@ -181,6 +181,18 @@ const READ_ONLY_TOOLS = new Set([
     "explain_why_stop_experimenting",
     "get_data_migration_report",
     "get_same_object_certificate",
+    // Proof-discovery layer — read-only tools served from per-run artifacts.
+    "list_experiment_reviews",
+    "get_experiment_review",
+    "get_experiment_raw_data",
+    "get_experiment_model_comparison",
+    "list_candidate_lemmas",
+    "get_candidate_lemma",
+    "list_baseline_hypotheses",
+    "get_baseline_hypothesis",
+    "get_proof_discovery_index",
+    "list_hypothesis_proposals",
+    "get_hypothesis_proposal",
 ]);
 
 const RUN_CONTROL_TOOLS = new Set([
@@ -195,6 +207,15 @@ const RUN_CONTROL_TOOLS = new Set([
     "compare_scales",
     "compare_runs",
     "compare_verdicts",
+]);
+
+// Proof-discovery mutation tools. These mutate canonical state (overlay file,
+// per-run proposal artifacts) and require the HTTP server's auth gate; the
+// local-fs bridge cannot stand in for them.
+const MUTATION_TOOLS = new Set([
+    "propose_baseline_update",
+    "accept_hypothesis_proposal",
+    "reject_hypothesis_proposal",
 ]);
 
 const resolveRepoPath = (candidate) => path.isAbsolute(candidate) ? candidate : path.join(REPO_ROOT, candidate);
@@ -689,7 +710,327 @@ const resetReportingObligation = (obl) => {
     };
 };
 
+// ---------------------------------------------------------------------------
+// Proof-discovery local-fs fallbacks (mirror lib/proof-discovery-api.ts).
+// Returns the same envelope shape so downstream consumers don't need a
+// separate code path for HTTP-up vs HTTP-down.
+// ---------------------------------------------------------------------------
+
+const PROOF_DISCOVERY_API_SCHEMA_VERSION = "2026.05.proof-discovery-api.v1";
+
+const ALIAS_TO_STABLE = {
+    "ZETA-0": "EXP_0", "POLAR": "EXP_0", "POLAR-TRACE": "EXP_0",
+    "TRANS-1": "EXP_10", "TRANSPORT": "EXP_10", "ZETA-TRANSPORT": "EXP_10",
+    "CORE-1": "EXP_1", "HARMONIC": "EXP_1", "HARMONIC-CONVERTER": "EXP_1", "CONVERTER": "EXP_1",
+    "CTRL-1": "EXP_1B", "OPERATOR-CONTROL": "EXP_1B", "OPERATOR-SCALING-CONTROL": "EXP_1B",
+    "NOTE-1": "EXP_1C", "ZERO-REUSE": "EXP_1C", "ZERO-REUSE-NOTE": "EXP_1C",
+    "P2-1": "EXP_2", "ROGUE-CENTRIFUGE": "EXP_2",
+    "P2-2": "EXP_2B", "ROGUE-ISOLATION": "EXP_2B",
+    "CTRL-2": "EXP_3", "BETA-CONTROL": "EXP_3", "BETA-COUNTERFACTUAL": "EXP_3",
+    "PATH-1": "EXP_4", "TRANSLATION-DILATION": "EXP_4",
+    "PATH-2": "EXP_5", "ZERO-CORRESPONDENCE": "EXP_5",
+    "VAL-1": "EXP_6", "BETA-STABILITY": "EXP_6", "BETA-VALIDATION": "EXP_6",
+    "P2-3": "EXP_7", "CALIBRATED-AMPLIFICATION": "EXP_7",
+    "WIT-1": "EXP_8", "ZERO-SCALING-WITNESS": "EXP_8", "REG-1": "EXP_8", "SCALED-ZETA-REGRESSION": "EXP_8",
+    "DEMO-1": "EXP_9", "BOUNDED-VIEW": "EXP_9",
+};
+
+const normalizeExperimentIdLoose = (raw) => {
+    if (!raw) throw new Error("experiment id is required");
+    const value = String(raw).trim().toUpperCase();
+    if (/^EXP_[0-9]+[A-Z]?$/.test(value)) return value;
+    if (/^EXP[0-9]+[A-Z]?$/.test(value)) return value.replace(/^EXP/, "EXP_");
+    const key = value.replace(/_/g, "-").replace(/\s+/g, "-");
+    const alias = ALIAS_TO_STABLE[key];
+    if (alias) return alias;
+    throw new Error(`Invalid experiment id: ${raw}`);
+};
+
+const resolveRunIdLocal = (argRunId) => {
+    if (argRunId && String(argRunId).trim()) return String(argRunId).trim();
+    const cur = currentState();
+    return cur?.latest_run_id || null;
+};
+
+const proofDiscoveryEnvelope = (runId, data, summary, errors = [], warnings = []) => ({
+    ok: errors.length === 0,
+    schema_version: PROOF_DISCOVERY_API_SCHEMA_VERSION,
+    run_id: runId,
+    data,
+    warnings,
+    errors,
+    plain_language_summary: summary,
+});
+
+/**
+ * Detect whether any accepted-overlay entries exist. The local-fs bridge
+ * does NOT apply read-time overlays (that logic lives in lib/review-overlay.ts
+ * and runs only when the HTTP server serves the response). When an overlay
+ * is active, append a warning to the response so callers know the on-disk
+ * review may not reflect the current canonical baseline.
+ */
+const hasActiveOverlays = () => {
+    const fp = path.join(REPO_ROOT, "proof_kernel", "hypotheses", "_accepted_overlays.json");
+    if (!fs.existsSync(fp)) return false;
+    try {
+        const raw = JSON.parse(fs.readFileSync(fp, "utf-8"));
+        return raw && raw.overlays && Object.keys(raw.overlays).length > 0;
+    } catch {
+        return false;
+    }
+};
+
+const overlayWarningForBridge = (toolName) =>
+    `bridge fallback: read-time overlays are NOT applied here (use the HTTP server with auth for the merged view). The on-disk review for ${toolName} reflects the baseline that was canonical at run time, not necessarily the current overlay-merged baseline.`;
+
+const readPerRunJson = (runId, ...segments) => {
+    const fp = path.join(REPO_ROOT, "artifacts", "runs", runId, ...segments);
+    if (!fs.existsSync(fp)) return null;
+    try { return JSON.parse(fs.readFileSync(fp, "utf-8")); } catch { return null; }
+};
+
+const readPerRunText = (runId, ...segments) => {
+    const fp = path.join(REPO_ROOT, "artifacts", "runs", runId, ...segments);
+    if (!fs.existsSync(fp)) return null;
+    try { return fs.readFileSync(fp, "utf-8"); } catch { return null; }
+};
+
+const listPerRunDir = (runId, ...segments) => {
+    const dir = path.join(REPO_ROOT, "artifacts", "runs", runId, ...segments);
+    if (!fs.existsSync(dir)) return [];
+    try { return fs.readdirSync(dir); } catch { return []; }
+};
+
+const readBaselineRegistry = () => {
+    const dir = path.join(REPO_ROOT, "proof_kernel", "hypotheses");
+    const out = { all: [], byHypothesisId: {}, byExperimentId: {}, byDisplayId: {} };
+    const overlay = readJsonOrNull(path.join(dir, "_accepted_overlays.json"));
+    const overlays = (overlay && typeof overlay === "object" ? overlay.overlays : null) || {};
+    for (const filename of ["program_1.json", "program_2.json", "controls.json", "pathfinders.json", "demonstrations.json"]) {
+        const payload = readJsonOrNull(path.join(dir, filename));
+        if (!payload || !Array.isArray(payload.hypotheses)) continue;
+        for (const entry of payload.hypotheses) {
+            const ov = overlays[entry.hypothesis_id];
+            const merged = ov?.accepted_baseline ? { ...entry, ...ov.accepted_baseline, _overlay_provenance: { from_proposal_id: ov.proposal_id, accepted_by: ov.accepted_by, accepted_at: ov.accepted_at, old_baseline_hash: ov.old_baseline_hash, new_baseline_hash: ov.new_baseline_hash } } : entry;
+            out.all.push(merged);
+            out.byHypothesisId[merged.hypothesis_id] = merged;
+            if (merged.display_id) out.byDisplayId[merged.display_id] = merged;
+            for (const expId of merged.experiment_ids || []) out.byExperimentId[expId] = merged;
+        }
+    }
+    return out;
+};
+
+// Tools whose payloads are baseline-derived; they need the overlay warning
+// when an overlay is active so consumers don't silently consume stale data.
+const REVIEW_DERIVED_PROOF_DISCOVERY_TOOLS = new Set([
+    "list_experiment_reviews",
+    "get_experiment_review",
+    "get_experiment_raw_data",
+    "get_experiment_model_comparison",
+    "list_candidate_lemmas",
+    "get_candidate_lemma",
+    "get_proof_discovery_index",
+]);
+
+const stampOverlayWarningIfNeeded = (toolName, env) => {
+    if (!env || typeof env !== "object" || !Array.isArray(env.warnings)) return env;
+    if (!REVIEW_DERIVED_PROOF_DISCOVERY_TOOLS.has(toolName)) return env;
+    if (!hasActiveOverlays()) return env;
+    return { ...env, warnings: [...env.warnings, overlayWarningForBridge(toolName)] };
+};
+
+const proofDiscoveryFallback = (toolName, args) => {
+    const argRunId = args?.run_id;
+    switch (toolName) {
+        case "list_baseline_hypotheses": {
+            const reg = readBaselineRegistry();
+            return proofDiscoveryEnvelope(null, { baselines: reg.all }, `Listed ${reg.all.length} baseline hypotheses (local-fs).`);
+        }
+        case "get_baseline_hypothesis": {
+            try {
+                const expId = normalizeExperimentIdLoose(args?.id);
+                const reg = readBaselineRegistry();
+                const baseline = reg.byExperimentId[expId];
+                if (!baseline) return proofDiscoveryEnvelope(null, null, `No baseline for ${expId}.`, [`unknown experiment id: ${args?.id}`]);
+                return proofDiscoveryEnvelope(null, baseline, `Baseline ${baseline.hypothesis_id} for ${expId}.`);
+            } catch (err) {
+                return proofDiscoveryEnvelope(null, null, "Invalid experiment id.", [err.message]);
+            }
+        }
+        case "list_experiment_reviews": {
+            const runId = resolveRunIdLocal(argRunId);
+            if (!runId) return proofDiscoveryEnvelope(null, { run_id: null, reviews: [] }, "No current run resolved.", ["no run id available"]);
+            const entries = listPerRunDir(runId, "experiment_reviews");
+            const reviews = entries
+                .filter((n) => n.endsWith(".json") && !n.endsWith(".no_baseline.json"))
+                .map((n) => readPerRunJson(runId, "experiment_reviews", n))
+                .filter(Boolean)
+                .sort((a, b) => a.experiment_id.localeCompare(b.experiment_id));
+            return proofDiscoveryEnvelope(runId, { run_id: runId, reviews }, `Listed ${reviews.length} reviews for ${runId} (local-fs).`);
+        }
+        case "get_experiment_review": {
+            const runId = resolveRunIdLocal(argRunId);
+            if (!runId) return proofDiscoveryEnvelope(null, null, "No current run resolved.", ["no run id available"]);
+            try {
+                const expId = normalizeExperimentIdLoose(args?.id);
+                const review = readPerRunJson(runId, "experiment_reviews", `${expId}.json`);
+                if (!review) return proofDiscoveryEnvelope(runId, null, `No review for ${expId} in ${runId}.`, [`not found: ${expId}`]);
+                return proofDiscoveryEnvelope(runId, review, `Run ${runId} — ${review.display_id} (${review.experiment_id}): baseline ${review.model_comparison?.baseline_status}, scoped ${review.scoped_consequence}.`);
+            } catch (err) {
+                return proofDiscoveryEnvelope(runId, null, "Invalid experiment id.", [err.message]);
+            }
+        }
+        case "get_experiment_model_comparison": {
+            const runId = resolveRunIdLocal(argRunId);
+            if (!runId) return proofDiscoveryEnvelope(null, null, "No current run resolved.", ["no run id available"]);
+            try {
+                const expId = normalizeExperimentIdLoose(args?.id);
+                const mc = readPerRunJson(runId, "model_comparisons", `${expId}.json`);
+                if (!mc) return proofDiscoveryEnvelope(runId, null, `No model comparison for ${expId}.`, [`not found: ${expId}`]);
+                return proofDiscoveryEnvelope(runId, mc, `Model comparison for ${mc.display_id} (${mc.experiment_id}) — baseline ${mc.fit_result?.baseline_status}, priority ${mc.agent_review_priority}.`);
+            } catch (err) {
+                return proofDiscoveryEnvelope(runId, null, "Invalid experiment id.", [err.message]);
+            }
+        }
+        case "list_candidate_lemmas": {
+            const runId = resolveRunIdLocal(argRunId);
+            if (!runId) return proofDiscoveryEnvelope(null, { run_id: null, lemmas: [] }, "No current run resolved.", ["no run id available"]);
+            const reviews = (() => {
+                const entries = listPerRunDir(runId, "experiment_reviews");
+                return entries.filter((n) => n.endsWith(".json") && !n.endsWith(".no_baseline.json"))
+                    .map((n) => readPerRunJson(runId, "experiment_reviews", n))
+                    .filter(Boolean);
+            })();
+            const lemmas = reviews.map((r) => ({
+                experiment_id: r.experiment_id,
+                display_id: r.display_id,
+                program: r.program,
+                role: r.role,
+                baseline_status: r.model_comparison?.baseline_status,
+                scoped_consequence: r.scoped_consequence,
+                candidate_lemmas: r.candidate_lemmas || [],
+                intended_inference_if_passed: r.intended_inference_if_passed || [],
+                actual_run_inference: r.actual_run_inference || [],
+                disallowed_conclusions: r.disallowed_conclusions || [],
+                next_hypotheses: r.next_hypotheses || [],
+                markdown: readPerRunText(runId, "lemmas", `${r.experiment_id}.md`),
+            }));
+            return proofDiscoveryEnvelope(runId, { run_id: runId, lemmas }, `Listed ${lemmas.length} candidate lemmas for ${runId} (local-fs).`);
+        }
+        case "get_candidate_lemma": {
+            const runId = resolveRunIdLocal(argRunId);
+            if (!runId) return proofDiscoveryEnvelope(null, null, "No current run resolved.", ["no run id available"]);
+            try {
+                const expId = normalizeExperimentIdLoose(args?.id);
+                const review = readPerRunJson(runId, "experiment_reviews", `${expId}.json`);
+                if (!review) return proofDiscoveryEnvelope(runId, null, `No candidate lemma for ${expId}.`, [`not found: ${expId}`]);
+                const md = readPerRunText(runId, "lemmas", `${expId}.md`);
+                return proofDiscoveryEnvelope(runId, {
+                    experiment_id: review.experiment_id,
+                    display_id: review.display_id,
+                    program: review.program,
+                    role: review.role,
+                    baseline_status: review.model_comparison?.baseline_status,
+                    scoped_consequence: review.scoped_consequence,
+                    candidate_lemmas: review.candidate_lemmas || [],
+                    intended_inference_if_passed: review.intended_inference_if_passed || [],
+                    actual_run_inference: review.actual_run_inference || [],
+                    disallowed_conclusions: review.disallowed_conclusions || [],
+                    next_hypotheses: review.next_hypotheses || [],
+                    markdown: md,
+                }, `Candidate lemma for ${review.display_id} (${review.experiment_id}) — baseline ${review.model_comparison?.baseline_status}.`);
+            } catch (err) {
+                return proofDiscoveryEnvelope(runId, null, "Invalid experiment id.", [err.message]);
+            }
+        }
+        case "get_experiment_raw_data": {
+            const runId = resolveRunIdLocal(argRunId);
+            if (!runId) return proofDiscoveryEnvelope(null, null, "No current run resolved.", ["no run id available"]);
+            try {
+                const expId = normalizeExperimentIdLoose(args?.id);
+                const review = readPerRunJson(runId, "experiment_reviews", `${expId}.json`);
+                if (!review) return proofDiscoveryEnvelope(runId, null, `No review for ${expId}.`, [`not found: ${expId}`]);
+                const mc = readPerRunJson(runId, "model_comparisons", `${expId}.json`);
+                const reg = readBaselineRegistry();
+                const baseline = reg.byExperimentId[expId] || null;
+                const seriesEndpoint = `/api/research/experiments/${expId}/series`;
+                const compareScalesEndpoint = `/api/research/compare-scales/${expId}`;
+                const seriesRefs = mc?.observations?.series_refs || [];
+                return proofDiscoveryEnvelope(runId, {
+                    baseline_hypothesis: baseline,
+                    raw_observations: review.raw_observations,
+                    verifier_signal: review.verifier_signal,
+                    observations: mc?.observations || null,
+                    series_refs: seriesRefs,
+                    chart_series: {
+                        available: false,
+                        series_endpoint: seriesEndpoint,
+                        compare_scales_endpoint: compareScalesEndpoint,
+                        available_keys: [...seriesRefs],
+                        available_k_values: [],
+                        available_columns: [],
+                        row_counts_by_k: {},
+                    },
+                    verifier_static_inference: (review.raw_observations || {}).verifier_static_inference ?? null,
+                }, `Raw observations for ${review.display_id} (${expId}) in ${runId} (local-fs; chart_series resolution requires HTTP server).`);
+            } catch (err) {
+                return proofDiscoveryEnvelope(runId, null, "Invalid experiment id.", [err.message]);
+            }
+        }
+        case "get_proof_discovery_index": {
+            const runId = resolveRunIdLocal(argRunId);
+            if (!runId) return proofDiscoveryEnvelope(null, { run_id: null, index: null, markdown: null }, "No current run resolved.", ["no run id available"]);
+            const index = readPerRunJson(runId, "proof_discovery_index.json");
+            const md = readPerRunText(runId, "proof_discovery.md");
+            if (!index) return proofDiscoveryEnvelope(runId, { run_id: runId, index: null, markdown: md }, `No proof-discovery index for ${runId}.`, [`index not found for ${runId}`]);
+            const cov = index.coverage || {};
+            const note = cov.coverage_complete ? "coverage complete" : `partial coverage (${(cov.reviews_generated || []).length}/${(cov.registered_experiments || []).length} reviewed)`;
+            return proofDiscoveryEnvelope(runId, { run_id: runId, index, markdown: md }, `Proof-discovery for ${runId}: ${index.totals?.experiments_reviewed} reviews, ${index.formalization_targets?.length} formalization targets, ${index.totals?.failed_or_incomplete} failed/incomplete — ${note}.`);
+        }
+        case "list_hypothesis_proposals": {
+            const runId = resolveRunIdLocal(argRunId);
+            if (!runId) return proofDiscoveryEnvelope(null, { run_id: null, proposals: [] }, "No current run resolved.", ["no run id available"]);
+            const entries = listPerRunDir(runId, "hypothesis_proposals");
+            const proposals = entries
+                .filter((n) => n.endsWith(".json") && !n.endsWith(".audit.json"))
+                .map((n) => readPerRunJson(runId, "hypothesis_proposals", n))
+                .filter(Boolean);
+            const status = args?.status ? String(args.status).toUpperCase() : null;
+            const filtered = status ? proposals.filter((p) => p.status === status) : proposals;
+            return proofDiscoveryEnvelope(runId, { run_id: runId, proposals: filtered }, `Listed ${filtered.length} proposals for ${runId}${status ? ` (status=${status})` : ""}.`);
+        }
+        case "get_hypothesis_proposal": {
+            const runId = resolveRunIdLocal(argRunId);
+            if (!runId) return proofDiscoveryEnvelope(null, { proposal: null, audit: null }, "No current run resolved.", ["no run id available"]);
+            const proposalId = String(args?.proposal_id || "");
+            const proposal = readPerRunJson(runId, "hypothesis_proposals", `${proposalId}.json`);
+            const audit = readPerRunJson(runId, "hypothesis_proposals", `${proposalId}.audit.json`);
+            if (!proposal) return proofDiscoveryEnvelope(runId, { proposal: null, audit: null }, `No proposal ${proposalId} in ${runId}.`, [`not found: ${proposalId}`]);
+            return proofDiscoveryEnvelope(runId, { proposal, audit }, `Proposal ${proposalId} for ${proposal.experiment_id} — status ${proposal.status}.`);
+        }
+        default:
+            return null;
+    }
+};
+
 const fallbackPayload = (toolName, args) => {
+    // Proof-discovery layer first — checked by name set, returns null only on
+    // unknown tool so we cleanly fall through to legacy handlers.
+    if (
+        toolName.startsWith("list_") ||
+        toolName.startsWith("get_baseline_") ||
+        toolName.startsWith("get_experiment_review") ||
+        toolName.startsWith("get_experiment_raw_data") ||
+        toolName.startsWith("get_experiment_model_") ||
+        toolName.startsWith("get_candidate_") ||
+        toolName.startsWith("get_proof_discovery") ||
+        toolName.startsWith("get_hypothesis_proposal")
+    ) {
+        const result = proofDiscoveryFallback(toolName, args);
+        if (result !== null) return stampOverlayWarningIfNeeded(toolName, result);
+    }
+
     switch (toolName) {
         case "get_latest_run":
             return latestRunFallback();
@@ -853,6 +1194,23 @@ const tryFallback = (req) => {
         return true;
     }
 
+    if (MUTATION_TOOLS.has(toolName)) {
+        emitToolResult(
+            req,
+            `Tool \`${toolName}\` mutates canonical proof-kernel state and requires `
+            + "the Next.js HTTP server's auth gate. The bridge could not reach any "
+            + "/mcp endpoint.\n\n"
+            + "Remedy: start the app with `npm run dev` (port 7000) or set "
+            + "`MCP_BRIDGE_URL` to a deployed /mcp endpoint with a valid "
+            + "`RESEARCH_RUN_TOKEN`.\n\n"
+            + "Read-only proof-discovery tools (list_experiment_reviews, "
+            + "get_experiment_review, get_proof_discovery_index, etc.) still work "
+            + "via the local-filesystem fallback while the server is down.",
+            { isError: true },
+        );
+        return true;
+    }
+
     return false;
 };
 
@@ -941,4 +1299,5 @@ export const __test__ = {
     readHistoryArtifact,
     READ_ONLY_TOOLS,
     RUN_CONTROL_TOOLS,
+    MUTATION_TOOLS,
 };

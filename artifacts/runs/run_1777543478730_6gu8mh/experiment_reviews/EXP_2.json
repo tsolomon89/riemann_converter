@@ -25,8 +25,12 @@
         "detectability holds only for perturbations above a structured floor"
       ],
       "name": "Rogue Detectability Candidate Lemma (failure-direction)",
+      "observed_metric": {
+        "primary_metric": "rogue_amplification_signature",
+        "value": 0.9997352740346337
+      },
       "scope": "baseline-revision",
-      "statement": "The current baseline (A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings) was not confirmed on this run. A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
+      "statement": "The current baseline (A planted rogue / off-line zero produces detectable amplification under the tested compression and gauge settings) was not confirmed on this run (primary metric rogue_amplification_signature: observed \u2248 0.999735). A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
       "status": "SUGGESTED_FROM_FAILURE",
       "what_it_does_not_prove": [
         "this proves NC6",
@@ -77,8 +81,22 @@
       "max_clean": 23789975.203929055,
       "max_rogue": 23783677.379777156
     },
+    "series_refs": [],
     "theory_fit": "REFUTES",
-    "verifier_interpretation": "No significant signal amplification detected (ratio 0.9997x, below 1% threshold)."
+    "verifier_interpretation": "No significant signal amplification detected (ratio 0.9997x, below 1% threshold).",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "Under deep zoom, a planted off-line zero produces visible error amplification relative to the clean baseline at this run's settings."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported.",
+        "No off-line zero exists at arbitrary height.",
+        "The Contradiction Track's non-hiding theorem is established.",
+        "Contradiction closure is established."
+      ],
+      "inference_scope": "this run, Contradiction Track formalization; planted rogue zero"
+    }
   },
   "role": "witness",
   "run_id": "run_1777543478730_6gu8mh",

@@ -68,8 +68,22 @@
       "window_hi": 1000.0,
       "window_lo": 10.0
     },
+    "series_refs": [],
     "theory_fit": "SUPPORTS",
-    "verifier_interpretation": "All 5 sampled zeros admit an integer k that brings the image into [10.0, 1000.0]. The bounded-view corollary's mechanics are demonstrable for the tested heights IF transport holds."
+    "verifier_interpretation": "All 5 sampled zeros admit an integer k that brings the image into [10.0, 1000.0]. The bounded-view corollary's mechanics are demonstrable for the tested heights IF transport holds.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "For each sampled zero, the integer k that brings |gamma * tau^k| into the target bounded window is computed; this exhibits the mechanical content of the bounded-view corollary IF transport holds."
+      ],
+      "disallowed_conclusion": [
+        "Transport is established by this experiment.",
+        "The bounded-view corollary is proved.",
+        "The theorem candidate is proved or refuted.",
+        "Anything about whether the gauge actually preserves RH-relevant structure."
+      ],
+      "inference_scope": "this run, sample of zero heights, bounded-view demonstration"
+    }
   },
   "role": "demonstration",
   "run_id": "run_1777543478730_6gu8mh",

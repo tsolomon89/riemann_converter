@@ -19,8 +19,12 @@
   "candidate_lemmas": [
     {
       "name": "Calibrated Amplification Candidate Lemma",
+      "observed_metric": {
+        "primary_metric": "amplification_vs_epsilon_curve",
+        "value": 1.0
+      },
       "scope": "finite/proxy",
-      "statement": "On this run's window, Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep held within tolerance. Formalizing this as a finite/proxy lemma is the next research step.",
+      "statement": "On this run's window, Rogue amplification behaves monotonically or in a structured way across the epsilon perturbation sweep held within tolerance (primary metric amplification_vs_epsilon_curve: observed \u2248 1). Formalizing this as a finite/proxy lemma is the next research step.",
       "status": "SUGGESTED_FROM_PASS",
       "what_it_does_not_prove": [
         "this proves NC6",
@@ -66,8 +70,21 @@
       ],
       "monotone": true
     },
+    "series_refs": [],
     "theory_fit": "SUPPORTS",
-    "verifier_interpretation": "Sensitivity confirmed. Rogue signal amplifies monotonically with perturbation."
+    "verifier_interpretation": "Sensitivity confirmed. Rogue signal amplifies monotonically with perturbation.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "The rogue-amplification function A(epsilon) is monotone across the swept epsilon range at this run's settings."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported.",
+        "A non-hiding theorem is established.",
+        "Contradiction closure is established."
+      ],
+      "inference_scope": "this run, Contradiction Track formalization; epsilon-sweep"
+    }
   },
   "role": "witness",
   "run_id": "run_1777543478730_6gu8mh",

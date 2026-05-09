@@ -54,6 +54,13 @@ import {
     proposeBaselineUpdate,
     rejectProposal,
 } from "./hypothesis-proposals";
+import {
+    aggregateProofDiscoveryIndex,
+    applyComparisonOverlay,
+    applyReviewOverlay,
+    type OverlayProvenance,
+} from "./review-overlay";
+import { REQUIRED_EXPERIMENT_IDS as REGISTRY_REQUIRED_EXPERIMENT_IDS } from "./hypothesis-registry";
 
 export const PROOF_DISCOVERY_API_SCHEMA_VERSION = "2026.05.proof-discovery-api.v1";
 
@@ -187,6 +194,16 @@ function envelope<T>(
     };
 }
 
+/** Format a provenance record into a human-readable warning string. */
+function provenanceWarning(p: OverlayProvenance | null, expId?: string): string | null {
+    if (!p) return null;
+    const tag = expId ? `${expId}: ` : "";
+    const who = p.accepted_by ?? "unknown";
+    const when = p.accepted_at ?? "unknown";
+    const prop = p.from_proposal_id ?? "unknown";
+    return `${tag}overlay applied at request time (proposal ${prop}, accepted by ${who} at ${when})`;
+}
+
 // ---------------------------------------------------------------------------
 // Baseline hypotheses
 // ---------------------------------------------------------------------------
@@ -251,11 +268,22 @@ export function listExperimentReviewsEnvelope(
             [],
         );
     }
-    const reviews = listExperimentReviews(runId, repoRoot);
+    const onDisk = listExperimentReviews(runId, repoRoot);
+    const warnings: string[] = [];
+    const reviews = onDisk.map((r) => {
+        const baseline = getBaselineForExperiment(r.experiment_id, repoRoot);
+        const merged = applyReviewOverlay(r, baseline);
+        if (merged.overlay_applied) {
+            const w = provenanceWarning(merged.provenance, r.experiment_id);
+            if (w) warnings.push(w);
+        }
+        return merged.data;
+    });
     return envelope(
         runId,
         { run_id: runId, reviews },
-        `Listed ${reviews.length} experiment reviews for run ${runId}.`,
+        `Listed ${reviews.length} experiment reviews for run ${runId}${warnings.length ? ` (${warnings.length} overlaid at request time)` : ""}.`,
+        warnings,
     );
 }
 
@@ -292,8 +320,14 @@ export function getExperimentReviewEnvelope(
             false,
         );
     }
-    const summary = `Run ${runId} — ${review.display_id} (${review.experiment_id}): baseline ${review.model_comparison.baseline_status}, scoped ${review.scoped_consequence}.`;
-    return envelope(runId, review, summary);
+    const baseline = getBaselineForExperiment(expId, repoRoot);
+    const merged = applyReviewOverlay(review, baseline);
+    const warnings: string[] = [];
+    const w = provenanceWarning(merged.provenance, expId);
+    if (merged.overlay_applied && w) warnings.push(w);
+    const r = merged.data;
+    const summary = `Run ${runId} — ${r.display_id} (${r.experiment_id}): baseline ${r.model_comparison.baseline_status}, scoped ${r.scoped_consequence}${merged.overlay_applied ? " (overlay applied at request time)" : ""}.`;
+    return envelope(runId, r, summary, warnings);
 }
 
 export interface NormalizedSeries {
@@ -345,6 +379,25 @@ function normalizeObservationSeries(metrics: Record<string, unknown> | null | un
     return out;
 }
 
+export interface ChartSeriesMetadata {
+    /** Whether the run's experiments.json was readable; if false, only
+     *  endpoints are returned and the agent should fall back to fetching. */
+    available: boolean;
+    /** Base API endpoint for fetching series points. Agents append query
+     *  params (variant, k, base, fields, downsample). */
+    series_endpoint: string;
+    /** Cross-k comparison endpoint. */
+    compare_scales_endpoint: string;
+    /** Curve / variant keys mentioned in the verifier metrics block. */
+    available_keys: string[];
+    /** k values for which series data exists in this run. */
+    available_k_values: string[];
+    /** Column names present in a sample row (X plus per-variant columns). */
+    available_columns: string[];
+    /** Per-k row count of the chart payload. */
+    row_counts_by_k: Record<string, number>;
+}
+
 export interface ExperimentRawDataPayload {
     baseline_hypothesis: BaselineHypothesis | null;
     raw_observations: Record<string, unknown>;
@@ -352,9 +405,81 @@ export interface ExperimentRawDataPayload {
     observations: ModelComparison["observations"] | null;
     series_refs: string[];
     observation_series: NormalizedSeries;
+    chart_series: ChartSeriesMetadata;
     /** Static inference rails recorded by the verifier. Exposed verbatim but
      *  clearly labeled so agents can distinguish them from actual run inference. */
     verifier_static_inference: unknown;
+}
+
+/**
+ * Resolve chart-series metadata for an experiment in a given run. Reads the
+ * run's experiments.json artifact when available and walks the verifier's
+ * `<exp>.main.by_k` payload to extract k values, column names, and row counts
+ * — without inlining the full series (potentially megabytes). Always returns
+ * stable endpoint URLs so an agent can fetch the series via the existing
+ * /api/research/experiments/<id>/series route.
+ */
+function resolveChartSeries(
+    runId: string,
+    expStableId: string,
+    seriesRefs: string[],
+    repoRoot: string,
+): ChartSeriesMetadata {
+    const seriesEndpoint = `/api/research/experiments/${expStableId}/series`;
+    const compareScalesEndpoint = `/api/research/compare-scales/${expStableId}`;
+    const baseMeta: ChartSeriesMetadata = {
+        available: false,
+        series_endpoint: seriesEndpoint,
+        compare_scales_endpoint: compareScalesEndpoint,
+        available_keys: [...seriesRefs],
+        available_k_values: [],
+        available_columns: [],
+        row_counts_by_k: {},
+    };
+
+    const expArtifactPath = path.join(repoRoot, "artifacts", "runs", runId, "experiments.json");
+    if (!fs.existsSync(expArtifactPath)) return baseMeta;
+
+    let artifact: Record<string, unknown>;
+    try {
+        artifact = JSON.parse(fs.readFileSync(expArtifactPath, "utf-8"));
+    } catch {
+        return baseMeta;
+    }
+
+    // EXP_2B → "experiment_2b"; EXP_10 → "experiment_10".
+    const lower = expStableId.toLowerCase().replace(/^exp_/, "experiment_");
+    const expBlock = artifact[lower] as { main?: { by_k?: Record<string, unknown> } } | undefined;
+    const byK = expBlock?.main?.by_k;
+    if (!byK || typeof byK !== "object") return baseMeta;
+
+    const kValues: string[] = [];
+    const rowCounts: Record<string, number> = {};
+    let columns: string[] = [];
+    for (const [k, points] of Object.entries(byK)) {
+        kValues.push(k);
+        if (Array.isArray(points)) {
+            rowCounts[k] = points.length;
+            if (columns.length === 0 && points[0] && typeof points[0] === "object") {
+                columns = Object.keys(points[0] as Record<string, unknown>);
+            }
+        } else {
+            rowCounts[k] = 0;
+        }
+    }
+
+    // Merge curve-keys we discovered in metrics with the actual columns from disk.
+    const mergedKeys = Array.from(new Set([...seriesRefs, ...columns.filter((c) => c !== "X")]));
+
+    return {
+        available: true,
+        series_endpoint: seriesEndpoint,
+        compare_scales_endpoint: compareScalesEndpoint,
+        available_keys: mergedKeys,
+        available_k_values: kValues.sort(),
+        available_columns: columns,
+        row_counts_by_k: rowCounts,
+    };
 }
 
 export function getExperimentRawDataEnvelope(
@@ -367,13 +492,26 @@ export function getExperimentRawDataEnvelope(
         return envelope(review.run_id, null, review.plain_language_summary, review.warnings, review.errors, false);
     }
     const r = review.data;
-    const mc = r.experiment_id && review.run_id
+    const baseline = getBaselineForExperiment(r.experiment_id, repoRoot);
+    const onDiskMc = r.experiment_id && review.run_id
         ? readModelComparison(review.run_id, r.experiment_id, repoRoot)
         : null;
-    const baseline = getBaselineForExperiment(r.experiment_id, repoRoot);
+    const mc = onDiskMc ? applyComparisonOverlay(onDiskMc, baseline).data : null;
     const metrics = (r.raw_observations as { metrics?: Record<string, unknown> }).metrics ?? null;
     const series = normalizeObservationSeries(metrics);
     const rawWithStatic = r.raw_observations as { verifier_static_inference?: unknown };
+    const seriesRefs = mc?.observations.series_refs ?? [];
+    const chartSeries = review.run_id
+        ? resolveChartSeries(review.run_id, r.experiment_id, seriesRefs, repoRoot)
+        : {
+            available: false,
+            series_endpoint: `/api/research/experiments/${r.experiment_id}/series`,
+            compare_scales_endpoint: `/api/research/compare-scales/${r.experiment_id}`,
+            available_keys: [...seriesRefs],
+            available_k_values: [],
+            available_columns: [],
+            row_counts_by_k: {},
+        };
     return envelope(
         review.run_id,
         {
@@ -381,11 +519,14 @@ export function getExperimentRawDataEnvelope(
             raw_observations: r.raw_observations,
             verifier_signal: r.verifier_signal,
             observations: mc?.observations ?? null,
-            series_refs: mc?.observations.series_refs ?? [],
+            series_refs: seriesRefs,
             observation_series: series,
+            chart_series: chartSeries,
             verifier_static_inference: rawWithStatic.verifier_static_inference ?? null,
         },
-        `Raw observations for ${r.display_id} (${r.experiment_id}) in run ${review.run_id}. Inspect data without relying on verdict labels — see observation_series and series_refs.`,
+        chartSeries.available
+            ? `Raw observations for ${r.display_id} (${r.experiment_id}) in run ${review.run_id}. Chart series resolved: ${chartSeries.available_k_values.length} k-values, ${chartSeries.available_columns.length} columns. Use ${chartSeries.series_endpoint} to fetch points.`
+            : `Raw observations for ${r.display_id} (${r.experiment_id}) in run ${review.run_id}. Chart series not resolved on disk; agents may still call ${chartSeries.series_endpoint}.`,
     );
 }
 
@@ -407,11 +548,22 @@ export function listModelComparisonsEnvelope(
             [],
         );
     }
-    const comparisons = listModelComparisons(runId, repoRoot);
+    const onDisk = listModelComparisons(runId, repoRoot);
+    const warnings: string[] = [];
+    const comparisons = onDisk.map((mc) => {
+        const baseline = getBaselineForExperiment(mc.experiment_id, repoRoot);
+        const merged = applyComparisonOverlay(mc, baseline);
+        if (merged.overlay_applied) {
+            const w = provenanceWarning(merged.provenance, mc.experiment_id);
+            if (w) warnings.push(w);
+        }
+        return merged.data;
+    });
     return envelope(
         runId,
         { run_id: runId, comparisons },
-        `Listed ${comparisons.length} model comparisons for run ${runId}.`,
+        `Listed ${comparisons.length} model comparisons for run ${runId}${warnings.length ? ` (${warnings.length} overlaid at request time)` : ""}.`,
+        warnings,
     );
 }
 
@@ -434,10 +586,17 @@ export function getModelComparisonEnvelope(
     if (!mc) {
         return envelope(runId, null, `No model comparison for ${expId} in run ${runId}.`, [], [`not found: ${expId}`], false);
     }
+    const baseline = getBaselineForExperiment(expId, repoRoot);
+    const merged = applyComparisonOverlay(mc, baseline);
+    const warnings: string[] = [];
+    const w = provenanceWarning(merged.provenance, expId);
+    if (merged.overlay_applied && w) warnings.push(w);
+    const out = merged.data;
     return envelope(
         runId,
-        mc,
-        `Model comparison for ${mc.display_id} (${mc.experiment_id}) — baseline ${mc.fit_result.baseline_status}, priority ${mc.agent_review_priority}.`,
+        out,
+        `Model comparison for ${out.display_id} (${out.experiment_id}) — baseline ${out.fit_result.baseline_status}, priority ${out.agent_review_priority}${merged.overlay_applied ? " (overlay applied at request time)" : ""}.`,
+        warnings,
     );
 }
 
@@ -488,9 +647,23 @@ export function listCandidateLemmasEnvelope(
     if (!runId) {
         return envelope(null, { run_id: null, lemmas: [] }, "No current run resolved.", ["no run id available"], []);
     }
-    const reviews = listExperimentReviews(runId, repoRoot);
-    const out = reviews.map((r) => reviewToLemmaPayload(r, readLemmaMarkdown(runId, r.experiment_id, repoRoot)));
-    return envelope(runId, { run_id: runId, lemmas: out }, `Listed ${out.length} candidate lemmas / notes for run ${runId}.`);
+    const onDisk = listExperimentReviews(runId, repoRoot);
+    const warnings: string[] = [];
+    const out = onDisk.map((r) => {
+        const baseline = getBaselineForExperiment(r.experiment_id, repoRoot);
+        const merged = applyReviewOverlay(r, baseline);
+        if (merged.overlay_applied) {
+            const w = provenanceWarning(merged.provenance, r.experiment_id);
+            if (w) warnings.push(w);
+        }
+        return reviewToLemmaPayload(merged.data, readLemmaMarkdown(runId, r.experiment_id, repoRoot));
+    });
+    return envelope(
+        runId,
+        { run_id: runId, lemmas: out },
+        `Listed ${out.length} candidate lemmas / notes for run ${runId}${warnings.length ? ` (${warnings.length} overlaid at request time)` : ""}.`,
+        warnings,
+    );
 }
 
 export function getCandidateLemmaEnvelope(
@@ -512,11 +685,17 @@ export function getCandidateLemmaEnvelope(
     if (!review) {
         return envelope(runId, null, `No candidate lemma for ${expId} in run ${runId}.`, [], [`not found: ${expId}`], false);
     }
+    const baseline = getBaselineForExperiment(expId, repoRoot);
+    const merged = applyReviewOverlay(review, baseline);
     const md = readLemmaMarkdown(runId, expId, repoRoot);
+    const warnings: string[] = [];
+    const w = provenanceWarning(merged.provenance, expId);
+    if (merged.overlay_applied && w) warnings.push(w);
     return envelope(
         runId,
-        reviewToLemmaPayload(review, md),
-        `Candidate lemma / note for ${review.display_id} (${review.experiment_id}) in run ${runId} — baseline ${review.model_comparison.baseline_status}.`,
+        reviewToLemmaPayload(merged.data, md),
+        `Candidate lemma / note for ${merged.data.display_id} (${merged.data.experiment_id}) in run ${runId} — baseline ${merged.data.model_comparison.baseline_status}${merged.overlay_applied ? " (overlay applied at request time)" : ""}.`,
+        warnings,
     );
 }
 
@@ -532,11 +711,41 @@ export function getProofDiscoveryEnvelope(
     if (!runId) {
         return envelope(null, { run_id: null, index: null, markdown: null }, "No current run resolved.", ["no run id available"], []);
     }
-    const index = readProofDiscoveryIndex(runId, repoRoot);
+    const onDiskIndex = readProofDiscoveryIndex(runId, repoRoot);
     const md = readProofDiscoveryMarkdown(runId, repoRoot);
-    if (!index) {
+    if (!onDiskIndex) {
         return envelope(runId, { run_id: runId, index: null, markdown: md }, `No proof-discovery index for run ${runId}.`, [`index not found for run ${runId}`], [], false);
     }
+
+    // Apply read-time overlays to every review and check whether anything
+    // changed. If at least one review was overlay-merged, the index needs to
+    // be re-aggregated from the merged reviews so its baseline-derived fields
+    // (alternative_hypotheses, candidate_lemmas, what_must_not_be_concluded)
+    // reflect the current registry. Otherwise pass through the on-disk index.
+    const onDiskReviews = listExperimentReviews(runId, repoRoot);
+    const warnings: string[] = [];
+    let anyOverlay = false;
+    const mergedReviews = onDiskReviews.map((r) => {
+        const baseline = getBaselineForExperiment(r.experiment_id, repoRoot);
+        const merged = applyReviewOverlay(r, baseline);
+        if (merged.overlay_applied) {
+            anyOverlay = true;
+            const w = provenanceWarning(merged.provenance, r.experiment_id);
+            if (w) warnings.push(w);
+        }
+        return merged.data;
+    });
+
+    const index = anyOverlay
+        ? aggregateProofDiscoveryIndex(
+            runId,
+            mergedReviews,
+            REGISTRY_REQUIRED_EXPERIMENT_IDS,
+            onDiskIndex.coverage?.experiments_run ?? mergedReviews.map((r) => r.experiment_id),
+            onDiskIndex.schema_version,
+        )
+        : onDiskIndex;
+
     const cov = index.coverage;
     const coverageNote = cov?.coverage_complete
         ? "coverage complete"
@@ -544,7 +753,8 @@ export function getProofDiscoveryEnvelope(
     return envelope(
         runId,
         { run_id: runId, index, markdown: md },
-        `Proof-discovery for run ${runId}: ${index.totals.experiments_reviewed} reviews, ${index.formalization_targets.length} formalization targets, ${index.totals.failed_or_incomplete} failed/incomplete baselines — ${coverageNote}.`,
+        `Proof-discovery for run ${runId}: ${index.totals.experiments_reviewed} reviews, ${index.formalization_targets.length} formalization targets, ${index.totals.failed_or_incomplete} failed/incomplete baselines — ${coverageNote}${anyOverlay ? "; overlay applied at request time" : ""}.`,
+        warnings,
     );
 }
 

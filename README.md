@@ -63,8 +63,9 @@ Reads `public/experiments.json` + `public/verdict_history.jsonl` and writes a Ma
 
 ```bash
 pip install -r requirements-dev.txt && pytest tests/   # Python suite
-npx jest                                               # Jest suite
-NODE_OPTIONS=--experimental-vm-modules npx jest __tests__/mcp-bridge-fallback.test.ts  # ESM-only test
+npm run test:js                                        # Jest suite (preferred)
+npx jest                                               # also works — bridge tests use a child Node process for ESM
+npm test                                               # Jest + pytest in one command
 ```
 
 ### 3. Configure run-control auth (deployed environments)
@@ -160,5 +161,73 @@ Brittleness experiments formalize the alternate contradiction-by-detectability r
 - `GAP_NO_HIDING_UNDER_COMPRESSION`: proof that compression cannot hide a rogue zero outside all bounded/verified views.
 - `GAP_CONTRADICTION_CLOSURE`: proof that detectability plus no-hiding plus a verified bounded view forces the contradiction.
 
-Every experiment record ships with mandatory `inference_scope`, `allowed_conclusion`, and `disallowed_conclusion` rails; the UI renders at least one next to every verdict. Those rails are the drift guardrail.
+Every experiment record ships with mandatory `inference_scope`, `allowed_conclusion`, and `disallowed_conclusion` rails. The proof-discovery layer (below) keeps the static "if-passed" rails and the actual run inference visibly separate so a failed/inconclusive run can never display the static intended conclusion as if the data showed it.
+
+## 🔬 Proof-Discovery Layer
+
+Every experiment is registered with a **baseline hypothesis**, and every run produces structured per-experiment **reviews**, **model comparisons**, and **candidate lemmas** alongside a top-level **proof-discovery index**. The goal is to turn the suite from a verdict dashboard into a hypothesis-review and lemma-generation system.
+
+### Artifacts produced per run
+
+```
+artifacts/runs/<run_id>/
+├── experiments.json                    # raw verifier output (legacy)
+├── summary.json                        # verifier summary (legacy)
+├── certificate.json                    # Same-Object Certificate, when built
+├── analysis.json + analysis.md         # claim-down rollup (legacy)
+├── experiment_reviews/<exp_id>.json    # per-experiment baseline review
+├── model_comparisons/<exp_id>.json     # observed vs. predicted, scoped consequence
+├── lemmas/<exp_id>.md                  # candidate lemma / research note
+├── hypothesis_proposals/<id>.json      # agent-proposed baseline updates (status: PROPOSED|ACCEPTED|REJECTED)
+├── hypothesis_proposals/<id>.audit.json  # accept/reject audit trail
+├── proof_discovery_index.json          # aggregated lemmas, formalization targets, coverage
+└── proof_discovery.md                  # human-readable index
+```
+
+The canonical baseline-hypothesis registry lives at `proof_kernel/hypotheses/{program_1,program_2,controls,pathfinders,demonstrations}.json` (one entry per experiment, role-classified). Accepted proposals are layered on top via `proof_kernel/hypotheses/_accepted_overlays.json` so canonical files in git stay clean.
+
+### Key separations enforced by every review
+
+| Field | What it is |
+|---|---|
+| `intended_inference_if_passed` | Static rails — what the run *would* allow if the baseline were confirmed. **Never displayed as the conclusion of a failed/inconclusive run.** |
+| `actual_run_inference` | Data-driven sentences for *this* run, generated from the verifier outcome + role + scoped consequence. |
+| `model_comparison.baseline_status` | `CONFIRMED` / `FAILED` / `INCONCLUSIVE` / `INCOMPLETE` / `NOT_APPLICABLE` |
+| `scoped_consequence` | `THEORY` / `FORMALIZATION` / `WITNESS` / `ROUTE` / `IMPLEMENTATION` / `BASELINE_MODEL` / `NONE`. Program 2 failures scope to BASELINE_MODEL/ROUTE first — never THEORY unless an NC4-bearing necessary condition is contradicted. |
+| `candidate_lemmas[]` | `SUGGESTED_FROM_PASS` / `SUGGESTED_FROM_FAILURE` / `DEFERRED` / `NO_LEMMA_SUGGESTED`, each with `what_it_does_not_prove`. |
+| `disallowed_conclusions` | Always rendered. |
+
+`public/current.json` carries a `proof_discovery` block with directory paths, the API endpoint map, and a quick `coverage_complete` / `all_baselines_confirmed` / `experiments_not_run` signal.
+
+### HTTP API (under `/api/research/`)
+
+| Endpoint | Verb | Purpose |
+|---|---|---|
+| `experiment-reviews` (`/:id`) | GET | List or get per-experiment reviews. |
+| `model-comparisons` (`/:id`) | GET | Observed-vs-predicted with `agent_review_priority`. |
+| `candidate-lemmas` (`/:id`) | GET | Candidate-lemma payloads with markdown rendering. |
+| `baseline-hypotheses` (`/:id`) | GET | Canonical registry (overlay-aware). |
+| `proof-discovery` | GET | Run-level index + markdown. |
+| `hypothesis-proposals` (`/:id`) | GET | List / fetch proposals + audit. |
+| `hypothesis-proposals` | POST | Propose a baseline update (auth + write-enabled deployment). |
+| `hypothesis-proposals/:id/accept` | POST | Accept (auth + write-enabled). |
+| `hypothesis-proposals/:id/reject` | POST | Reject (auth + write-enabled). |
+
+All proof-discovery endpoints accept stable IDs (`EXP_2B`), display IDs (`P2-2`), or aliases (`rogue-isolation`). Errors come through as ok=false envelopes with `{ok, schema_version, run_id, data, warnings, errors, plain_language_summary}` — never bare `{error}`. See [MCP_README.md](MCP_README.md) for the matching MCP tool surface.
+
+### UI
+
+The active-experiment area renders a single shared `<ExperimentReviewPanel>` ([components/ExperimentReviewPanel.tsx](components/ExperimentReviewPanel.tsx)) for every tab, with sub-components `<ModelComparisonPanel>` and `<CandidateLemmaPanel>`. The legacy single "may infer" callout was removed — no per-tab inference logic remains.
+
+### Lean 4 formalization scaffold
+
+The three Program 1 confirmed-witness lemmas have **statement-only** Lean 4 skeletons under [proof_kernel/lean/](proof_kernel/lean/):
+
+| File | Witness experiment | Obligation |
+|---|---|---|
+| [FiniteReconstructionCovariance.lean](proof_kernel/lean/FiniteReconstructionCovariance.lean) | EXP_1 / CORE-1 | `OBL_COORD_RECONSTRUCTION_COVARIANCE` |
+| [FiniteBetaStability.lean](proof_kernel/lean/FiniteBetaStability.lean) | EXP_6 / VAL-1 | `OBL_BETA_INVARIANCE` |
+| [FiniteZeroScalingCorrespondence.lean](proof_kernel/lean/FiniteZeroScalingCorrespondence.lean) | EXP_8 / WIT-1 | `OBL_ZERO_SCALING_EQUIVALENCE` |
+
+Every file follows the same pattern: a missing-hypotheses catalog (TODO-A1 … TODO-W6, 17 distinct primitives), `axiom` / `noncomputable def := sorry` stubs for each, the witness theorem with `sorry`, and a strengthened `_OBL` form (also `sorry`) recording the actual proof obligation the witness is a proxy for. See [proof_kernel/lean/README.md](proof_kernel/lean/README.md) for the consolidated catalog and extension protocol. **No `lakefile.lean` yet** — these are read-only formal targets until the toolchain is set up.
 
