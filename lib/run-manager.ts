@@ -660,6 +660,75 @@ const markTerminal = (record: RunRecord, status: RunStatus, exitCode?: number) =
     }
 };
 
+const triggerCertificateBuild = (record: RunRecord) => {
+    const experimentsPath = path.join("artifacts", "runs", record.id, "experiments.json");
+    const args = [
+        "-m",
+        "proof_kernel.same_object_certificate",
+        "--input",
+        experimentsPath,
+        "--no-public-mirror",
+    ];
+    appendRawLog(record, `[certificate] starting: python ${args.join(" ")}\n`);
+    addEvent(record, {
+        kind: "LIFECYCLE",
+        phase: "DONE",
+        state: "certificate_build_started",
+        message: `[certificate] python ${args.join(" ")}`,
+        payload: { stage: "certificate_build", started: true, args },
+    });
+    let child: ChildProcess;
+    try {
+        child = spawnImpl("python", args, {
+            cwd: record.cwd,
+            env: {
+                ...process.env,
+                RIEMANN_RUN_ID: record.id,
+                RIEMANN_CERTIFICATE_BUILD: "1",
+            },
+        });
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        appendRawLog(record, `[certificate] failed to spawn: ${message}\n`);
+        addEvent(record, {
+            kind: "LIFECYCLE",
+            phase: "DONE",
+            state: "certificate_build_failed",
+            message: `[certificate] failed to spawn: ${message}`,
+            payload: { stage: "certificate_build", error: message },
+        });
+        return;
+    }
+    child.stdout?.on("data", (data) =>
+        appendRawLog(record, `[certificate] ${data.toString()}`),
+    );
+    child.stderr?.on("data", (data) =>
+        appendRawLog(record, `[certificate stderr] ${data.toString()}`),
+    );
+    child.on("error", (err) => {
+        appendRawLog(record, `[certificate] failed: ${err.message}\n`);
+        addEvent(record, {
+            kind: "LIFECYCLE",
+            phase: "DONE",
+            state: "certificate_build_failed",
+            message: `[certificate] failed: ${err.message}`,
+            payload: { stage: "certificate_build", error: err.message },
+        });
+    });
+    child.on("close", (code) => {
+        const normalizedCode = typeof code === "number" ? code : -1;
+        const ok = normalizedCode === 0;
+        appendRawLog(record, `[certificate] exited code=${normalizedCode}\n`);
+        addEvent(record, {
+            kind: "LIFECYCLE",
+            phase: "DONE",
+            state: ok ? "certificate_build_succeeded" : "certificate_build_failed",
+            message: `[certificate] ${ok ? "succeeded" : "failed"} (code=${normalizedCode})`,
+            payload: { stage: "certificate_build", exit_code: normalizedCode },
+        });
+    });
+};
+
 const startHeartbeat = (record: RunRecord) => {
     record.heartbeat_timer = setInterval(() => {
         if (!(record.status === "RUNNING" || record.status === "CANCELLING" || record.status === "QUEUED")) {
@@ -796,7 +865,11 @@ const startProcess = (
             return;
         }
         const normalizedCode = typeof code === "number" ? code : -1;
-        markTerminal(run, normalizedCode === 0 ? "SUCCEEDED" : "FAILED", normalizedCode);
+        const finalStatus = normalizedCode === 0 ? "SUCCEEDED" : "FAILED";
+        markTerminal(run, finalStatus, normalizedCode);
+        if (finalStatus === "SUCCEEDED") {
+            triggerCertificateBuild(run);
+        }
     });
 
     return { run };

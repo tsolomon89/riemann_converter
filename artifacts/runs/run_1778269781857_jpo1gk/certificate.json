@@ -350,7 +350,5 @@
     "wrong_test": "Does \u03b6(t) literally equal \u03b6(c^k\u00b7t)?",
     "right_test": "Does the RH-relevant object/relation/predicate transport under the declared gauge?",
     "exp10_confirms": "EXP_10 shows \u03b6(t) \u2260 \u03b6(\u03c4^k\u00b7t). This is expected and does NOT falsify the base claim."
-  },
-  "mirrors_run_id": "run_1778269781857_jpo1gk",
-  "freshness": "CURRENT"
+  }
 }
