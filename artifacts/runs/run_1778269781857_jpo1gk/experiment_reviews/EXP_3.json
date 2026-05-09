@@ -1,0 +1,94 @@
+{
+  "actual_run_inference": [
+    "CTRL-2: the falsifier described by this control is armed in this run.",
+    "This is a statement about instrument health, not theory support."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "clear divergence of the counterfactual beta from the true count",
+      "pass_rule": "counterfactual beta is rejected by the divergence test for every tested scale",
+      "primary_metric": "counterfactual_beta_divergence",
+      "tolerance": "experiment-declared divergence threshold"
+    },
+    "id": "HYP_CTRL_2_BETA_COUNTERFACTUAL",
+    "object_under_test": "rh_predicate_under_counterfactual_beta",
+    "plain_statement": "A counterfactual beta (off the critical line) should diverge from the true / reconstructed prime count under the same gauge scales.",
+    "why_this_matters": "Without this control, beta-stability would be uninformative: any value of beta could appear to pass. The beta falsifier must be armed for VAL-1 to be epistemically meaningful."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Beta-Counterfactual Detection Lemma (instrument health)",
+      "observed_metric": {
+        "primary_metric": "counterfactual_beta_divergence",
+        "value": 17082.167369673043
+      },
+      "scope": "finite/proxy",
+      "statement": "On this run's window, A counterfactual beta (off the critical line) should diverge from the true / reconstructed prime count under the same gauge scales held within tolerance (primary metric counterfactual_beta_divergence: observed \u2248 17082.2). Formalizing this as a finite/proxy lemma is the next research step.",
+      "status": "SUGGESTED_FROM_PASS",
+      "what_it_does_not_prove": [
+        "this proves RH",
+        "this proves predicate transport",
+        "passing this control supports Program 1 directly"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this proves RH",
+    "this proves predicate transport",
+    "passing this control supports Program 1 directly",
+    "The theorem candidate is supported by this control.",
+    "beta is invariant."
+  ],
+  "display_id": "CTRL-2",
+  "experiment_id": "EXP_3",
+  "intended_inference_if_passed": [
+    "the beta-divergence falsifier is armed for the tested counterfactual range",
+    "VAL-1 results are epistemically meaningful in this window",
+    "this is not theory support \u2014 it is instrument health"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 17082.167369673043
+    }
+  },
+  "next_hypotheses": [
+    "Extend the tested window for CTRL-2 to confirm robustness.",
+    "Tighten the tolerance on counterfactual_beta_divergence and re-run."
+  ],
+  "program": "NONE",
+  "raw_observations": {
+    "metrics": {
+      "baseline_amplitude": 15.0,
+      "max_error": 17082.167369673043,
+      "relative_divergence": 1138.8111579782028
+    },
+    "series_refs": [],
+    "theory_fit": "SUPPORTS",
+    "verifier_interpretation": "Control armed: beta=pi reconstruction diverges from true by 1138.8x baseline amplitude (pi_err=1.708e+04).",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "The engine detects the counterfactual: beta=pi reconstruction diverges as expected, arming the beta-invariance claim's falsifier."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported by this control.",
+        "beta is invariant."
+      ],
+      "inference_scope": "this run, beta=pi counterfactual control"
+    }
+  },
+  "role": "control",
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "NONE",
+  "verifier_signal": {
+    "epistemic_level": "INSTRUMENTAL",
+    "function": "CONTROL",
+    "outcome": "IMPLEMENTATION_OK",
+    "scoped_status": "CONTROL_ARMED",
+    "status": "PASS"
+  }
+}

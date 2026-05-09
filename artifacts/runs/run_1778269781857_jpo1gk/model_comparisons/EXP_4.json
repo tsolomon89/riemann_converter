@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "MEDIUM",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_PATH_1_TRANSLATION_VS_DILATION",
+  "baseline_prediction": {
+    "expected": "directional signal indicating one family preferred",
+    "metric": "coherence_advantage_dilation_minus_translation",
+    "pass_rule": "the result decisively favors dilation over translation (or vice versa)",
+    "tolerance": "experiment-declared decision margin"
+  },
+  "display_id": "PATH-1",
+  "experiment_id": "EXP_4",
+  "fit_result": {
+    "baseline_status": "INCONCLUSIVE",
+    "failed_metrics": [],
+    "reason": "Cannot resolve Translation vs Dilation at current fidelity (delta_error=0.4772727272727273). Re-run at higher precision or wider K."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 0.4772727272727273
+    }
+  },
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1"
+}

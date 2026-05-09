@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "LOW",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_WIT_1_ZERO_SCALING_CORRESPONDENCE",
+  "baseline_prediction": {
+    "expected": "within adaptive tolerance for every tested k",
+    "metric": "nearest_neighbor_distance_under_scaling",
+    "pass_rule": "scaled-zero correspondence holds for every tested k under tolerance",
+    "tolerance": "experiment adaptive tolerance"
+  },
+  "display_id": "WIT-1",
+  "experiment_id": "EXP_8",
+  "fit_result": {
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "reason": "Run outcome consistent with the declared baseline; pass rule satisfied."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 2.388279452544451e-76
+    }
+  },
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1"
+}

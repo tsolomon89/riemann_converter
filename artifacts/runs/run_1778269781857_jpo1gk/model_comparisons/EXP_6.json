@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "LOW",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_VAL_1_BETA_STABILITY",
+  "baseline_prediction": {
+    "expected": "0.5",
+    "metric": "recovered_beta",
+    "pass_rule": "|recovered_beta - 0.5| within declared tolerance for every tested k",
+    "tolerance": "adaptive precision tolerance for this run"
+  },
+  "display_id": "VAL-1",
+  "experiment_id": "EXP_6",
+  "fit_result": {
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "reason": "Run outcome consistent with the declared baseline; pass rule satisfied."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 0.5
+    }
+  },
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1"
+}

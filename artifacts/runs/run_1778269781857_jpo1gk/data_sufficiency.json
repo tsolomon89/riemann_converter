@@ -1,0 +1,363 @@
+{
+  "artifact_kind": "data_sufficiency",
+  "available_assets": [
+    {
+      "available": {
+        "asset_id": "tau_dps_100",
+        "count": null,
+        "errors": [],
+        "generator": "mpmath.pi",
+        "guard_dps": null,
+        "kind": "tau",
+        "max_value": null,
+        "source_path": "data/constants/tau/tau.dps_100.txt",
+        "stored_dps": 100,
+        "strictly_increasing": null,
+        "usable_dps": 100,
+        "valid": true,
+        "warnings": []
+      },
+      "required": {
+        "kind": "tau",
+        "stored_dps": 100
+      }
+    },
+    {
+      "available": {
+        "asset_id": "nontrivial_zeros_count_100000_dps_100",
+        "count": 100000,
+        "errors": [],
+        "generator": "python-flint.acb.zeta_zeros",
+        "guard_dps": 20,
+        "kind": "nontrivial_zeta_zeros",
+        "max_value": "74920.8274989941867938492009469183466202235552168015540934906315761266125515775842389074547418377755065296065",
+        "reference_asset_id": "nontrivial_zeros_count_2001052_dps_9",
+        "reference_asset_path": "data/zeros/nontrivial/zeros_2M_four_ten_power_neg_nine.gz",
+        "source_path": "data/zeros/nontrivial/zeros.generated.dps_100.jsonl",
+        "stored_dps": 100,
+        "strictly_increasing": true,
+        "usable_dps": 80,
+        "valid": true,
+        "valid_for_overkill": true,
+        "validation_artifact_path": "data/zeros/nontrivial/zeros.generated.dps_100.validation.json",
+        "validation_status": "PASS",
+        "warnings": []
+      },
+      "required": {
+        "count": 60000,
+        "kind": "nontrivial_zeta_zeros",
+        "stored_dps": 100
+      }
+    },
+    {
+      "available": {
+        "asset_id": "trivial_zeta_zeros_formula",
+        "count": null,
+        "errors": [],
+        "formula": "s = -2n",
+        "generator": "formula",
+        "guard_dps": null,
+        "kind": "trivial_zeta_zeros",
+        "max_value": null,
+        "source_path": null,
+        "stored_dps": null,
+        "strictly_increasing": null,
+        "usable_dps": null,
+        "valid": true,
+        "warnings": []
+      },
+      "required": {
+        "formula": "s = -2n",
+        "kind": "trivial_zeta_zeros"
+      }
+    },
+    {
+      "available": {
+        "asset_id": "primes_count_7000000",
+        "count": 7000000,
+        "errors": [],
+        "generator": "existing_file_migration",
+        "guard_dps": null,
+        "kind": "primes",
+        "max_prime": 122949823,
+        "max_value": 122949823,
+        "role": "canonical_static_asset",
+        "source_path": "data/primes/primes.count_7000000.jsonl",
+        "stored_dps": null,
+        "strictly_increasing": true,
+        "usable_dps": null,
+        "valid": true,
+        "warnings": []
+      },
+      "required": {
+        "count": 0,
+        "kind": "primes",
+        "max_prime": 1974,
+        "max_value": 1974
+      }
+    }
+  ],
+  "code_fingerprint": {
+    "experiment_engine.py": "fd8b0e4e7ca5737709089fe71c415db9",
+    "riemann_math.py": "b6c78cff1e982a4c8e4b077aeb19b417",
+    "run_exp0.py": "db0bca55b548d78205c9aace23ddb954",
+    "run_exp1.py": "bf9252ae29c02bcdf6782659fcb75c1a",
+    "run_exp10.py": "82f2f96afe220afc53cc584ed658787c",
+    "run_exp2.py": "112c5696b9ef85db25b4d9252f90701a",
+    "run_exp3.py": "84f96db1ccb1162510b74cee5069e249",
+    "run_exp4.py": "8bf825c2e298cc9b5c08704a67ff953e",
+    "run_exp5.py": "0553e0d867710eb1af23d4910dc600d6",
+    "run_exp6.py": "aff9594172ee933748a9db6fda846842",
+    "run_exp7.py": "3fc8a2a1c0118b4e3b36ac129852d530",
+    "run_exp8.py": "471039a1b38ae90b6941a3dfc947517f",
+    "run_exp9.py": "1fb93ed73dd42ede296fcb646652c3c1",
+    "verifier.py": "9e2d37103604efc40365ab50c457778d"
+  },
+  "created_at": "2026-05-09T15:59:09.869415Z",
+  "errors": [],
+  "generation_plan": [],
+  "insufficient_assets": [],
+  "missing_assets": [],
+  "mode": "same_object_certificate",
+  "next_action": "run_next_research_step",
+  "policies": {
+    "certificate_policy": {
+      "require_raw_high_precision_artifacts": false
+    },
+    "prime_policy": {
+      "require_sufficient_max_prime": true,
+      "selection": "canonical_7m"
+    },
+    "tau_policy": {
+      "require_dps_plus_guard": true,
+      "selection": "highest_available"
+    },
+    "zero_policy": {
+      "allow_lower_precision_fallback": false,
+      "require_odlyzko_crosscheck": false,
+      "selection": "highest_available"
+    }
+  },
+  "preset": null,
+  "required_assets": [
+    {
+      "kind": "tau",
+      "stored_dps": 100
+    },
+    {
+      "count": 60000,
+      "kind": "nontrivial_zeta_zeros",
+      "stored_dps": 100
+    },
+    {
+      "formula": "s = -2n",
+      "kind": "trivial_zeta_zeros"
+    },
+    {
+      "count": 0,
+      "kind": "primes",
+      "max_prime": 1974,
+      "max_value": 1974
+    }
+  ],
+  "requirements": {
+    "declarations": {
+      "EXP_1": {
+        "critical_path": true,
+        "display_id": "CORE-1",
+        "program": "PROGRAM_1",
+        "requirements": {
+          "nontrivial_zeros": {
+            "count": "run.zero_count",
+            "stored_dps": "run.dps + guard_dps"
+          },
+          "primes": {
+            "max_value": "derived from x_end and k range"
+          },
+          "tau": {
+            "stored_dps": "run.dps + guard_dps"
+          },
+          "trivial_zeros": {
+            "formula": "s = -2n"
+          }
+        }
+      },
+      "EXP_6": {
+        "critical_path": true,
+        "display_id": "VAL-1",
+        "program": "PROGRAM_1",
+        "requirements": {
+          "nontrivial_zeros": {
+            "count": "run.zero_count",
+            "stored_dps": "run.dps + guard_dps"
+          },
+          "primes": {
+            "max_value": "derived from x_end * max(tau^k)"
+          },
+          "tau": {
+            "stored_dps": "run.dps + guard_dps"
+          },
+          "trivial_zeros": {
+            "formula": "s = -2n"
+          }
+        }
+      },
+      "EXP_8": {
+        "critical_path": true,
+        "display_id": "WIT-1",
+        "program": "PROGRAM_1",
+        "requirements": {
+          "nontrivial_zeros": {
+            "count": "run.n_test or run.zero_count",
+            "stored_dps": "run.dps + guard_dps"
+          },
+          "tau": {
+            "stored_dps": "run.dps + guard_dps"
+          }
+        }
+      }
+    },
+    "experiments": [
+      "EXP_1",
+      "EXP_6",
+      "EXP_8"
+    ],
+    "guard_dps": 20,
+    "requested_dps": 80,
+    "required_assets": [
+      {
+        "kind": "tau",
+        "stored_dps": 100
+      },
+      {
+        "count": 60000,
+        "kind": "nontrivial_zeta_zeros",
+        "stored_dps": 100
+      },
+      {
+        "formula": "s = -2n",
+        "kind": "trivial_zeta_zeros"
+      },
+      {
+        "count": 0,
+        "kind": "primes",
+        "max_prime": 1974,
+        "max_value": 1974
+      }
+    ],
+    "required_stored_dps": 100
+  },
+  "run_contract": null,
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.run-artifact.v1",
+  "selected_assets": {
+    "prime": {
+      "asset": {
+        "asset_id": "primes_count_7000000",
+        "count": 7000000,
+        "errors": [],
+        "generator": "existing_file_migration",
+        "guard_dps": null,
+        "kind": "primes",
+        "max_prime": 122949823,
+        "max_value": 122949823,
+        "role": "canonical_static_asset",
+        "source_path": "data/primes/primes.count_7000000.jsonl",
+        "stored_dps": null,
+        "strictly_increasing": true,
+        "usable_dps": null,
+        "valid": true,
+        "warnings": []
+      },
+      "policy": {
+        "require_sufficient_max_prime": true,
+        "selection": "canonical_7m"
+      },
+      "reason": "canonical 7M prime asset"
+    },
+    "tau": {
+      "asset": {
+        "asset_id": "tau_dps_100",
+        "count": null,
+        "errors": [],
+        "generator": "mpmath.pi",
+        "guard_dps": null,
+        "kind": "tau",
+        "max_value": null,
+        "source_path": "data/constants/tau/tau.dps_100.txt",
+        "stored_dps": 100,
+        "strictly_increasing": null,
+        "usable_dps": 100,
+        "valid": true,
+        "warnings": []
+      },
+      "reason": "highest valid tau asset satisfying dps + guard"
+    },
+    "trivial_zeros": {
+      "asset": {
+        "asset_id": "trivial_zeta_zeros_formula",
+        "count": null,
+        "errors": [],
+        "formula": "s = -2n",
+        "generator": "formula",
+        "guard_dps": null,
+        "kind": "trivial_zeta_zeros",
+        "max_value": null,
+        "source_path": null,
+        "stored_dps": null,
+        "strictly_increasing": null,
+        "usable_dps": null,
+        "valid": true,
+        "warnings": []
+      },
+      "reason": "formulaic trivial zeros"
+    },
+    "zero": {
+      "asset": {
+        "asset_id": "nontrivial_zeros_count_100000_dps_100",
+        "count": 100000,
+        "errors": [],
+        "generator": "python-flint.acb.zeta_zeros",
+        "guard_dps": 20,
+        "kind": "nontrivial_zeta_zeros",
+        "max_value": "74920.8274989941867938492009469183466202235552168015540934906315761266125515775842389074547418377755065296065",
+        "reference_asset_id": "nontrivial_zeros_count_2001052_dps_9",
+        "reference_asset_path": "data/zeros/nontrivial/zeros_2M_four_ten_power_neg_nine.gz",
+        "source_path": "data/zeros/nontrivial/zeros.generated.dps_100.jsonl",
+        "stored_dps": 100,
+        "strictly_increasing": true,
+        "usable_dps": 80,
+        "valid": true,
+        "valid_for_overkill": true,
+        "validation_artifact_path": "data/zeros/nontrivial/zeros.generated.dps_100.validation.json",
+        "validation_status": "PASS",
+        "warnings": []
+      },
+      "policy": {
+        "allow_lower_precision_fallback": false,
+        "require_odlyzko_crosscheck": false,
+        "selection": "highest_available"
+      },
+      "reason": "highest valid generated high-dps asset satisfying count + dps + guard",
+      "reference_asset": {
+        "asset_id": "nontrivial_zeros_count_2001052_dps_9",
+        "count": 2001052,
+        "errors": [],
+        "generator": "existing_file_migration",
+        "guard_dps": null,
+        "kind": "nontrivial_zeta_zeros",
+        "max_value": "1132490.658714411",
+        "source_path": "data/zeros/nontrivial/zeros_2M_four_ten_power_neg_nine.gz",
+        "stored_dps": 9,
+        "strictly_increasing": true,
+        "usable_dps": 9,
+        "valid": true,
+        "warnings": []
+      },
+      "validation": null
+    }
+  },
+  "source_artifact_hash": "eddec2a1e9425934bd24e2330ef454f9e3013af3d62410a9f6b5a786a78e2d74",
+  "status": "READY",
+  "warnings": []
+}

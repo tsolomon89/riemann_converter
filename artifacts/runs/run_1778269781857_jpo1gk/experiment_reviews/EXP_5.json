@@ -1,0 +1,93 @@
+{
+  "actual_run_inference": [
+    "PATH-2: the run produced partial / directional information against this baseline.",
+    "Strengthening the metric or extending the window is the natural next step."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "structured signal, not noise",
+      "pass_rule": "the correspondence metric exhibits structure beyond noise",
+      "primary_metric": "nearest_neighbor_correspondence_signal",
+      "tolerance": "experiment-declared structural tolerance"
+    },
+    "id": "HYP_PATH_2_ZERO_CORRESPONDENCE",
+    "object_under_test": "scaled_zero_correspondence_metric",
+    "plain_statement": "A scaled-zero correspondence should show meaningful nearest-neighbor behavior under the tested lattice / zero relation.",
+    "why_this_matters": "PATH-2 explores whether a particular zero-correspondence formulation has any chance of supporting an exact predicate transport down the road."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Zero-Correspondence Pathfinding Note (deferred)",
+      "observed_metric": {
+        "primary_metric": "nearest_neighbor_correspondence_signal",
+        "value": 0.2595674195768738
+      },
+      "scope": "deferred",
+      "statement": "This run was incomplete against the current baseline (primary metric nearest_neighbor_correspondence_signal: observed \u2248 0.259567). No candidate lemma is suggested until the baseline is confirmed or definitively failed.",
+      "status": "DEFERRED",
+      "what_it_does_not_prove": [
+        "this proves predicate transport",
+        "this supports the base claim",
+        "this proves any necessary condition"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this proves predicate transport",
+    "this supports the base claim",
+    "this proves any necessary condition",
+    "The theorem candidate is supported or refuted by this pathfinder.",
+    "The zero-scaling hypothesis is universally confirmed or ruled out."
+  ],
+  "display_id": "PATH-2",
+  "experiment_id": "EXP_5",
+  "intended_inference_if_passed": [
+    "the chosen correspondence metric shows structure on the tested window",
+    "this metric remains a candidate for further formalization",
+    "this is a direction note, not a theorem"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "INCOMPLETE",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 0.2595674195768738
+    }
+  },
+  "next_hypotheses": [
+    "Increase precision and re-run PATH-2.",
+    "Re-examine the metric nearest_neighbor_correspondence_signal for sensitivity."
+  ],
+  "program": "NONE",
+  "raw_observations": {
+    "metrics": {
+      "direction": "lattice-path-negative",
+      "median_z": 0.2595674195768738
+    },
+    "series_refs": [],
+    "theory_fit": "INFORMATIVE",
+    "verifier_interpretation": "PATHFINDER verdict: lattice-path-negative. Scaled zeros do NOT align with existing zeros at this fidelity \u2014 rules out the naive lattice path and redirects toward the operator/coord-reparam investigation.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "Scaled zeros {lattice-hit, lattice-weak, lattice-path-negative} under this run's median_z thresholds."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported or refuted by this pathfinder.",
+        "The zero-scaling hypothesis is universally confirmed or ruled out."
+      ],
+      "inference_scope": "this run, nearest-neighbor zero correspondence"
+    }
+  },
+  "role": "pathfinder",
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "BASELINE_MODEL",
+  "verifier_signal": {
+    "epistemic_level": "EMPIRICAL",
+    "function": "PATHFINDER",
+    "outcome": "DIRECTIONAL",
+    "scoped_status": "PATHFINDER_RESULT",
+    "status": "NOTEWORTHY"
+  }
+}

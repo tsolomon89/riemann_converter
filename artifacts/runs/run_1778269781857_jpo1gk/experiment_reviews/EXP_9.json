@@ -1,0 +1,99 @@
+{
+  "actual_run_inference": [
+    "DEMO-1: status not determinable from this run.",
+    "This is an instrument / coverage gap, not a theory result."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "all sampled zero heights map into the declared bounded window",
+      "pass_rule": "every sampled zero maps inside the declared window",
+      "primary_metric": "image_heights_within_declared_window",
+      "tolerance": "experiment-declared boundary tolerance"
+    },
+    "id": "HYP_DEMO_1_BOUNDED_VIEW",
+    "object_under_test": "bounded_view_mapping_under_assumed_transport",
+    "plain_statement": "Bounded-view mechanics can map sampled zero heights into the declared bounded window if transport is assumed.",
+    "why_this_matters": "DEMO-1 illustrates how a bounded-view reduction would behave conditional on transport. It is not a proof of NC5; it is an illustration of the route's mechanics."
+  },
+  "candidate_lemmas": [
+    {
+      "name": "Bounded-Window Demonstration Lemma (no-lemma)",
+      "scope": "demonstration",
+      "statement": "This experiment is demonstration-typed; no candidate lemma is suggested from this run.",
+      "status": "NO_LEMMA_SUGGESTED",
+      "what_it_does_not_prove": [
+        "this proves NC5",
+        "this proves predicate transport",
+        "this proves RH"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this proves NC5",
+    "this proves predicate transport",
+    "this proves RH",
+    "Transport is established by this experiment.",
+    "The bounded-view corollary is proved.",
+    "The theorem candidate is proved or refuted.",
+    "Anything about whether the gauge actually preserves RH-relevant structure."
+  ],
+  "display_id": "DEMO-1",
+  "experiment_id": "EXP_9",
+  "intended_inference_if_passed": [
+    "the bounded-view mechanic is consistent with the declared window assuming transport",
+    "this remains an illustration, not a proof",
+    "NC5 is not formally established by this demonstration"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [],
+    "baseline_status": "NOT_APPLICABLE",
+    "failed_metrics": [],
+    "fit_metrics": {
+      "summary_metric": 5.0
+    }
+  },
+  "next_hypotheses": [],
+  "program": "NONE",
+  "raw_observations": {
+    "metrics": {
+      "in_window_count": 5,
+      "k_required_per_sample": [
+        1,
+        -1,
+        -2,
+        -3,
+        -3
+      ],
+      "total_count": 5,
+      "window_hi": 1000.0,
+      "window_lo": 10.0
+    },
+    "series_refs": [],
+    "theory_fit": "SUPPORTS",
+    "verifier_interpretation": "All 5 sampled zeros admit an integer k that brings the image into [10.0, 1000.0]. The bounded-view corollary's mechanics are demonstrable for the tested heights IF transport holds.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "For each sampled zero, the integer k that brings |gamma * tau^k| into the target bounded window is computed; this exhibits the mechanical content of the bounded-view corollary IF transport holds."
+      ],
+      "disallowed_conclusion": [
+        "Transport is established by this experiment.",
+        "The bounded-view corollary is proved.",
+        "The theorem candidate is proved or refuted.",
+        "Anything about whether the gauge actually preserves RH-relevant structure."
+      ],
+      "inference_scope": "this run, sample of zero heights, bounded-view demonstration"
+    }
+  },
+  "role": "demonstration",
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "NONE",
+  "verifier_signal": {
+    "epistemic_level": "INSTRUMENTAL",
+    "function": "DEMONSTRATION",
+    "outcome": "INFORMATIONAL",
+    "scoped_status": "PASS",
+    "status": "PASS"
+  }
+}

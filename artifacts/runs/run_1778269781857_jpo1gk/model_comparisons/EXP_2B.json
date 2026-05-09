@@ -1,0 +1,34 @@
+{
+  "agent_review_priority": "HIGH",
+  "alternative_model_candidates": [
+    "phase-dependent residual envelope",
+    "k-depth dependent attenuation of the residual signal",
+    "window-dependent amplification",
+    "multi-zero interference dominates over single-perturbation contribution",
+    "wrong normalization of the observed/predicted ratio"
+  ],
+  "baseline_hypothesis_id": "HYP_P2_2_RESIDUAL_ISOLATION",
+  "baseline_prediction": {
+    "expected": "near 1.0 within declared envelope",
+    "metric": "observed_over_predicted_residual_ratio",
+    "pass_rule": "ratio remains near 1.0 across the tested k / window range",
+    "tolerance": "experiment-declared residual envelope"
+  },
+  "display_id": "P2-2",
+  "experiment_id": "EXP_2B",
+  "fit_result": {
+    "baseline_status": "FAILED",
+    "failed_metrics": [
+      "observed_over_predicted_residual_ratio"
+    ],
+    "reason": "Residual deviation exceeds tolerance; rogue isolation not supported at this fidelity."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 9.68867496086273
+    }
+  },
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1"
+}

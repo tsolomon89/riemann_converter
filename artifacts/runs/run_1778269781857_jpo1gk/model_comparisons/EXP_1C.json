@@ -1,0 +1,32 @@
+{
+  "agent_review_priority": "MEDIUM",
+  "alternative_model_candidates": [
+    "zero-reuse is valid only at low |k|",
+    "zero-reuse requires a specific normalization to match the baseline",
+    "the baseline implicitly does something the optimization skips"
+  ],
+  "baseline_hypothesis_id": "HYP_NOTE_1_ZERO_REUSE",
+  "baseline_prediction": {
+    "expected": "within declared engineering tolerance",
+    "metric": "scaled_zero_reconstruction_drift_vs_baseline",
+    "pass_rule": "scaled-zero reconstruction agrees with baseline within tolerance",
+    "tolerance": "experiment-declared engineering tolerance"
+  },
+  "display_id": "NOTE-1",
+  "experiment_id": "EXP_1C",
+  "fit_result": {
+    "baseline_status": "FAILED",
+    "failed_metrics": [
+      "scaled_zero_reconstruction_drift_vs_baseline"
+    ],
+    "reason": "Zero-scaling hypothesis fails documented tolerances (drift and/or error-ratio)."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 284.9942038984427
+    }
+  },
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1"
+}

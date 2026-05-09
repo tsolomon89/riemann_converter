@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "LOW",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_TRANS_1_DIRECT_ZETA_TRANSPORT_GUARDRAIL",
+  "baseline_prediction": {
+    "expected": "non-zero, structured, bounded residual",
+    "metric": "pointwise_zeta_transport_residual",
+    "pass_rule": "the residual is bounded and structured, consistent with non-trivial guardrail behavior",
+    "tolerance": "experiment-declared residual bound"
+  },
+  "display_id": "TRANS-1",
+  "experiment_id": "EXP_10",
+  "fit_result": {
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "reason": "Run outcome consistent with the declared baseline; pass rule satisfied."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 6.830321442835776
+    }
+  },
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1"
+}

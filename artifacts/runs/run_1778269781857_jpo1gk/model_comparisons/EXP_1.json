@@ -1,0 +1,29 @@
+{
+  "agent_review_priority": "LOW",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_CORE_1_RECONSTRUCTION_COVARIANCE",
+  "baseline_prediction": {
+    "expected": "near zero (within reconstruction tolerance)",
+    "metric": "max_drift_between_k_zero_and_other_k",
+    "pass_rule": "drift remains within tolerance for every tested k",
+    "tolerance": "experiment-declared reconstruction tolerance"
+  },
+  "display_id": "CORE-1",
+  "experiment_id": "EXP_1",
+  "fit_result": {
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "reason": "Run outcome consistent with the declared baseline; pass rule satisfied."
+  },
+  "observations": {
+    "series_refs": [
+      "harmonic_N_200",
+      "mobius_N_200"
+    ],
+    "summary_metrics": {
+      "summary_metric": 200.0
+    }
+  },
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1"
+}

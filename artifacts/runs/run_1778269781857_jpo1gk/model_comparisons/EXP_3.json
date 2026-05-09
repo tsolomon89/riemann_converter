@@ -1,0 +1,26 @@
+{
+  "agent_review_priority": "LOW",
+  "alternative_model_candidates": [],
+  "baseline_hypothesis_id": "HYP_CTRL_2_BETA_COUNTERFACTUAL",
+  "baseline_prediction": {
+    "expected": "clear divergence of the counterfactual beta from the true count",
+    "metric": "counterfactual_beta_divergence",
+    "pass_rule": "counterfactual beta is rejected by the divergence test for every tested scale",
+    "tolerance": "experiment-declared divergence threshold"
+  },
+  "display_id": "CTRL-2",
+  "experiment_id": "EXP_3",
+  "fit_result": {
+    "baseline_status": "CONFIRMED",
+    "failed_metrics": [],
+    "reason": "Run outcome consistent with the declared baseline; pass rule satisfied."
+  },
+  "observations": {
+    "series_refs": [],
+    "summary_metrics": {
+      "summary_metric": 17082.167369673043
+    }
+  },
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1"
+}

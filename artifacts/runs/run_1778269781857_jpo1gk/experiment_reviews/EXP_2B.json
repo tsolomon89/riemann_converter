@@ -1,0 +1,116 @@
+{
+  "actual_run_inference": [
+    "P2-2: the current baseline was not confirmed on this run.",
+    "Baseline tested: A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope).",
+    "The raw data may still contain structured behavior \u2014 see candidate lemma and alternative-hypothesis suggestions.",
+    "This run does not, by itself, refute the base claim."
+  ],
+  "baseline_hypothesis": {
+    "expected_signature": {
+      "expected_value": "near 1.0 within declared envelope",
+      "pass_rule": "ratio remains near 1.0 across the tested k / window range",
+      "primary_metric": "observed_over_predicted_residual_ratio",
+      "tolerance": "experiment-declared residual envelope"
+    },
+    "id": "HYP_P2_2_RESIDUAL_ISOLATION",
+    "object_under_test": "zero_ensemble",
+    "plain_statement": "A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope).",
+    "why_this_matters": "Residual isolation is the finite-precision baseline for NC6 via single-perturbation modeling. The current ratio model is one specific baseline among several plausible models."
+  },
+  "candidate_lemmas": [
+    {
+      "alternative_directions": [
+        "phase-dependent residual envelope",
+        "k-depth dependent attenuation of the residual signal",
+        "window-dependent amplification",
+        "multi-zero interference dominates over single-perturbation contribution",
+        "wrong normalization of the observed/predicted ratio"
+      ],
+      "name": "Residual Isolation / Residual Envelope Candidate Lemma (failure-direction)",
+      "observed_metric": {
+        "primary_metric": "observed_over_predicted_residual_ratio",
+        "value": 9.68867496086273
+      },
+      "scope": "baseline-revision",
+      "statement": "The current baseline (A single-perturbed-zero model predicts residual behavior according to the current residual-ratio model (observed/predicted residual ~ 1.0 under the tested envelope)) was not confirmed on this run (primary metric observed_over_predicted_residual_ratio: observed \u2248 9.68867). A revised lemma should account for the observed deviation, possibly via one of the alternative hypotheses below.",
+      "status": "SUGGESTED_FROM_FAILURE",
+      "what_it_does_not_prove": [
+        "this proves NC6",
+        "this proves the rogue-isolation theorem",
+        "this is consistent with Program 1 in any direct sense"
+      ]
+    }
+  ],
+  "disallowed_conclusions": [
+    "this proves NC6",
+    "this proves the rogue-isolation theorem",
+    "this is consistent with Program 1 in any direct sense",
+    "The theorem candidate is supported.",
+    "All off-line zeros are isolable in general.",
+    "No-hiding under compression is proved."
+  ],
+  "display_id": "P2-2",
+  "experiment_id": "EXP_2B",
+  "intended_inference_if_passed": [
+    "the single-perturbation residual model is consistent on the tested window",
+    "the Program 2 detection route via residual ratios remains armed",
+    "this is not a proof of NC6"
+  ],
+  "model_comparison": {
+    "alternative_model_candidates": [
+      "phase-dependent residual envelope",
+      "k-depth dependent attenuation of the residual signal",
+      "window-dependent amplification",
+      "multi-zero interference dominates over single-perturbation contribution",
+      "wrong normalization of the observed/predicted ratio"
+    ],
+    "baseline_status": "FAILED",
+    "failed_metrics": [
+      "observed_over_predicted_residual_ratio"
+    ],
+    "fit_metrics": {
+      "summary_metric": 9.68867496086273
+    }
+  },
+  "next_hypotheses": [
+    "phase-dependent residual envelope",
+    "k-depth dependent attenuation of the residual signal",
+    "window-dependent amplification",
+    "multi-zero interference dominates over single-perturbation contribution",
+    "wrong normalization of the observed/predicted ratio"
+  ],
+  "program": "PROGRAM_2",
+  "raw_observations": {
+    "metrics": {
+      "count": 501,
+      "max_abs_residual_dev": 9.68867496086273,
+      "threshold": 0.5
+    },
+    "series_refs": [],
+    "theory_fit": "REFUTES",
+    "verifier_interpretation": "Residual deviation exceeds tolerance; rogue isolation not supported at this fidelity.",
+    "verifier_static_inference": {
+      "_label": "static rails recorded by verifier; do not read as run conclusion",
+      "allowed_conclusion": [
+        "The residual error scales as x^(0.5+delta) as the single-perturbed-zero model predicts at this run's settings."
+      ],
+      "disallowed_conclusion": [
+        "The theorem candidate is supported.",
+        "All off-line zeros are isolable in general.",
+        "No-hiding under compression is proved."
+      ],
+      "inference_scope": "this run, Contradiction Track formalization; residual isolation"
+    }
+  },
+  "role": "witness",
+  "run_id": "run_1778269781857_jpo1gk",
+  "schema_version": "2026.05.experiment-review.v1",
+  "scoped_consequence": "ROUTE",
+  "verifier_signal": {
+    "epistemic_level": "EMPIRICAL",
+    "function": "EXPLORATORY",
+    "outcome": "INCONSISTENT",
+    "scoped_status": "ROUTE_NEGATIVE",
+    "status": "FAIL"
+  }
+}
